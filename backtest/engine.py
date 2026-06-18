@@ -2,7 +2,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-from modes.scoring import alpha_score, build_explanation, risk_label, z_score
+from modes.scoring import alpha_score, z_score
 
 @dataclass
 class BacktestTrade:

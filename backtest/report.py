@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from pathlib import Path
 import json
-import math
+
 
 from backtest.engine import BacktestResult
 

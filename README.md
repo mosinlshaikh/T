@@ -1,5 +1,12 @@
 # T
 
+[![CI](https://github.com/mosin1982/T/actions/workflows/ci.yml/badge.svg)](https://github.com/mosin1982/T/actions/workflows/ci.yml)
+[![Docker Build](https://github.com/mosin1982/T/actions/workflows/docker.yml/badge.svg)](https://github.com/mosin1982/T/actions/workflows/docker.yml)
+[![Smoke](https://github.com/mosin1982/T/actions/workflows/smoke.yml/badge.svg)](https://github.com/mosin1982/T/actions/workflows/smoke.yml)
+[![Release](https://github.com/mosin1982/T/actions/workflows/release.yml/badge.svg)](https://github.com/mosin1982/T/actions/workflows/release.yml)
+
+Open-source Financial Intelligence Operating System for market research, paper trading, backtesting, risk analysis, and smart money intelligence.
+
 **Autonomous Financial Intelligence Platform**  
 Built by **T Technology Research Lab**
 

@@ -1,4 +1,3 @@
-from pathlib import Path
 from modes.demo_mode import run_demo
 
 def test_demo_mode_generates_signal():

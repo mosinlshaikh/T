@@ -11,3 +11,5 @@ python-telegram-bot
 ruff
 websockets
 yfinance
+streamlit
+pandas

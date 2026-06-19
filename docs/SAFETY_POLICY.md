@@ -1,12 +1,12 @@
-\# T Safety Policy
+# T Safety Policy
 
 
 
-\*\*Project:\*\* T
+**Project:** T
 
-\*\*Maintainer:\*\* T Technology Research Lab
+**Maintainer:** T Technology Research Lab
 
-\*\*Status:\*\* Public Alpha / Research Software
+**Status:** Public Alpha / Research Software
 
 
 
@@ -22,7 +22,7 @@ Research only. Not financial advice.
 
 
 
-\## 1. Core Safety Position
+## 1. Core Safety Position
 
 
 
@@ -30,15 +30,15 @@ T must always be positioned as:
 
 
 
-\* Research software
+* Research software
 
-\* Educational tooling
+* Educational tooling
 
-\* Backtesting and analysis infrastructure
+* Backtesting and analysis infrastructure
 
-\* Paper-trading and observation support
+* Paper-trading and observation support
 
-\* Financial intelligence research system
+* Financial intelligence research system
 
 
 
@@ -46,21 +46,21 @@ T must never be positioned as:
 
 
 
-\* Guaranteed-profit software
+* Guaranteed-profit software
 
-\* Investment advisory software
+* Investment advisory software
 
-\* Buy/sell signal service
+* Buy/sell signal service
 
-\* Risk-free trading system
+* Risk-free trading system
 
-\* Automated wealth-generation product
+* Automated wealth-generation product
 
-\* Financial advisor replacement
+* Financial advisor replacement
 
 
 
-\## 2. Prohibited Claims
+## 2. Prohibited Claims
 
 
 
@@ -68,31 +68,31 @@ The project, documentation, dashboard, CLI output, and generated explanations mu
 
 
 
-\* Guaranteed profit
+* Guaranteed profit
 
-\* 100% accurate
+* 100% accurate
 
-\* Sure-shot trade
+* Sure-shot trade
 
-\* Risk-free return
+* Risk-free return
 
-\* No-loss strategy
+* No-loss strategy
 
-\* Must buy
+* Must buy
 
-\* Must sell
+* Must sell
 
-\* This will go up
+* This will go up
 
-\* This will go down
+* This will go down
 
-\* Financial advice
+* Financial advice
 
-\* Investment advice
+* Investment advice
 
 
 
-\## 3. Required Disclaimer
+## 3. Required Disclaimer
 
 
 
@@ -120,7 +120,7 @@ This output is for research, testing, and educational analysis only. It should n
 
 
 
-\## 4. Hallucination-Resistant Output Guard
+## 4. Hallucination-Resistant Output Guard
 
 
 
@@ -132,15 +132,15 @@ The guard checks for unsafe language such as:
 
 
 
-\* Guaranteed profit claims
+* Guaranteed profit claims
 
-\* Direct buy/sell instructions
+* Direct buy/sell instructions
 
-\* Investment-advice language
+* Investment-advice language
 
-\* Risk-free claims
+* Risk-free claims
 
-\* Overconfident market predictions
+* Overconfident market predictions
 
 
 
@@ -148,7 +148,7 @@ The guard may sanitize unsafe text and append the required research disclaimer.
 
 
 
-\## 5. Human Review Requirement
+## 5. Human Review Requirement
 
 
 
@@ -160,7 +160,7 @@ No automated output should be treated as final financial advice.
 
 
 
-\## 6. Backtesting Safety
+## 6. Backtesting Safety
 
 
 
@@ -172,23 +172,23 @@ Backtest reports should be interpreted with caution because results may be affec
 
 
 
-\* Data quality
+* Data quality
 
-\* Fees and slippage assumptions
+* Fees and slippage assumptions
 
-\* Market regime changes
+* Market regime changes
 
-\* Liquidity conditions
+* Liquidity conditions
 
-\* Overfitting
+* Overfitting
 
-\* Survivorship bias
+* Survivorship bias
 
-\* Incomplete risk modeling
+* Incomplete risk modeling
 
 
 
-\## 7. Dashboard Safety
+## 7. Dashboard Safety
 
 
 
@@ -200,7 +200,7 @@ Dashboard metrics, equity curves, trade tables, and analytics are not trading re
 
 
 
-\## 8. Commercial Safety
+## 8. Commercial Safety
 
 
 
@@ -212,7 +212,7 @@ Paid services must not be marketed as guaranteed-return investment services.
 
 
 
-\## 9. Official Safety Statement
+## 9. Official Safety Statement
 
 
 

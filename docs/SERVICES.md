@@ -1,12 +1,12 @@
-\# T Professional Services
+# T Professional Services
 
 
 
-\*\*Project:\*\* T
+**Project:** T
 
-\*\*Maintainer:\*\* T Technology Research Lab
+**Maintainer:** T Technology Research Lab
 
-\*\*Status:\*\* Public Alpha / Research Software
+**Status:** Public Alpha / Research Software
 
 
 
@@ -22,7 +22,7 @@ Research only. Not financial advice.
 
 
 
-\## 1. Open-Source Access
+## 1. Open-Source Access
 
 
 
@@ -34,7 +34,7 @@ Open-source access does not include guaranteed support, custom setup, private de
 
 
 
-\## 2. Paid Professional Services
+## 2. Paid Professional Services
 
 
 
@@ -42,31 +42,31 @@ T Technology Research Lab may offer paid professional services around the T soft
 
 
 
-\* Installation and setup
+* Installation and setup
 
-\* Local environment configuration
+* Local environment configuration
 
-\* Dashboard customization
+* Dashboard customization
 
-\* Backtest report customization
+* Backtest report customization
 
-\* Data integration
+* Data integration
 
-\* Strategy module configuration
+* Strategy module configuration
 
-\* Training and walkthroughs
+* Training and walkthroughs
 
-\* Deployment support
+* Deployment support
 
-\* Business workflow integration
+* Business workflow integration
 
-\* Research and development customization
+* Research and development customization
 
-\* Monthly technical support
+* Monthly technical support
 
 
 
-\## 3. Suggested Pricing Guidance
+## 3. Suggested Pricing Guidance
 
 
 
@@ -92,7 +92,7 @@ Pricing depends on scope, complexity, timeline, and support requirements.
 
 
 
-\## 4. What Paid Services Do Not Include
+## 4. What Paid Services Do Not Include
 
 
 
@@ -100,21 +100,21 @@ Paid services do not include:
 
 
 
-\* Guaranteed trading profit
+* Guaranteed trading profit
 
-\* Investment advice
+* Investment advice
 
-\* Buy/sell recommendations
+* Buy/sell recommendations
 
-\* Portfolio management
+* Portfolio management
 
-\* Risk-free returns
+* Risk-free returns
 
-\* Legal, tax, or financial advisory services
+* Legal, tax, or financial advisory services
 
 
 
-\## 5. Donation Support
+## 5. Donation Support
 
 
 
@@ -134,7 +134,7 @@ If T helps your research, learning, testing, or development workflow, you may su
 
 
 
-\## 6. Donation Notice
+## 6. Donation Notice
 
 
 
@@ -146,7 +146,7 @@ For setup, training, dashboard customization, business integration, or enterpris
 
 
 
-\## 7. Commercial Positioning
+## 7. Commercial Positioning
 
 
 
@@ -166,7 +166,7 @@ Professional services may be charged separately for setup, customization, traini
 
 
 
-\## 8. Official Disclaimer
+## 8. Official Disclaimer
 
 
 

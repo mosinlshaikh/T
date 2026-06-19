@@ -18,22 +18,28 @@ Research only. Not financial advice.
 ## Important Links
 
 | Item                  | Link                                                         |
-| --------------------- | ------------------------------------------------------------ |
-| GitHub Repository     | https://github.com/mosin1982/T                               |
-| Latest Releases       | https://github.com/mosin1982/T/releases                      |
-| CI Workflow           | https://github.com/mosin1982/T/actions/workflows/ci.yml      |
-| Docker Workflow       | https://github.com/mosin1982/T/actions/workflows/docker.yml  |
-| Smoke Workflow        | https://github.com/mosin1982/T/actions/workflows/smoke.yml   |
-| Release Workflow      | https://github.com/mosin1982/T/actions/workflows/release.yml |
-| Safety Policy         | [docs/SAFETY_POLICY.md](docs/SAFETY_POLICY.md)               |
-| Professional Services | [docs/SERVICES.md](docs/SERVICES.md)                         |
-| Disclaimer            | [DISCLAIMER.md](DISCLAIMER.md)                               |
-| Security              | [SECURITY.md](SECURITY.md)                                   |
-| Support               | [SUPPORT.md](SUPPORT.md)                                     |
-| Contributing          | [CONTRIBUTING.md](CONTRIBUTING.md)                           |
-| Code of Conduct       | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)                     |
-| Changelog             | [CHANGELOG.md](CHANGELOG.md)                                 |
-| Donate                | [DONATE.md](DONATE.md)                                       |
+| --------------------------- | -------------------------------------------------------------------------- |
+| GitHub Repository           | https://github.com/mosin1982/T                                             |
+| Latest Releases             | https://github.com/mosin1982/T/releases                                    |
+| CI Workflow                 | https://github.com/mosin1982/T/actions/workflows/ci.yml                    |
+| Docker Workflow             | https://github.com/mosin1982/T/actions/workflows/docker.yml                |
+| Smoke Workflow              | https://github.com/mosin1982/T/actions/workflows/smoke.yml                 |
+| Release Workflow            | https://github.com/mosin1982/T/actions/workflows/release.yml               |
+| Safety Policy               | [docs/SAFETY_POLICY.md](docs/SAFETY_POLICY.md)                             |
+| Professional Services       | [docs/SERVICES.md](docs/SERVICES.md)                                       |
+| Disclaimer                  | [DISCLAIMER.md](DISCLAIMER.md)                                             |
+| Security                    | [SECURITY.md](SECURITY.md)                                                 |
+| Support                     | [SUPPORT.md](SUPPORT.md)                                                   |
+| Contributing                | [CONTRIBUTING.md](CONTRIBUTING.md)                                         |
+| Code of Conduct             | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)                                   |
+| Changelog                   | [CHANGELOG.md](CHANGELOG.md)                                               |
+| Donate                      | [DONATE.md](DONATE.md)                                                     |
+| Support T                   | [DONATE.md](DONATE.md)                                                     |
+| Support Scope               | [docs/SUPPORT_SCOPE.md](docs/SUPPORT_SCOPE.md)                             |
+| Deployment Guide            | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)                       |
+| UI/UX Design System         | [docs/UI_UX_DESIGN_SYSTEM.md](docs/UI_UX_DESIGN_SYSTEM.md)                 |
+| Global Language Support     | [docs/GLOBAL_LANGUAGE_SUPPORT.md](docs/GLOBAL_LANGUAGE_SUPPORT.md)         |
+| Multi-Language Architecture | [docs/MULTI_LANGUAGE_ARCHITECTURE.md](docs/MULTI_LANGUAGE_ARCHITECTURE.md) |
 
 ---
 
@@ -317,6 +323,23 @@ Read the full policy:
 
 ---
 
+## Support, Deployment, and UI/UX
+
+T is designed as a research-only public alpha system with clear support boundaries, deployment guidance, and a safety-first UI/UX direction.
+
+Important documents:
+
+* [Support T](DONATE.md)
+* [Support Scope](docs/SUPPORT_SCOPE.md)
+* [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
+* [UI/UX Design System](docs/UI_UX_DESIGN_SYSTEM.md)
+
+Deployment support is technical guidance only. T does not provide financial advice, investment advice, trade recommendations, broker account operation, or managed financial services.
+
+```text
+Research only. Not financial advice.
+```
+
 ## Professional Services
 
 The T source code may be available publicly for research and development use.
@@ -362,6 +385,28 @@ If this project helps your research, learning, testing, or development workflow,
 Donations are voluntary and do not create any investment relationship, trading promise, profit assurance, advisory relationship, or service obligation.
 
 For setup, training, dashboard customization, business integration, or enterprise R&D work, use a paid professional service engagement instead of donation.
+
+---
+
+## Global and Developer Language Roadmap
+
+T is English-first today, with planned global documentation and dashboard language support for wider international users.
+
+Planned human-language direction includes:
+
+- English as the primary global technical language
+- Hindi and Hinglish for community support
+- Spanish, Arabic, French, Portuguese, Indonesian, and other languages as future documentation options
+
+T is also Python-first today, with future developer-language extension layers planned for Go, Rust, TypeScript, and WebAssembly.
+
+Important documents:
+
+- [Global Language Support](docs/GLOBAL_LANGUAGE_SUPPORT.md)
+- [Multi-Language Architecture](docs/MULTI_LANGUAGE_ARCHITECTURE.md)
+
+```text
+Research only. Not financial advice.
 
 ---
 

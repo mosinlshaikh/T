@@ -1,23 +1,8 @@
-# Support T Technology Research Lab
+# Support T
 
-T is developed for traders, researchers, builders, and the open-source community.
+**T** is a public alpha research project by **T Technology Research Lab**.
 
-## Donation Methods
+T is designed for financial research, backtesting, dashboard analytics, safety-oriented research output, and open-source learning.
 
-### UPI
-tmps8346991530153183@slc
-
-### USDT TRC20
-TLFLEDbN47bSBkWeqZzMNgkrzRK64RHbVn
-
-### Binance UID
-475627577
-
-## Funds Are Used For
-
-- Cloud infrastructure
-- Market data APIs
-- AI research
-- Security hardening
-- Documentation
-- Open-source maintenance
+```text
+Research only. Not financial advice.

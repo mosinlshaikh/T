@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from modes.scoring import alpha_score, z_score
@@ -20,6 +20,30 @@ class BacktestTrade:
 
 
 @dataclass
+class BacktestConfig:
+    csv_path: str = ""
+    starting_balance: float = 10000.0
+    alpha_threshold: float = 65.0
+    z_threshold: float = 2.0
+    hold_bars: int = 2
+    risk_pct: float = 1.0
+    fee_bps: float = 5.0
+    slippage_bps: float = 2.0
+    side: str = "LONG"
+
+
+@dataclass
+class BacktestDiagnostics:
+    data_rows: int = 0
+    evaluated_bars: int = 0
+    warmup_bars: int = 0
+    qualified_signals: int = 0
+    max_position_size: float = 0.0
+    average_position_size: float = 0.0
+    max_exposure_pct: float = 0.0
+
+
+@dataclass
 class BacktestResult:
     trades: list[BacktestTrade]
     starting_balance: float
@@ -35,6 +59,29 @@ class BacktestResult:
     worst_trade_pnl: float
     average_return_pct: float
     equity_curve: list[float]
+    gross_profit: float = 0.0
+    gross_loss: float = 0.0
+    expectancy: float = 0.0
+    payoff_ratio: float = 0.0
+    config: BacktestConfig = field(default_factory=BacktestConfig)
+    diagnostics: BacktestDiagnostics = field(default_factory=BacktestDiagnostics)
+
+
+def validate_backtest_config(config: BacktestConfig) -> None:
+    if config.starting_balance <= 0:
+        raise ValueError("starting_balance must be greater than 0")
+    if config.hold_bars < 1:
+        raise ValueError("hold_bars must be at least 1")
+    if not 0 < config.risk_pct <= 100:
+        raise ValueError("risk_pct must be greater than 0 and less than or equal to 100")
+    if config.fee_bps < 0:
+        raise ValueError("fee_bps cannot be negative")
+    if config.slippage_bps < 0:
+        raise ValueError("slippage_bps cannot be negative")
+    if config.alpha_threshold < 0:
+        raise ValueError("alpha_threshold cannot be negative")
+    if config.z_threshold < 0:
+        raise ValueError("z_threshold cannot be negative")
 
 
 def apply_costs(
@@ -62,6 +109,18 @@ def run_backtest(
     fee_bps: float = 5.0,
     slippage_bps: float = 2.0,
 ) -> BacktestResult:
+    config = BacktestConfig(
+        csv_path=csv_path,
+        starting_balance=starting_balance,
+        alpha_threshold=alpha_threshold,
+        z_threshold=z_threshold,
+        hold_bars=hold_bars,
+        risk_pct=risk_pct,
+        fee_bps=fee_bps,
+        slippage_bps=slippage_bps,
+    )
+    validate_backtest_config(config)
+
     path = Path(csv_path)
 
     if not path.exists():
@@ -76,6 +135,10 @@ def run_backtest(
     equity_peak = starting_balance
     max_drawdown_pct = 0.0
     equity_curve = [round(balance, 2)]
+    evaluated_bars = 0
+    warmup_bars = 0
+    qualified_signals = 0
+    position_sizes: list[float] = []
 
     for index, row in enumerate(rows):
         if index + hold_bars >= len(rows):
@@ -86,8 +149,10 @@ def run_backtest(
         volume_history.append(volume)
 
         if len(history_window) < 3:
+            warmup_bars += 1
             continue
 
+        evaluated_bars += 1
         z = z_score(volume, history_window)
         alpha = alpha_score(
             z=z,
@@ -101,6 +166,7 @@ def run_backtest(
         if alpha < alpha_threshold or z < z_threshold:
             continue
 
+        qualified_signals += 1
         entry = float(row.get("price", row.get("entry_price", 0.0)))
         exit_row = rows[index + hold_bars]
         exit_price = float(exit_row.get("price", exit_row.get("exit_price", entry)))
@@ -114,6 +180,7 @@ def run_backtest(
         )
 
         position_size = balance * (risk_pct / 100)
+        position_sizes.append(position_size)
         units = position_size / max(adj_entry, 1e-9)
         pnl = (adj_exit - adj_entry) * units
         balance += pnl
@@ -156,6 +223,12 @@ def run_backtest(
     average_loss = round(sum(trade.pnl for trade in losses) / len(losses), 2) if losses else 0.0
     best_trade_pnl = round(max((trade.pnl for trade in trades), default=0.0), 2)
     worst_trade_pnl = round(min((trade.pnl for trade in trades), default=0.0), 2)
+    expectancy = (
+        round(sum(trade.pnl for trade in trades) / total_trades, 2) if total_trades else 0.0
+    )
+    payoff_ratio = (
+        round(average_win / abs(average_loss), 4) if average_win and average_loss else 0.0
+    )
     average_return_pct = (
         round(sum(trade.return_pct for trade in trades) / total_trades, 4) if total_trades else 0.0
     )
@@ -178,4 +251,20 @@ def run_backtest(
         worst_trade_pnl=worst_trade_pnl,
         average_return_pct=average_return_pct,
         equity_curve=equity_curve,
+        gross_profit=round(gross_profit, 2),
+        gross_loss=round(gross_loss, 2),
+        expectancy=expectancy,
+        payoff_ratio=payoff_ratio,
+        config=config,
+        diagnostics=BacktestDiagnostics(
+            data_rows=len(rows),
+            evaluated_bars=evaluated_bars,
+            warmup_bars=warmup_bars,
+            qualified_signals=qualified_signals,
+            max_position_size=round(max(position_sizes, default=0.0), 2),
+            average_position_size=(
+                round(sum(position_sizes) / len(position_sizes), 2) if position_sizes else 0.0
+            ),
+            max_exposure_pct=round(risk_pct, 2) if position_sizes else 0.0,
+        ),
     )

@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from backtest.engine import apply_costs, run_backtest
+import pytest
+
+from backtest.engine import BacktestConfig, apply_costs, run_backtest, validate_backtest_config
 
 
 def test_apply_costs_for_long_trade():
@@ -54,3 +56,21 @@ def test_run_backtest_generates_enhanced_analytics(tmp_path: Path):
 
     assert result.win_rate_pct >= 0
     assert result.max_drawdown_pct >= 0
+    assert result.gross_profit >= 0
+    assert result.gross_loss >= 0
+    assert isinstance(result.expectancy, float)
+
+    assert result.config.hold_bars == 1
+    assert result.config.risk_pct == 1.0
+    assert result.diagnostics.data_rows == 7
+    assert result.diagnostics.evaluated_bars >= result.total_trades
+    assert result.diagnostics.qualified_signals == result.total_trades
+    assert result.diagnostics.max_position_size > 0
+
+
+def test_backtest_config_validation_rejects_invalid_risk():
+    with pytest.raises(ValueError, match="risk_pct"):
+        validate_backtest_config(BacktestConfig(risk_pct=0))
+
+    with pytest.raises(ValueError, match="hold_bars"):
+        validate_backtest_config(BacktestConfig(hold_bars=0))

@@ -38,6 +38,13 @@ Average Loss     : {result.average_loss}
 Best Trade PnL   : {result.best_trade_pnl}
 Worst Trade PnL  : {result.worst_trade_pnl}
 Avg Return       : {result.average_return_pct}%
+Gross Profit     : {result.gross_profit}
+Gross Loss       : {result.gross_loss}
+Expectancy       : {result.expectancy}
+Payoff Ratio     : {result.payoff_ratio}
+Risk Per Trade   : {result.config.risk_pct}%
+Rows Evaluated   : {result.diagnostics.evaluated_bars}
+Qualified Signals: {result.diagnostics.qualified_signals}
 
 Research only. Not financial advice.
 ==============================

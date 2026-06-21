@@ -97,6 +97,42 @@ def render_equity_curve(report: dict[str, Any]) -> None:
     st.line_chart(equity_curve)
 
 
+def render_risk_diagnostics(report: dict[str, Any]) -> None:
+    config = report.get("config") or {}
+    diagnostics = report.get("diagnostics") or {}
+
+    st.subheader("Risk Diagnostics")
+    risk_cols = st.columns(4)
+    with risk_cols[0]:
+        st.metric("Risk / Trade", pct(display_value(config, "risk_pct")))
+    with risk_cols[1]:
+        st.metric("Fee", f"{display_value(config, 'fee_bps')} bps")
+    with risk_cols[2]:
+        st.metric("Slippage", f"{display_value(config, 'slippage_bps')} bps")
+    with risk_cols[3]:
+        st.metric("Max Exposure", pct(display_value(diagnostics, "max_exposure_pct")))
+
+    signal_cols = st.columns(4)
+    with signal_cols[0]:
+        st.metric("Data Rows", display_value(diagnostics, "data_rows"))
+    with signal_cols[1]:
+        st.metric("Evaluated Bars", display_value(diagnostics, "evaluated_bars"))
+    with signal_cols[2]:
+        st.metric("Qualified Signals", display_value(diagnostics, "qualified_signals"))
+    with signal_cols[3]:
+        st.metric("Warmup Bars", display_value(diagnostics, "warmup_bars"))
+
+    pnl_cols = st.columns(4)
+    with pnl_cols[0]:
+        st.metric("Gross Profit", money(display_value(report, "gross_profit")))
+    with pnl_cols[1]:
+        st.metric("Gross Loss", money(display_value(report, "gross_loss")))
+    with pnl_cols[2]:
+        st.metric("Expectancy", money(display_value(report, "expectancy")))
+    with pnl_cols[3]:
+        st.metric("Payoff Ratio", display_value(report, "payoff_ratio"))
+
+
 def render_trade_table(report: dict[str, Any]) -> None:
     trades = report.get("trades") or []
     st.subheader("Trade Table")
@@ -181,6 +217,8 @@ with analytics_tab:
         render_report_summary(report)
         st.divider()
         render_equity_curve(report)
+        st.divider()
+        render_risk_diagnostics(report)
         with st.expander("Raw report JSON"):
             st.json(report)
 

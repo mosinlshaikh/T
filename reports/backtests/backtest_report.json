@@ -37,5 +37,29 @@
     10000.0,
     10000.04,
     10000.07
-  ]
+  ],
+  "gross_profit": 0.07,
+  "gross_loss": 0,
+  "expectancy": 0.04,
+  "payoff_ratio": 0.0,
+  "config": {
+    "csv_path": "data/sample/btc_demo.csv",
+    "starting_balance": 10000.0,
+    "alpha_threshold": 65.0,
+    "z_threshold": 2.0,
+    "hold_bars": 2,
+    "risk_pct": 1.0,
+    "fee_bps": 5.0,
+    "slippage_bps": 3.0,
+    "side": "LONG"
+  },
+  "diagnostics": {
+    "data_rows": 10,
+    "evaluated_bars": 5,
+    "warmup_bars": 3,
+    "qualified_signals": 2,
+    "max_position_size": 100.0,
+    "average_position_size": 100.0,
+    "max_exposure_pct": 1.0
+  }
 }

@@ -3,9 +3,9 @@ from modes.scoring import Signal
 
 def format_console_alert(signal: Signal) -> str:
     return f"""
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+==============================
 T SMART MONEY INTELLIGENCE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+==============================
 Asset        : {signal.asset}
 Direction    : {signal.direction}
 Price        : {signal.price}
@@ -18,13 +18,13 @@ Explanation:
 
 Powered by T Technology Research Lab
 Research only. Not financial advice.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+==============================
 """.strip()
 
 
 def format_telegram_alert(signal: Signal) -> str:
     return f"""
-⚡ <b>T SMART MONEY INTELLIGENCE</b> ⚡
+<b>T SMART MONEY INTELLIGENCE</b>
 
 <b>Asset:</b> {signal.asset}
 <b>Direction:</b> {signal.direction}
@@ -36,10 +36,10 @@ def format_telegram_alert(signal: Signal) -> str:
 <b>Explanation:</b>
 {signal.explanation}
 
-━━━━━━━━━━━━━━━━━━━━
+====================
 <b>T</b>
 <b>T Technology Research Lab</b>
-━━━━━━━━━━━━━━━━━━━━
+====================
 
 <i>Research only. Not financial advice.</i>
 """.strip()

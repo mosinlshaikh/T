@@ -15,6 +15,48 @@ Research only. Not financial advice.
 
 ---
 
+## 60-Second Demo
+
+Run the project locally and generate a research-only backtest report:
+
+```bash
+git clone https://github.com/mosin1982/T.git
+cd T
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python t_cli.py backtest
+python -m streamlit run dashboard/app.py
+```
+
+On Windows PowerShell, activate the virtual environment first:
+
+```powershell
+.venv\Scripts\activate
+```
+
+Expected output:
+
+* A console backtest summary with PnL, drawdown, win rate, expectancy, and risk diagnostics
+* A JSON report at `reports/backtests/backtest_report.json`
+* A Streamlit dashboard with analytics, equity curve, trade table, and research safety panel
+
+---
+
+## Why T Exists
+
+Most trading demos jump directly to signals. T takes a more conservative route:
+
+* Research-first workflows before any live execution idea
+* Backtest metrics with visible assumptions and risk settings
+* Dashboard review before human decisions
+* Safety guardrails against overconfident financial language
+* Documentation that separates open-source research from professional services
+
+T is useful for developers, researchers, students, analysts, and builders who want a transparent financial research sandbox.
+
+---
+
 ## Important Links
 
 | Item                  | Link                                                         |
@@ -34,7 +76,6 @@ Research only. Not financial advice.
 | Code of Conduct             | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)                                   |
 | Changelog                   | [CHANGELOG.md](CHANGELOG.md)                                               |
 | Donate                      | [DONATE.md](DONATE.md)                                                     |
-| Support T                   | [DONATE.md](DONATE.md)                                                     |
 | Support Scope               | [docs/SUPPORT_SCOPE.md](docs/SUPPORT_SCOPE.md)                             |
 | Deployment Guide            | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)                       |
 | UI/UX Design System         | [docs/UI_UX_DESIGN_SYSTEM.md](docs/UI_UX_DESIGN_SYSTEM.md)                 |
@@ -62,6 +103,7 @@ Current direction:
 * Equity curve visualization
 * Trade table view
 * Research safety panel
+* Risk diagnostics panel
 * Hallucination-resistant output guard
 * Safety policy documentation
 * Professional services documentation
@@ -118,6 +160,10 @@ The backtest system supports:
 * Worst trade PnL
 * Average return percentage
 * Equity curve tracking
+* Gross profit and gross loss
+* Expectancy and payoff ratio
+* Strategy configuration snapshot
+* Data and signal diagnostics
 
 ### Dashboard
 
@@ -127,6 +173,7 @@ The Streamlit dashboard provides:
 * Backtest analytics metrics
 * Equity curve visualization
 * Trade table view
+* Risk diagnostics
 * Raw JSON inspection
 * Research safety panel
 * Project status summary
@@ -269,30 +316,31 @@ Backtest results are historical simulations and should be reviewed carefully.
 
 ```text
 T/
-├─ README.md
-├─ CHANGELOG.md
-├─ CODE_OF_CONDUCT.md
-├─ CONTRIBUTING.md
-├─ DISCLAIMER.md
-├─ DONATE.md
-├─ SECURITY.md
-├─ SUPPORT.md
-├─ backtest/
-│  └─ engine.py
-├─ dashboard/
-│  └─ app.py
-├─ data/
-├─ docs/
-│  ├─ SAFETY_POLICY.md
-│  └─ SERVICES.md
-├─ modes/
-│  └─ scoring.py
-├─ quality/
-│  ├─ __init__.py
-│  └─ hallucination_guard.py
-├─ reports/
-├─ tests/
-└─ t_cli.py
+|-- README.md
+|-- CHANGELOG.md
+|-- CODE_OF_CONDUCT.md
+|-- CONTRIBUTING.md
+|-- DISCLAIMER.md
+|-- DONATE.md
+|-- SECURITY.md
+|-- SUPPORT.md
+|-- backtest/
+|   |-- engine.py
+|   `-- report.py
+|-- dashboard/
+|   `-- app.py
+|-- data/
+|-- docs/
+|   |-- SAFETY_POLICY.md
+|   `-- SERVICES.md
+|-- modes/
+|   `-- scoring.py
+|-- quality/
+|   |-- __init__.py
+|   `-- hallucination_guard.py
+|-- reports/
+|-- tests/
+`-- t_cli.py
 ```
 
 ---
@@ -360,11 +408,11 @@ Suggested service ranges:
 
 | Service Type                       |      Suggested Range |
 | ---------------------------------- | -------------------: |
-| Basic demo/setup                   |     ₹5,000 – ₹15,000 |
-| Professional installation/training |    ₹15,000 – ₹35,000 |
-| Custom dashboard/reporting         |    ₹25,000 – ₹75,000 |
-| Business/custom integration        | ₹75,000 – ₹2,50,000+ |
-| Monthly support                    |     ₹5,000 – ₹50,000 |
+| Basic demo/setup                   |     INR 5,000 - INR 15,000 |
+| Professional installation/training |    INR 15,000 - INR 35,000 |
+| Custom dashboard/reporting         |    INR 25,000 - INR 75,000 |
+| Business/custom integration        | INR 75,000 - INR 2,50,000+ |
+| Monthly support                    |     INR 5,000 - INR 50,000 |
 
 Read more:
 
@@ -407,6 +455,7 @@ Important documents:
 
 ```text
 Research only. Not financial advice.
+```
 
 ---
 
@@ -531,7 +580,9 @@ Users are responsible for reviewing outputs, validating assumptions, and complyi
 
 **T Technology Research Lab**
 
-━━━━━━━━━━━━━━━━━━━━
+```text
+--------------------
 T
 T Technology Research Lab
-━━━━━━━━━━━━━━━━━━━━
+--------------------
+```

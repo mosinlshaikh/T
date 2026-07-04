@@ -1,6 +1,8 @@
 bandit
 black
 ccxt
+fastapi
+uvicorn
 mypy
 numpy
 pandas

@@ -61,6 +61,11 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 
 | Item                  | Link                                                         |
 | --------------------------- | -------------------------------------------------------------------------- |
+| Codebase Consolidation      | [docs/CODEBASE_CONSOLIDATION.md](docs/CODEBASE_CONSOLIDATION.md)           |
+| IP Protection               | [docs/IP_PROTECTION.md](docs/IP_PROTECTION.md)                             |
+| TTRL License System         | [docs/LICENSE_KEY_SYSTEM.md](docs/LICENSE_KEY_SYSTEM.md)                   |
+| Client Activation Flow      | [docs/CLIENT_ACTIVATION_FLOW.md](docs/CLIENT_ACTIVATION_FLOW.md)           |
+| Commercial License          | [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)                             |
 | GitHub Repository           | https://github.com/mosin1982/T                                             |
 | Latest Releases             | https://github.com/mosin1982/T/releases                                    |
 | CI Workflow                 | https://github.com/mosin1982/T/actions/workflows/ci.yml                    |
@@ -78,7 +83,66 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 | Donate                      | [DONATE.md](DONATE.md)                                                     |
 | Support Scope               | [docs/SUPPORT_SCOPE.md](docs/SUPPORT_SCOPE.md)                             |
 | Deployment Guide            | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)                       |
+
+---
+
+## AI Binance Trading OS Status
+
+The canonical backend is `trading_os/`. The separate `backend/` folder is
+retained as an experimental scaffold only and is not the active Android/API
+integration target.
+
+Current safety posture:
+
+- Paper/sandbox mode remains default.
+- Live trading remains disabled.
+- Withdrawals are unsupported.
+- Binance API keys must be created in Binance and handled through backend vault
+  design only.
+- The Android app is a dashboard/control panel and must not contain Binance
+  credentials or direct Binance execution.
+- TTRL app license keys are activation/access keys, not Binance API keys.
+
+Pre-APK licensing work adds server-side TTRL client license generation and an
+Android license activation screen. APK/AAB/EXE artifacts have not been built.
+
+### Release Readiness
+
+Completed locally:
+
+- Canonical backend review with `trading_os/` as source of truth.
+- Backend syntax/import checks and existing pytest suite.
+- Paper-mode pipeline smoke with zero-hallucination safety behavior.
+- Smart shutdown and emergency-stop restore smoke.
+- TTRL license generation/validation smoke.
+- Security scan for real Binance secrets and admin token values.
+- Android source review without APK/AAB generation.
+
+Still blocked until a separate explicit command:
+
+- Final APK build and signing.
+- APK/AAB/EXE artifact generation.
+- Live trading and real Binance execution.
+- Withdrawal, margin, futures, transfer, or private-key support.
 | UI/UX Design System         | [docs/UI_UX_DESIGN_SYSTEM.md](docs/UI_UX_DESIGN_SYSTEM.md)                 |
+| Backend Architecture        | [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md)                 |
+| Backend Deployment Readiness | [docs/BACKEND_DEPLOYMENT_READINESS.md](docs/BACKEND_DEPLOYMENT_READINESS.md) |
+| Railway Deployment           | [docs/RAILWAY_DEPLOYMENT.md](docs/RAILWAY_DEPLOYMENT.md)                     |
+| Binance Rule Engine         | [docs/BINANCE_RULE_ENGINE.md](docs/BINANCE_RULE_ENGINE.md)                   |
+| Zero Hallucination Engine   | [docs/ZERO_HALLUCINATION_ENGINE.md](docs/ZERO_HALLUCINATION_ENGINE.md)       |
+| Risk Engine                 | [docs/RISK_ENGINE.md](docs/RISK_ENGINE.md)                                   |
+| AI Binance Trading OS Backend | [docs/AI_BINANCE_TRADING_OS_BACKEND.md](docs/AI_BINANCE_TRADING_OS_BACKEND.md) |
+| Phase 2 Backend Core       | [docs/PHASE_2_BACKEND_CORE.md](docs/PHASE_2_BACKEND_CORE.md)                 |
+| Phase 3 Trade Lifecycle    | [docs/PHASE_3_TRADE_LIFECYCLE.md](docs/PHASE_3_TRADE_LIFECYCLE.md)           |
+| Phase 4 Market Intelligence | [docs/PHASE_4_MARKET_INTELLIGENCE.md](docs/PHASE_4_MARKET_INTELLIGENCE.md)   |
+| Phase 5 Security Runtime   | [docs/PHASE_5_SECURITY_RUNTIME.md](docs/PHASE_5_SECURITY_RUNTIME.md)           |
+| APK API Contract           | [docs/API_CONTRACT_FOR_APK.md](docs/API_CONTRACT_FOR_APK.md)                   |
+| Phase 7 Database Memory    | [docs/PHASE_7_DATABASE_MEMORY.md](docs/PHASE_7_DATABASE_MEMORY.md)             |
+| Phase 8 Analytics Reports  | [docs/PHASE_8_ANALYTICS_REPORTS.md](docs/PHASE_8_ANALYTICS_REPORTS.md)         |
+| Phase 9 Android UI Source  | [docs/PHASE_9_ANDROID_APP_UI.md](docs/PHASE_9_ANDROID_APP_UI.md)               |
+| Phase 9B Pre-APK Polish    | [docs/PHASE_9B_PRE_APK_POLISH.md](docs/PHASE_9B_PRE_APK_POLISH.md)             |
+| Phase 10 Final Review      | [docs/PHASE_10_FINAL_REVIEW.md](docs/PHASE_10_FINAL_REVIEW.md)                 |
+| Future APK Phase            | [docs/FUTURE_APK_PHASE.md](docs/FUTURE_APK_PHASE.md)                       |
 | Global Language Support     | [docs/GLOBAL_LANGUAGE_SUPPORT.md](docs/GLOBAL_LANGUAGE_SUPPORT.md)         |
 | Multi-Language Architecture | [docs/MULTI_LANGUAGE_ARCHITECTURE.md](docs/MULTI_LANGUAGE_ARCHITECTURE.md) |
 

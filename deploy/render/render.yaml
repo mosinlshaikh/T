@@ -1,6 +1,15 @@
 services:
-  - type: worker
-    name: t-platform
+  - type: web
+    name: ttrl-ai-trading-os-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    startCommand: python -m uvicorn trading_os.api.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: TRADING_MODE
+        value: paper
+      - key: LIVE_TRADING_ENABLED
+        value: "false"
+      - key: MANUAL_LIVE_UNLOCK
+        value: "false"
+      - key: BINANCE_WITHDRAWALS_SUPPORTED
+        value: "false"

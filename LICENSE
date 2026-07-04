@@ -1,18 +1,28 @@
-T LICENSE v1.0
+T Proprietary Research License v1.1
 
-Copyright (c) T Technology Research Lab
+Copyright (c) T TECHNOLOGY RESEARCH LAB.
+Architect: MOSIN LIYAKAT SHAIKH.
 
-Permission is granted for personal, educational, and research use only.
+All rights are reserved unless explicit written permission is given by
+T TECHNOLOGY RESEARCH LAB.
 
-Commercial use, resale, SaaS deployment, white-labeling, redistribution for profit,
-or enterprise deployment is prohibited without written authorization from
-T Technology Research Lab.
+Personal, educational, and non-commercial research review is allowed only within
+the safety boundaries documented in this repository. Unauthorized copying,
+resale, redistribution, commercial use, hosted operation, sublicensing,
+white-labeling, or use as a commercial trading service is prohibited without
+written authorization.
 
-All derivative works must retain attribution to:
+Public research/demo code does not grant permission to operate a commercial
+trading service, sell strategy access, redistribute an APK, or bundle this work
+inside another product.
 
-T Technology Research Lab
+Production strategy packs, deployment secrets, signing keys, TTRL client license
+keys, and private operating infrastructure are private assets and are not
+licensed through this repository.
 
-Required attribution in visible interfaces:
-Powered by T Technology Research Lab
+No warranty is provided. This software is for research, education, and
+paper-mode development only. It is not financial advice and it does not promise
+profit, returns, market movement, or trading success.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+See README.md, DISCLAIMER.md, NOTICE.md, COMMERCIAL_LICENSE.md, and
+docs/IP_PROTECTION.md for additional boundaries.

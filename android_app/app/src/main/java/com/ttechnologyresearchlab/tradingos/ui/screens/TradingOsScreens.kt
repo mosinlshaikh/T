@@ -324,6 +324,7 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
             QuietButton("Graceful Stop", viewModel::gracefulStop)
             QuietButton("Pause New Trades", viewModel::pauseNewTrades)
             QuietButton("Resume Paper Trades", viewModel::resumePaperTrades)
+            GoldButton("Run Live-Market Paper Demo", viewModel::runLiveMarketPaperDemo)
         } else {
             MetricCard("Controls Disabled", "Backend offline", "Reconnect before sending control commands.")
         }
@@ -335,6 +336,7 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
         GlassCard {
             KeyValue("Shutdown state", state.shutdownState)
             Text("Graceful stop blocks new trades immediately, keeps active paper trades managed, saves logs, then stops after safe state.")
+            Text("Live-market paper demo reads public market data only and never places Binance orders.")
         }
     }
 }

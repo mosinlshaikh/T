@@ -61,6 +61,7 @@ class TradingOsViewModel : ViewModel() {
     fun emergencyStop() = viewModelScope.launch { repository.emergencyStop(); refresh() }
     fun pauseNewTrades() = viewModelScope.launch { repository.pauseNewTrades(); refresh() }
     fun resumePaperTrades() = viewModelScope.launch { repository.resumePaperTrades(); refresh() }
+    fun runLiveMarketPaperDemo() = viewModelScope.launch { repository.runLiveMarketPaperDemo(); refresh() }
     fun validateLicense(licenseKey: String) = viewModelScope.launch {
         val licenseStatus = repository.validateLicense(licenseKey)
         _uiState.value = _uiState.value.copy(licenseStatus = licenseStatus)

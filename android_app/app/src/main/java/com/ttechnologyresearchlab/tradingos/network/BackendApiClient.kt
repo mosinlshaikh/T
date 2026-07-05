@@ -58,6 +58,7 @@ class BackendApiClient(
     suspend fun emergencyStop() = post("/control/emergency-stop")
     suspend fun pauseNewTrades() = post("/control/pause-new-trades")
     suspend fun resumePaperTrades() = post("/control/resume-paper-trades")
+    suspend fun runLiveMarketPaperDemo() = post("/control/run-live-market-paper-demo")
     suspend fun getRiskSettings() = get("/settings/risk")
     suspend fun getStrategySettings() = get("/settings/strategy")
     suspend fun getSecuritySettings() = get("/settings/security")

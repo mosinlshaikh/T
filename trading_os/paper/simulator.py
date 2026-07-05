@@ -53,6 +53,8 @@ class PaperTradingSimulator:
             reserved_capital=notional + fee,
         )
         self.portfolio.add_position(position)
+        if self.repository is not None:
+            self.repository.save_open_position(position)
         fill = self._record_fill(intent, position.position_id, fill_price, fee, "PAPER_OPEN")
         self._record_journal(position.symbol, "PAPER_OPEN", intent.reason)
         return fill
@@ -64,6 +66,8 @@ class PaperTradingSimulator:
         position = self.portfolio.open_positions[position_id]
         fee = self._fee(position.quantity * fill_price)
         closed = self.portfolio.close_position(position_id, fill_price, fee)
+        if self.repository is not None:
+            self.repository.close_position(closed)
         fill = self._record_fill(intent, closed.position_id, fill_price, fee, "PAPER_CLOSED")
         self._record_journal(closed.symbol, "PAPER_CLOSED", intent.reason)
         return fill
@@ -78,6 +82,8 @@ class PaperTradingSimulator:
         self._assert_paper_intent(intent)
         fee = self._fee(exit_quantity * fill_price)
         remaining = self.portfolio.partial_exit(position_id, fill_price, exit_quantity, fee)
+        if self.repository is not None:
+            self.repository.update_open_position(remaining)
         fill = self._record_fill(
             intent, remaining.position_id, fill_price, fee, "PAPER_PARTIAL_EXIT"
         )

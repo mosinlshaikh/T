@@ -123,7 +123,9 @@ class TradingOsRepository(
             ?: bodyText.jsonBoolean("zero_hallucination_verified")
             ?: bodyText.jsonBoolean("verified")
             ?: false
-        val evidence = bodyText.jsonArrayItems("evidence").ifEmpty {
+        val evidence = bodyText.jsonObjectFieldValues("summary").ifEmpty {
+            bodyText.jsonArrayItems("evidence")
+        }.ifEmpty {
             listOf("Backend decision endpoint returned latest paper decision", "Paper mode active", "Live trading disabled")
         }
         return DecisionSummary(
@@ -154,5 +156,10 @@ class TradingOsRepository(
                 pnl = pnl
             )
         )
+    }
+
+    private fun String.jsonObjectFieldValues(name: String): List<String> {
+        val pattern = Regex(""""$name"\s*:\s*"([^"]+)"""")
+        return pattern.findAll(this).map { it.groupValues[1] }.toList()
     }
 }

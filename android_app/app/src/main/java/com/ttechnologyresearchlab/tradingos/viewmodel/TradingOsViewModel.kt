@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class TradingOsViewModel : ViewModel() {
-    private val backendBaseUrl = MutableStateFlow("http://127.0.0.1:8000")
+    private val backendBaseUrl = MutableStateFlow("https://t-production-8efc.up.railway.app")
     private val repository = TradingOsRepository(BackendApiClient { backendBaseUrl.value })
     private val _uiState = MutableStateFlow(PreviewData.state)
     val uiState: StateFlow<TradingOsUiState> = _uiState

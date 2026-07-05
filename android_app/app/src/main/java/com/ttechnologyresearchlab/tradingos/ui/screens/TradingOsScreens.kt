@@ -3,10 +3,14 @@ package com.ttechnologyresearchlab.tradingos.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Assessment
@@ -14,6 +18,7 @@ import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.HealthAndSafety
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.icons.outlined.PowerSettingsNew
@@ -23,23 +28,34 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.VpnKey
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import com.ttechnologyresearchlab.tradingos.R
 import com.ttechnologyresearchlab.tradingos.data.BackendConnectionState
 import com.ttechnologyresearchlab.tradingos.data.TradingOsUiState
 import com.ttechnologyresearchlab.tradingos.localization.AppLanguage
@@ -54,18 +70,30 @@ import com.ttechnologyresearchlab.tradingos.ui.components.ScreenShell
 import com.ttechnologyresearchlab.tradingos.ui.navigation.AppRoute
 import com.ttechnologyresearchlab.tradingos.ui.theme.DangerRed
 import com.ttechnologyresearchlab.tradingos.ui.theme.SafeGreen
+import com.ttechnologyresearchlab.tradingos.ui.theme.PanelBlack
 import com.ttechnologyresearchlab.tradingos.ui.theme.TradingGold
 import com.ttechnologyresearchlab.tradingos.viewmodel.TradingOsViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TradingOsApp(viewModel: TradingOsViewModel) {
     val state by viewModel.uiState.collectAsState()
     var route by remember { mutableStateOf(AppRoute.Onboarding) }
-    val bottomRoutes = listOf(
+    var menuExpanded by remember { mutableStateOf(false) }
+    val menuRoutes = listOf(
+        AppRoute.SetupWizard,
         AppRoute.Dashboard,
+        AppRoute.Market,
+        AppRoute.BotBrain,
         AppRoute.Control,
+        AppRoute.Portfolio,
+        AppRoute.Decisions,
+        AppRoute.Journal,
+        AppRoute.Reports,
+        AppRoute.SafetyLock,
         AppRoute.License,
         AppRoute.Settings,
+        AppRoute.Audit,
         AppRoute.ReleaseReadiness
     )
     if (state.appLocked) {
@@ -73,18 +101,86 @@ fun TradingOsApp(viewModel: TradingOsViewModel) {
         return
     }
     Scaffold(
-        bottomBar = {
-            NavigationBar {
-                bottomRoutes.forEach { item ->
-                    NavigationBarItem(
-                        selected = route == item,
-                        onClick = { route = item },
-                        icon = { Icon(iconFor(item), contentDescription = item.title) },
-                        label = { Text(item.title) }
-                    )
-                }
+        topBar = {
+            TopAppBar(
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                painter = painterResource(R.mipmap.ic_launcher),
+                                contentDescription = "TTRL AI Trading OS",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(34.dp)
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    route.title,
+                                    color = TradingGold,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 20.sp
+                                )
+                                Text(
+                                    "Live DISABLED / Paper Mode",
+                                    color = SafeGreen,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        Column {
+                            IconButton(
+                                onClick = { menuExpanded = true },
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .padding(end = 6.dp)
+                                    .shadow(12.dp, RoundedCornerShape(12.dp))
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Menu,
+                                    contentDescription = "Open menu",
+                                    tint = TradingGold,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                                containerColor = PanelBlack
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.mipmap.ic_launcher),
+                                        contentDescription = "TTRL AI Trading OS",
+                                        tint = Color.Unspecified,
+                                        modifier = Modifier.size(34.dp)
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text("TTRL Menu", color = TradingGold, fontWeight = FontWeight.Bold)
+                                }
+                                menuRoutes.forEach { item ->
+                                    DropdownMenuItem(
+                                        text = { Text(item.title) },
+                                        leadingIcon = { Icon(iconFor(item), contentDescription = item.title) },
+                                        onClick = {
+                                            route = item
+                                            menuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF080A0F))
+                )
             }
-        }
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             when (route) {
@@ -182,6 +278,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
             KeyValue("Confidence", state.latestDecision.confidence)
             Text(state.latestDecision.reason)
         }
+        CurrentTradeWatchCard(state)
         if (connected) {
             EmergencyStopButton(emergencyStop)
         } else {
@@ -496,6 +593,31 @@ private fun IntelligenceCard(state: TradingOsUiState) {
         KeyValue("News risk", state.marketIntelligence.newsRiskSignal)
         KeyValue("Structure", state.marketIntelligence.marketStructureSignal)
         KeyValue("Combined confidence", state.marketIntelligence.combinedConfidence, TradingGold)
+    }
+}
+
+@Composable
+private fun CurrentTradeWatchCard(state: TradingOsUiState) {
+    val activeTrade = state.openTrades.firstOrNull()
+    GlassCard {
+        Text("Current Trade Watch", color = TradingGold, fontWeight = FontWeight.Bold)
+        Text("Yahan bot kya trade le raha hai aur kyun, wo clear dikhega.")
+        if (activeTrade == null) {
+            KeyValue("Trade intent", state.latestDecision.action, TradingGold)
+            KeyValue("Status", "No open paper trade")
+            KeyValue("Rule", "No Data = No Trade")
+            Text("Agar backend evidence missing bhejta hai to decision SKIP rahega. Live trade app se execute nahi hota.")
+        } else {
+            KeyValue("Symbol", activeTrade.symbol, TradingGold)
+            KeyValue("Side", activeTrade.side)
+            KeyValue("Status", activeTrade.status)
+            KeyValue("PnL", activeTrade.pnl)
+            Text("Paper position backend ke risk/exit rules se manage hoti hai.")
+        }
+        Text("Evidence being used", color = TradingGold, fontWeight = FontWeight.Bold)
+        state.latestDecision.evidence.ifEmpty { listOf("unknown / insufficient data") }.forEach { Text("- $it") }
+        Text("Missing / blocked reasons", color = TradingGold, fontWeight = FontWeight.Bold)
+        state.latestDecision.missingData.ifEmpty { listOf("none") }.forEach { Text("- $it") }
     }
 }
 

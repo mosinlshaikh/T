@@ -17,6 +17,20 @@ class TradingOsRepository(
                     connectionStatus = "Backend reachable",
                     backendConnectionState = BackendConnectionState.CONNECTED,
                     lastKnownBotState = supervisorState,
+                    latestDecision = DecisionSummary(
+                        decisionId = "backend-connected",
+                        action = "SKIP",
+                        confidence = "0.00",
+                        reason = "Backend connected. No verified trade decision has been provided yet.",
+                        evidence = listOf("Railway backend health check passed", "Paper mode active", "Live trading disabled"),
+                        missingData = listOf("market_signal_snapshot", "verified_ai_decision"),
+                        conflicts = emptyList(),
+                        zeroHallucinationVerified = true,
+                        riskStatus = "waiting_for_decision"
+                    ),
+                    openTrades = emptyList(),
+                    closedTrades = emptyList(),
+                    journal = emptyList(),
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled

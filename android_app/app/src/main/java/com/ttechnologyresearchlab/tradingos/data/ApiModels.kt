@@ -96,7 +96,7 @@ data class RiskSettingsUi(
 )
 
 data class AppSettingsUi(
-    val backendBaseUrl: String = "http://127.0.0.1:8000",
+    val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
     val risk: RiskSettingsUi = RiskSettingsUi(),
     val notifications: String = "placeholders disabled",
     val vaultStatus: String = "placeholder only",
@@ -115,7 +115,7 @@ data class LicenseStatusUi(
 
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
-    val backendBaseUrl: String = "http://127.0.0.1:8000",
+    val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
     val connectionStatus: String = "DEVELOPMENT PREVIEW DATA",
     val backendConnectionState: BackendConnectionState = BackendConnectionState.UNKNOWN,
     val lastKnownBotState: String = "unknown",

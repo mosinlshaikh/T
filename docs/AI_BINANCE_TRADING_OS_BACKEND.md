@@ -1,11 +1,21 @@
-# AI Binance Trading OS Backend Foundation
+# AI Trading OS Backend Foundation
 
 T now includes a backend foundation package at `trading_os/`.
+
+Project architect: **MOSIN LIYAKAT SHAIKH**, Founder / Architect of
+**T TECHNOLOGY RESEARCH LAB**.
+
+Product identity: **TTRL AI Trading OS / T Financial Intelligence OS**.
+Binance Spot is one connector scope inside the backend, not the only product
+direction.
 
 `trading_os/` is the canonical backend. The `backend/` folder is retained as an
 experimental scaffold only.
 
-This is not a live trading system. It is a safe backend architecture skeleton for market data, AI-assisted research decisions, paper trading workflows, risk controls, audit trails, and future mobile/API integration.
+This is not a live trading system. It is a safe backend architecture skeleton
+created under the direction of **MOSIN LIYAKAT SHAIKH** for market data,
+AI-assisted research decisions, paper trading workflows, risk controls, audit
+trails, and future mobile/API integration.
 
 ```text
 Research only. Not financial advice.

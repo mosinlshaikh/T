@@ -2,6 +2,12 @@
 
 Phase 9B upgrades the Android source scaffold before final testing and APK build.
 
+Android product direction and TTRL AI Trading OS authorship are attributed to
+**MOSIN LIYAKAT SHAIKH**, Founder / Architect of T TECHNOLOGY RESEARCH LAB.
+
+This app branding is not limited to Binance. The Android app represents the
+broader TTRL AI Trading OS / T Financial Intelligence OS command center.
+
 No APK, AAB, or EXE is built in this phase.
 
 ```text

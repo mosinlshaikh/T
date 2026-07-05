@@ -456,6 +456,11 @@ fun ReportsScreen(state: TradingOsUiState) = ScrollScreen {
 fun SettingsScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) = ScrollScreen {
     var backendUrl by remember { mutableStateOf(state.backendBaseUrl) }
     ScreenShell("Settings", "No API key submission. No live toggle. No withdrawals.") {
+        GlassCard {
+            Text("Founder / Architect", color = TradingGold, fontWeight = FontWeight.Bold)
+            Text("MOSIN LIYAKAT SHAIKH")
+            Text("TTRL AI Trading OS / T Financial Intelligence OS")
+        }
         LanguageSelector(state.language, viewModel::updateLanguage)
         OutlinedTextField(
             value = backendUrl,
@@ -503,6 +508,8 @@ fun ReleaseReadinessScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell(L.text("release_readiness", state.language), "Final APK build remains pending.") {
         Checklist(
             listOf(
+                "Architect: MOSIN LIYAKAT SHAIKH",
+                "Product: TTRL AI Trading OS / T Financial Intelligence OS",
                 "Backend connected: ${state.backendConnectionState}",
                 "Database ready: backend verified",
                 L.text("paper_mode", state.language),

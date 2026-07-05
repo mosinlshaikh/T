@@ -1,6 +1,6 @@
 # Phase 3 Trade Lifecycle, Portfolio State, and Execution Intent Layer
 
-Phase 3 adds the backend trade lifecycle and paper execution foundation for the AI Binance Trading OS.
+Phase 3 adds the backend trade lifecycle and paper execution foundation for the TTRL AI Trading OS.
 
 This phase still does not build an APK or EXE, does not enable live trading, and does not place real Binance orders.
 

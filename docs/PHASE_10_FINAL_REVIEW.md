@@ -2,6 +2,9 @@
 
 Phase 10 validates the backend, API, persistence, analytics, reports, and Android source scaffold before the final APK build phase.
 
+Architect attribution: MOSIN LIYAKAT SHAIKH created the TTRL AI Trading OS /
+T Financial Intelligence OS direction for T TECHNOLOGY RESEARCH LAB.
+
 No APK, AAB, or EXE is built in this phase.
 
 ```text

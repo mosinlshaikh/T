@@ -1,6 +1,6 @@
 # Phase 7 Database Persistence, Memory System, and Durable Bot State
 
-Phase 7 adds local persistence and evidence-based memory for the AI Binance Trading OS backend.
+Phase 7 adds local persistence and evidence-based memory for the TTRL AI Trading OS backend.
 
 This phase does not build an APK, does not build an EXE, does not enable live trading, and does not place real Binance orders.
 

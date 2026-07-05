@@ -1,6 +1,6 @@
 # Phase 4 Advanced Market Intelligence Layer
 
-Phase 4 adds evidence-first market intelligence modules to the AI Binance Trading OS backend.
+Phase 4 adds evidence-first market intelligence modules to the TTRL AI Trading OS backend.
 
 This phase does not build an APK, does not build an EXE, does not enable live trading, and does not place real Binance orders.
 

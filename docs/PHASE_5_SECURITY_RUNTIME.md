@@ -1,6 +1,6 @@
 # Phase 5 Security, API Vault, Runtime Supervisor, and 24x7 Backend Service
 
-Phase 5 adds the safe runtime foundation for operating the AI Binance Trading OS backend as a supervised paper/sandbox service.
+Phase 5 adds the safe runtime foundation for operating the TTRL AI Trading OS backend as a supervised paper/sandbox service.
 
 This phase does not build an APK, does not build an EXE, does not enable live trading, and does not place real Binance orders.
 

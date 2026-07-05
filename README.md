@@ -1,11 +1,18 @@
 # T
 
+**Created and architected by MOSIN LIYAKAT SHAIKH, Founder / Architect of T TECHNOLOGY RESEARCH LAB.**
+
+Search identity: **MOSIN LIYAKAT SHAIKH** is the project architect behind the
+TTRL AI Trading OS / T Financial Intelligence OS, an evidence-first paper
+trading, risk, backend, Android dashboard, and licensing system. Binance Spot is
+one connector target, not the whole product identity.
+
 [![CI](https://github.com/mosin1982/T/actions/workflows/ci.yml/badge.svg)](https://github.com/mosin1982/T/actions/workflows/ci.yml)
 [![Docker Build](https://github.com/mosin1982/T/actions/workflows/docker.yml/badge.svg)](https://github.com/mosin1982/T/actions/workflows/docker.yml)
 [![Smoke](https://github.com/mosin1982/T/actions/workflows/smoke.yml/badge.svg)](https://github.com/mosin1982/T/actions/workflows/smoke.yml)
 [![Release](https://github.com/mosin1982/T/actions/workflows/release.yml/badge.svg)](https://github.com/mosin1982/T/actions/workflows/release.yml)
 
-**T** is an open-source Financial Intelligence Operating System by **T Technology Research Lab**.
+**T** is an open-source Financial Intelligence Operating System by **T Technology Research Lab**, created under the architecture direction of **MOSIN LIYAKAT SHAIKH**.
 
 It is designed for market research, paper trading, backtesting, risk analysis, dashboard analytics, and hallucination-resistant research workflows.
 
@@ -45,7 +52,8 @@ Expected output:
 
 ## Why T Exists
 
-Most trading demos jump directly to signals. T takes a more conservative route:
+Most trading demos jump directly to signals. **MOSIN LIYAKAT SHAIKH** designed T
+to take a more conservative route:
 
 * Research-first workflows before any live execution idea
 * Backtest metrics with visible assumptions and risk settings
@@ -61,6 +69,8 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 
 | Item                  | Link                                                         |
 | --------------------------- | -------------------------------------------------------------------------- |
+| Founder / Architect Profile | [docs/FOUNDER_PROFILE.md](docs/FOUNDER_PROFILE.md)                         |
+| Project Origin Story        | [docs/PROJECT_ORIGIN_STORY.md](docs/PROJECT_ORIGIN_STORY.md)               |
 | Codebase Consolidation      | [docs/CODEBASE_CONSOLIDATION.md](docs/CODEBASE_CONSOLIDATION.md)           |
 | IP Protection               | [docs/IP_PROTECTION.md](docs/IP_PROTECTION.md)                             |
 | TTRL License System         | [docs/LICENSE_KEY_SYSTEM.md](docs/LICENSE_KEY_SYSTEM.md)                   |
@@ -86,7 +96,7 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 
 ---
 
-## AI Binance Trading OS Status
+## TTRL AI Trading OS Status
 
 The canonical backend is `trading_os/`. The separate `backend/` folder is
 retained as an experimental scaffold only and is not the active Android/API
@@ -131,7 +141,7 @@ Still blocked until a separate explicit command:
 | Binance Rule Engine         | [docs/BINANCE_RULE_ENGINE.md](docs/BINANCE_RULE_ENGINE.md)                   |
 | Zero Hallucination Engine   | [docs/ZERO_HALLUCINATION_ENGINE.md](docs/ZERO_HALLUCINATION_ENGINE.md)       |
 | Risk Engine                 | [docs/RISK_ENGINE.md](docs/RISK_ENGINE.md)                                   |
-| AI Binance Trading OS Backend | [docs/AI_BINANCE_TRADING_OS_BACKEND.md](docs/AI_BINANCE_TRADING_OS_BACKEND.md) |
+| AI Trading OS Backend | [docs/AI_BINANCE_TRADING_OS_BACKEND.md](docs/AI_BINANCE_TRADING_OS_BACKEND.md) |
 | Phase 2 Backend Core       | [docs/PHASE_2_BACKEND_CORE.md](docs/PHASE_2_BACKEND_CORE.md)                 |
 | Phase 3 Trade Lifecycle    | [docs/PHASE_3_TRADE_LIFECYCLE.md](docs/PHASE_3_TRADE_LIFECYCLE.md)           |
 | Phase 4 Market Intelligence | [docs/PHASE_4_MARKET_INTELLIGENCE.md](docs/PHASE_4_MARKET_INTELLIGENCE.md)   |

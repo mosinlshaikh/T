@@ -1,5 +1,9 @@
 # Client Activation Flow
 
+Client activation belongs to the TTRL AI Trading OS / T Financial Intelligence
+OS created and architected by MOSIN LIYAKAT SHAIKH for T TECHNOLOGY RESEARCH
+LAB.
+
 1. Owner/admin runs the backend with `TTRL_ADMIN_TOKEN` configured.
 2. Owner/admin generates a TTRL app license key from the admin backend route.
 3. The full license key is shown once and shared with the client through a safe

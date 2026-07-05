@@ -1,5 +1,9 @@
 # Codebase Consolidation
 
+Project architect: MOSIN LIYAKAT SHAIKH, Founder / Architect of
+T TECHNOLOGY RESEARCH LAB. Canonical codebase decisions in this document support
+the broader TTRL AI Trading OS / T Financial Intelligence OS product direction.
+
 ## Canonical Backend
 
 `trading_os/` is the canonical backend source of truth.

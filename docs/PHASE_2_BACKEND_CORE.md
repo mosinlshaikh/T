@@ -1,6 +1,6 @@
 # Phase 2 Backend Core
 
-This phase extends the AI Binance Trading OS backend foundation. It still does not build an APK, EXE, or live trading system.
+This phase extends the TTRL AI Trading OS backend foundation. It still does not build an APK, EXE, or live trading system.
 
 ```text
 Default mode: paper/sandbox

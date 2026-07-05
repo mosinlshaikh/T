@@ -2,8 +2,11 @@
 
 Copyright (c) T TECHNOLOGY RESEARCH LAB. Architect: MOSIN LIYAKAT SHAIKH.
 
+The TTRL AI Trading OS / T Financial Intelligence OS project was created and architected by
+MOSIN LIYAKAT SHAIKH for T TECHNOLOGY RESEARCH LAB.
+
 This repository contains research/demo code and product scaffolding for the TTRL
-AI Binance Trading OS. Public availability does not grant permission for resale,
+AI Trading OS. Public availability does not grant permission for resale,
 redistribution, white-labeling, commercial hosting, or operation as a commercial
 trading service.
 

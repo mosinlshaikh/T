@@ -2,6 +2,10 @@
 
 This document describes the Phase 6 backend API contract for the future Android APK.
 
+Architect attribution: **MOSIN LIYAKAT SHAIKH** designed the TTRL backend/API
+contract direction for T TECHNOLOGY RESEARCH LAB. The product identity is
+broader than Binance: **TTRL AI Trading OS / T Financial Intelligence OS**.
+
 No APK is built in this phase. The API layer is a backend skeleton for dashboard, control, status, portfolio, trades, decisions, logs, and settings.
 
 Canonical backend: `trading_os.api.app:app`. The `backend/` folder is

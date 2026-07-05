@@ -18,6 +18,7 @@ from trading_os.pipeline.decision_to_trade import PipelineInput
 
 
 BINANCE_PUBLIC_BASE_URL = "https://api.binance.com"
+BINANCE_PUBLIC_FALLBACK_BASE_URLS = ("https://api.binance.us",)
 BINANCE_ANNOUNCEMENT_URL = "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query"
 
 
@@ -47,6 +48,7 @@ class BinancePublicMarketDataClient:
     """
 
     base_url: str = BINANCE_PUBLIC_BASE_URL
+    fallback_base_urls: tuple[str, ...] = BINANCE_PUBLIC_FALLBACK_BASE_URLS
     timeout_seconds: int = 8
 
     def fetch_bundle(
@@ -219,7 +221,13 @@ class BinancePublicMarketDataClient:
         return items
 
     def _get_json(self, path: str, params: dict[str, Any]) -> Any:
-        return self._get_url_json(f"{self.base_url}{path}", params)
+        errors: list[str] = []
+        for base_url in (self.base_url, *self.fallback_base_urls):
+            try:
+                return self._get_url_json(f"{base_url}{path}", params)
+            except Exception as exc:
+                errors.append(f"{base_url}: {exc.__class__.__name__}")
+        raise RuntimeError(f"Public Binance market data unavailable: {'; '.join(errors)}")
 
     def _get_url_json(self, url: str, params: dict[str, Any]) -> Any:
         full_url = f"{url}?{urlencode(params)}"

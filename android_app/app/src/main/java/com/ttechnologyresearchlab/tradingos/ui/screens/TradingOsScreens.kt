@@ -426,6 +426,15 @@ fun DecisionsScreen(state: TradingOsUiState) = ScrollScreen {
             KeyValue("Risk", state.latestDecision.riskStatus)
         }
         ListCard("Evidence", state.latestDecision.evidence)
+        GlassCard {
+            Text("Candle / Whale / News Detail", color = TradingGold, fontWeight = FontWeight.Bold)
+            KeyValue("Candle", state.marketIntelligence.candleSignal)
+            KeyValue("Whale", state.marketIntelligence.whaleSignal)
+            KeyValue("Order book", state.marketIntelligence.orderBookSignal)
+            KeyValue("News", state.marketIntelligence.newsRiskSignal)
+            KeyValue("Structure", state.marketIntelligence.marketStructureSignal)
+            Text("Tap flow target: trade/candle drill-down modal in next UI pass. Current screen already shows backend evidence summaries.")
+        }
         ListCard("Missing data", state.latestDecision.missingData)
         ListCard("Conflicts", state.latestDecision.conflicts.ifEmpty { listOf("none") })
     }
@@ -434,10 +443,12 @@ fun DecisionsScreen(state: TradingOsUiState) = ScrollScreen {
 @Composable
 fun TradeJournalScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Trade Journal", "Paper fills, partial exits, stop-loss and take-profit events only.") {
+        CurrentTradeWatchCard(state)
         ListCard("Open trades", state.openTrades.map { "${it.symbol} ${it.side} ${it.status}" })
         ListCard("Closed trades", state.closedTrades.map { "${it.symbol} ${it.side} ${it.pnl}" })
         ListCard("Journal", state.journal.map { "${it.id} ${it.status} ${it.pnl}" })
         MetricCard("Realized / Unrealized PnL", "${state.portfolio.dailyPnl} / preview")
+        ListCard("Audit report", state.auditEvents.map { "${it.type}: ${it.detail}" })
     }
 }
 
@@ -625,6 +636,12 @@ private fun CurrentTradeWatchCard(state: TradingOsUiState) {
         }
         Text("Evidence being used", color = TradingGold, fontWeight = FontWeight.Bold)
         state.latestDecision.evidence.ifEmpty { listOf("unknown / insufficient data") }.forEach { Text("- $it") }
+        Text("Market intelligence details", color = TradingGold, fontWeight = FontWeight.Bold)
+        Text("- Candle: ${state.marketIntelligence.candleSignal}")
+        Text("- Whale: ${state.marketIntelligence.whaleSignal}")
+        Text("- Order book: ${state.marketIntelligence.orderBookSignal}")
+        Text("- News: ${state.marketIntelligence.newsRiskSignal}")
+        Text("- Structure: ${state.marketIntelligence.marketStructureSignal}")
         Text("Missing / blocked reasons", color = TradingGold, fontWeight = FontWeight.Bold)
         state.latestDecision.missingData.ifEmpty { listOf("none") }.forEach { Text("- $it") }
     }

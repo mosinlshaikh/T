@@ -16,15 +16,20 @@ class TradingOsRepository(
                 val latestDecision = latestDecisionResult.toDecisionSummary()
                 val openPositionsResult = apiClient.getOpenPositions()
                 val openTrades = openPositionsResult.toTradeRows()
+                val monitorResult = apiClient.getPaperLiveMonitor()
+                val monitorState = monitorResult.toMonitorState()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
                     backendConnectionState = BackendConnectionState.CONNECTED,
                     lastKnownBotState = supervisorState,
-                    latestDecision = latestDecision,
-                    openTrades = openTrades,
-                    closedTrades = emptyList(),
-                    journal = emptyList(),
+                    latestDecision = monitorState.latestDecision ?: latestDecision,
+                    marketIntelligence = monitorState.marketIntelligence,
+                    openTrades = monitorState.openTrades.ifEmpty { openTrades },
+                    closedTrades = monitorState.closedTrades,
+                    journal = monitorState.journal,
+                    auditEvents = monitorState.auditEvents,
+                    portfolio = monitorState.portfolio ?: PreviewData.state.portfolio,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -102,6 +107,53 @@ class TradingOsRepository(
         return Regex(""""([^"]+)"""").findAll(content).map { it.groupValues[1] }.toList()
     }
 
+    private data class MonitorState(
+        val latestDecision: DecisionSummary? = null,
+        val marketIntelligence: MarketIntelligenceSummary = MarketIntelligenceSummary(),
+        val openTrades: List<TradeRow> = emptyList(),
+        val closedTrades: List<TradeRow> = emptyList(),
+        val journal: List<TradeRow> = emptyList(),
+        val auditEvents: List<AuditEventRow> = emptyList(),
+        val portfolio: PortfolioSummary? = null
+    )
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toMonitorState(): MonitorState {
+        if (!ok) return MonitorState()
+        val bodyText = body
+        val decision = toDecisionSummary()
+        val intelligence = MarketIntelligenceSummary(
+            candleSignal = bodyText.latestReasonFor("candle_analysis"),
+            orderBookSignal = bodyText.latestReasonFor("order_book_analysis"),
+            whaleSignal = bodyText.latestReasonFor("whale_analysis"),
+            newsRiskSignal = bodyText.latestReasonFor("news_risk_analysis"),
+            marketStructureSignal = bodyText.latestReasonFor("market_structure_analysis"),
+            combinedConfidence = bodyText.jsonNumber("confidence_score") ?: decision.confidence,
+            missingData = bodyText.jsonArrayItems("missing_data"),
+            conflicts = decision.conflicts
+        )
+        val auditRows = bodyText.auditEventRows().takeLast(12)
+        val journalRows = bodyText.tradeRowsFromSection("paper_journal")
+        val openRows = bodyText.tradeRowsFromSection("open_positions")
+        val closedRows = bodyText.tradeRowsFromSection("closed_positions")
+        val portfolioSummary = PortfolioSummary(
+            paperBalanceUsdt = bodyText.jsonNumber("usdt_balance") ?: PreviewData.state.portfolio.paperBalanceUsdt,
+            dailyPnl = bodyText.jsonNumber("daily_pnl") ?: "0.00",
+            openTrades = openRows.size,
+            exposure = bodyText.jsonNumber("exposure") ?: "0.00",
+            reserveLock = "10%",
+            drawdown = "${bodyText.jsonNumber("drawdown_pct") ?: "0.00"}%"
+        )
+        return MonitorState(
+            latestDecision = decision,
+            marketIntelligence = intelligence,
+            openTrades = openRows,
+            closedTrades = closedRows,
+            journal = journalRows,
+            auditEvents = auditRows,
+            portfolio = portfolioSummary
+        )
+    }
+
     private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toDecisionSummary(): DecisionSummary {
         if (!ok) {
             return DecisionSummary(
@@ -161,5 +213,47 @@ class TradingOsRepository(
     private fun String.jsonObjectFieldValues(name: String): List<String> {
         val pattern = Regex(""""$name"\s*:\s*"([^"]+)"""")
         return pattern.findAll(this).map { it.groupValues[1] }.toList()
+    }
+
+    private fun String.latestReasonFor(eventType: String): String {
+        val eventIndex = lastIndexOf(""""event_type":"$eventType"""")
+        if (eventIndex < 0) return "unknown"
+        val tail = substring(eventIndex).take(1500)
+        return tail.jsonString("reason") ?: tail.jsonString("summary") ?: eventType
+    }
+
+    private fun String.tradeRowsFromSection(sectionName: String): List<TradeRow> {
+        val section = section(sectionName)
+        if (section.isBlank() || !section.contains("symbol", ignoreCase = true)) return emptyList()
+        val chunks = section.split(Regex("""\},\s*\{""")).filter { it.contains("symbol", ignoreCase = true) }
+        return chunks.takeLast(20).mapIndexed { index, chunk ->
+            TradeRow(
+                id = chunk.jsonString("position_id") ?: chunk.jsonString("trade_id") ?: "$sectionName-$index",
+                symbol = chunk.jsonString("symbol") ?: "UNKNOWN",
+                side = chunk.jsonString("side") ?: chunk.jsonString("action") ?: "PAPER",
+                status = chunk.jsonString("status") ?: chunk.jsonString("action") ?: "PAPER_EVENT",
+                pnl = chunk.jsonNumber("unrealized_pnl") ?: chunk.jsonNumber("realized_pnl") ?: "0.00"
+            )
+        }
+    }
+
+    private fun String.auditEventRows(): List<AuditEventRow> {
+        val section = section("audit_timeline")
+        if (section.isBlank()) return emptyList()
+        return Regex(""""event_type"\s*:\s*"([^"]+)"""").findAll(section).mapIndexed { index, match ->
+            val start = match.range.first
+            val chunk = section.substring(start).take(700)
+            AuditEventRow(
+                timestamp = chunk.jsonString("created_at") ?: "latest",
+                type = match.groupValues[1],
+                detail = chunk.jsonString("reason") ?: chunk.jsonString("summary") ?: chunk.jsonString("status") ?: "paper monitor event"
+            )
+        }.toList().takeLast(20)
+    }
+
+    private fun String.section(name: String): String {
+        val start = indexOf(""""$name"""")
+        if (start < 0) return ""
+        return substring(start).take(12_000)
     }
 }

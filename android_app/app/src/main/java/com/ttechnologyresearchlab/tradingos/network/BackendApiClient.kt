@@ -53,6 +53,7 @@ class BackendApiClient(
     suspend fun getSkippedTradeReport() = get("/reports/skipped-trades")
     suspend fun getStrategyReport() = get("/reports/strategies")
     suspend fun getRuntimeReport() = get("/reports/runtime")
+    suspend fun getPaperLiveMonitor() = get("/monitor/paper-live")
     suspend fun startBot() = post("/control/start")
     suspend fun stopGraceful() = post("/control/stop-graceful")
     suspend fun emergencyStop() = post("/control/emergency-stop")

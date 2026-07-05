@@ -7,6 +7,7 @@ from trading_os.api.routes import (
     control,
     decisions,
     licensing,
+    monitor,
     portfolio,
     reports,
     settings,
@@ -23,6 +24,7 @@ def create_app() -> FastAPI:
     app.include_router(trades.router)
     app.include_router(decisions.router)
     app.include_router(licensing.router)
+    app.include_router(monitor.router)
     app.include_router(audit.router)
     app.include_router(settings.router)
     app.include_router(reports.router)

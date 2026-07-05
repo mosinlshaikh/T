@@ -223,7 +223,7 @@ class TradingOsRepository(
     }
 
     private fun String.tradeRowsFromSection(sectionName: String): List<TradeRow> {
-        val section = section(sectionName)
+        val section = arraySection(sectionName)
         if (section.isBlank() || !section.contains("symbol", ignoreCase = true)) return emptyList()
         val chunks = section.split(Regex("""\},\s*\{""")).filter { it.contains("symbol", ignoreCase = true) }
         return chunks.takeLast(20).mapIndexed { index, chunk ->
@@ -238,7 +238,7 @@ class TradingOsRepository(
     }
 
     private fun String.auditEventRows(): List<AuditEventRow> {
-        val section = section("audit_timeline")
+        val section = arraySection("audit_timeline")
         if (section.isBlank()) return emptyList()
         return Regex(""""event_type"\s*:\s*"([^"]+)"""").findAll(section).mapIndexed { index, match ->
             val start = match.range.first
@@ -255,5 +255,23 @@ class TradingOsRepository(
         val start = indexOf(""""$name"""")
         if (start < 0) return ""
         return substring(start).take(12_000)
+    }
+
+    private fun String.arraySection(name: String): String {
+        val nameIndex = indexOf(""""$name"""")
+        if (nameIndex < 0) return ""
+        val start = indexOf('[', nameIndex)
+        if (start < 0) return ""
+        var depth = 0
+        for (index in start until length) {
+            when (this[index]) {
+                '[' -> depth += 1
+                ']' -> {
+                    depth -= 1
+                    if (depth == 0) return substring(start + 1, index)
+                }
+            }
+        }
+        return ""
     }
 }

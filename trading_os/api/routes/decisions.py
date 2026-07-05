@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from trading_os.api.dependencies import latest_audit_events
+from trading_os.api.dependencies import latest_decisions
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import ok
 
@@ -27,7 +27,7 @@ def _decision_payload(event: dict[str, object]) -> dict[str, object]:
 
 
 def _decisions(limit: int = 50) -> list[dict[str, object]]:
-    return [_decision_payload(event) for event in latest_audit_events(limit, "ai_decision")]
+    return [_decision_payload(event) for event in latest_decisions(limit)]
 
 
 @router.get("/latest")

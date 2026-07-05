@@ -19,3 +19,4 @@ data/events/
 data/*.sqlite3
 data/*.db
 *.log
+ttrl_phone_*.png

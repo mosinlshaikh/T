@@ -20,6 +20,47 @@ It is designed for market research, paper trading, backtesting, risk analysis, d
 Research only. Not financial advice.
 ```
 
+## TTRL AI Trading OS
+
+TTRL AI Trading OS is an evidence-first paper trading and financial
+intelligence backend with an Android dashboard, live public-market paper
+monitor, risk engine, zero-hallucination decision rules, audit reports,
+licensing, and Go/Rust safety extensions.
+
+```text
+Paper Mode | Live Trading Disabled | No Withdrawals | Evidence First | Full Audit Trail
+```
+
+What makes it worth reviewing:
+
+* AI decisions are limited to `BUY`, `SELL`, `HOLD`, or `SKIP`
+* Every decision must include evidence, confidence, missing data, conflicts, and reason
+* No data means no trade
+* Conflicting signals mean `HOLD` or `SKIP`
+* Android app shows current paper trade intent, evidence, audit, and safety status
+* Backend exposes a live paper monitor at `/monitor/paper-live`
+* Go probe and Rust safety guard scaffolds support future high-performance operations
+
+```mermaid
+flowchart LR
+    A["Public Market Data"] --> B["Candle / Whale / News / Order Book"]
+    B --> C["AI Decision Brain"]
+    C --> D["Zero Hallucination"]
+    D --> E["Risk Engine"]
+    E --> F["Paper Trade Intent"]
+    F --> G["Journal + Audit"]
+    G --> H["Android Dashboard"]
+```
+
+Screenshots included in the repository:
+
+| Screen | File |
+| --- | --- |
+| Connected Dashboard | `ttrl_phone_dashboard_connected.png` |
+| Navigation Menu | `ttrl_phone_menu_scaled.png` |
+| Trade Watch | `ttrl_phone_final_trade_watch.png` |
+| Paper Monitor | `ttrl_phone_trade_watch.png` |
+
 ---
 
 ## 60-Second Demo
@@ -71,6 +112,9 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 | --------------------------- | -------------------------------------------------------------------------- |
 | Founder / Architect Profile | [docs/FOUNDER_PROFILE.md](docs/FOUNDER_PROFILE.md)                         |
 | Project Origin Story        | [docs/PROJECT_ORIGIN_STORY.md](docs/PROJECT_ORIGIN_STORY.md)               |
+| Showcase                    | [docs/SHOWCASE.md](docs/SHOWCASE.md)                                       |
+| Demo Walkthrough            | [docs/DEMO_WALKTHROUGH.md](docs/DEMO_WALKTHROUGH.md)                       |
+| Why TTRL AI Trading OS      | [docs/WHY_TTRL_AI_TRADING_OS.md](docs/WHY_TTRL_AI_TRADING_OS.md)           |
 | Codebase Consolidation      | [docs/CODEBASE_CONSOLIDATION.md](docs/CODEBASE_CONSOLIDATION.md)           |
 | IP Protection               | [docs/IP_PROTECTION.md](docs/IP_PROTECTION.md)                             |
 | TTRL License System         | [docs/LICENSE_KEY_SYSTEM.md](docs/LICENSE_KEY_SYSTEM.md)                   |
@@ -93,6 +137,7 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 | Donate                      | [DONATE.md](DONATE.md)                                                     |
 | Support Scope               | [docs/SUPPORT_SCOPE.md](docs/SUPPORT_SCOPE.md)                             |
 | Deployment Guide            | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)                       |
+| Go/Rust Extension Plan      | [docs/GO_RUST_EXTENSION_PLAN.md](docs/GO_RUST_EXTENSION_PLAN.md)           |
 
 ---
 

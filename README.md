@@ -54,12 +54,12 @@ flowchart LR
 
 Screenshots included in the repository:
 
-| Screen | File |
+| Screen | Preview |
 | --- | --- |
-| Connected Dashboard | `ttrl_phone_dashboard_connected.png` |
-| Navigation Menu | `ttrl_phone_menu_scaled.png` |
-| Trade Watch | `ttrl_phone_final_trade_watch.png` |
-| Paper Monitor | `ttrl_phone_trade_watch.png` |
+| Connected Dashboard | ![Connected Dashboard](docs/images/android-dashboard-connected.png) |
+| Navigation Menu | ![Navigation Menu](docs/images/android-navigation-menu.png) |
+| Trade Watch | ![Trade Watch](docs/images/android-current-trade-watch.png) |
+| Paper Monitor | ![Paper Monitor](docs/images/android-paper-monitor.png) |
 
 ---
 
@@ -115,6 +115,9 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 | Showcase                    | [docs/SHOWCASE.md](docs/SHOWCASE.md)                                       |
 | Demo Walkthrough            | [docs/DEMO_WALKTHROUGH.md](docs/DEMO_WALKTHROUGH.md)                       |
 | Why TTRL AI Trading OS      | [docs/WHY_TTRL_AI_TRADING_OS.md](docs/WHY_TTRL_AI_TRADING_OS.md)           |
+| 30-Day Paper Logbook        | [docs/PAPER_TRADING_LOGBOOK.md](docs/PAPER_TRADING_LOGBOOK.md)             |
+| Daily Paper Template        | [docs/PAPER_TRADING_DAILY_TEMPLATE.md](docs/PAPER_TRADING_DAILY_TEMPLATE.md) |
+| Release Draft               | [docs/RELEASE_DRAFT_V0_1_0_PAPER_ALPHA.md](docs/RELEASE_DRAFT_V0_1_0_PAPER_ALPHA.md) |
 | Codebase Consolidation      | [docs/CODEBASE_CONSOLIDATION.md](docs/CODEBASE_CONSOLIDATION.md)           |
 | IP Protection               | [docs/IP_PROTECTION.md](docs/IP_PROTECTION.md)                             |
 | TTRL License System         | [docs/LICENSE_KEY_SYSTEM.md](docs/LICENSE_KEY_SYSTEM.md)                   |

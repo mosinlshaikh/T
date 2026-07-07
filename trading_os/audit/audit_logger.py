@@ -74,8 +74,9 @@ class AuditLogger:
             self.repository.save_audit_event(data)
         return event.event_id
 
-    def log(self, event_type: AuditEventType, payload: dict[str, Any]) -> str:
-        return self.append(AuditEvent(event_type=event_type.value, payload=payload))
+    def log(self, event_type: AuditEventType | str, payload: dict[str, Any]) -> str:
+        value = event_type.value if isinstance(event_type, AuditEventType) else event_type
+        return self.append(AuditEvent(event_type=value, payload=payload))
 
     def log_market_snapshot(self, payload: dict[str, Any]) -> str:
         return self.log(AuditEventType.MARKET_SNAPSHOT, payload)

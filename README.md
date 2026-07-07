@@ -203,6 +203,16 @@ T provides a research-first framework for:
 
 T is not a live money execution system by default. It is intended for analysis, testing, education, and research workflows.
 
+### Go/Rust Extension Layer
+
+The project includes safe Go and Rust support scaffolds:
+
+- `go_services/market_probe/` checks the backend paper monitor endpoint.
+- `rust_services/safety_guard/` validates that paper mode and live-trading blocks remain active.
+- `trading_os/runtime/paper_auto_trader.py` provides a public-market, paper-only auto trader loop.
+
+These components do not place real Binance orders, do not contain secrets, and do not enable withdrawals or live trading. See [docs/GO_RUST_EXTENSION_PLAN.md](docs/GO_RUST_EXTENSION_PLAN.md).
+
 ---
 
 ## Core Features

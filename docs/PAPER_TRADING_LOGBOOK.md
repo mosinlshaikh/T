@@ -29,6 +29,28 @@ Withdrawals: unsupported
 Real Binance orders: absent
 ```
 
+## Generate Daily Snapshot
+
+Run locally:
+
+```bash
+python scripts/generate_paper_report.py
+```
+
+Optional date:
+
+```bash
+python scripts/generate_paper_report.py --day 2026-07-07
+```
+
+The script writes:
+
+- `reports/paper/daily/YYYY-MM-DD.md`
+- an auto-generated summary row in this logbook
+
+The report uses persisted paper-mode backend data only. It does not call live
+Binance private endpoints and does not place orders.
+
 ## Daily Entries
 
 | Day | Date | Decisions | Paper Trades | BUY | SELL | HOLD | SKIP | Realized PnL | Drawdown | Notes |
@@ -61,3 +83,8 @@ Continue this table through day 30 after daily report automation is stable.
 - [ ] risk rejections were reviewed
 - [ ] app dashboard matched backend data
 
+## Auto-Generated Daily Snapshots
+
+| Date | Decisions | Paper Trades | Skipped | Realized PnL | Drawdown | Notes |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 2026-07-07 | 3 | 0 | 3 | 0.0 | 0.0% | Auto-generated daily snapshot |

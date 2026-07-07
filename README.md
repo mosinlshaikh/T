@@ -142,6 +142,12 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 | Deployment Guide            | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)                       |
 | Go/Rust Extension Plan      | [docs/GO_RUST_EXTENSION_PLAN.md](docs/GO_RUST_EXTENSION_PLAN.md)           |
 
+Generate a local paper report:
+
+```bash
+python scripts/generate_paper_report.py
+```
+
 ---
 
 ## TTRL AI Trading OS Status

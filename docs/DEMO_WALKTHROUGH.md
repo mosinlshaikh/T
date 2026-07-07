@@ -78,7 +78,20 @@ When a trade is not opened, that can be correct behavior. Examples:
 The goal is not to force trades. The goal is to preserve evidence, explain the
 decision, and avoid unsupported claims.
 
-## 6. What Not To Expect
+## 6. Generate Paper Report
+
+After running paper ticks, generate a local daily report:
+
+```bash
+python scripts/generate_paper_report.py
+```
+
+Output:
+
+- `reports/paper/daily/YYYY-MM-DD.md`
+- updated `docs/PAPER_TRADING_LOGBOOK.md`
+
+## 7. What Not To Expect
 
 This public phase does not provide:
 
@@ -88,4 +101,3 @@ This public phase does not provide:
 - withdrawal support
 - margin/futures execution
 - hidden strategy formulas
-

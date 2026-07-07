@@ -16,10 +16,11 @@ from trading_os.market.order_book_engine import OrderBookLevel, OrderBookSnapsho
 from trading_os.market.timeframes import Timeframe, normalize_timeframe
 from trading_os.pipeline.decision_to_trade import PipelineInput
 
-
 BINANCE_PUBLIC_BASE_URL = "https://api.binance.com"
 BINANCE_PUBLIC_FALLBACK_BASE_URLS = ("https://api.binance.us",)
-BINANCE_ANNOUNCEMENT_URL = "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query"
+BINANCE_ANNOUNCEMENT_URL = (
+    "https://www.binance.com/bapi/composite/v1/public/cms/article/catalog/list/query"
+)
 
 
 def utc_now() -> str:
@@ -190,12 +191,7 @@ class BinancePublicMarketDataClient:
                 "pageSize": limit,
             },
         )
-        articles = (
-            payload.get("data", {})
-            .get("articles", [])
-            if isinstance(payload, dict)
-            else []
-        )
+        articles = payload.get("data", {}).get("articles", []) if isinstance(payload, dict) else []
         items: list[NewsItem] = []
         for article in articles[:limit]:
             title = str(article.get("title", "")).strip()

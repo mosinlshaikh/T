@@ -133,7 +133,9 @@ def paper_auto_trader_tick(
 ) -> dict[str, object]:
     backend = get_backend()
     if backend.config.enable_live_trading:
-        return fail("LIVE_TRADING_BLOCKED", errors=["Paper auto trader cannot enable live trading."])
+        return fail(
+            "LIVE_TRADING_BLOCKED", errors=["Paper auto trader cannot enable live trading."]
+        )
     if backend.kill_switch.active:
         return fail("KILL_SWITCH_ACTIVE", errors=["Emergency stop is active."])
     try:
@@ -162,7 +164,9 @@ def start_paper_auto_trader(
 ) -> dict[str, object]:
     backend = get_backend()
     if backend.config.enable_live_trading:
-        return fail("LIVE_TRADING_BLOCKED", errors=["Paper auto trader cannot enable live trading."])
+        return fail(
+            "LIVE_TRADING_BLOCKED", errors=["Paper auto trader cannot enable live trading."]
+        )
     safe_symbols = [item.strip().upper() for item in symbols.split(",") if item.strip()]
     return ok(
         backend.paper_auto_trader.start(

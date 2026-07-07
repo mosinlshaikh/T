@@ -88,3 +88,4 @@ Continue this table through day 30 after daily report automation is stable.
 | Date | Decisions | Paper Trades | Skipped | Realized PnL | Drawdown | Notes |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | 2026-07-07 | 3 | 0 | 3 | 0.0 | 0.0% | Auto-generated daily snapshot |
+| 2026-07-08 | 3 | 0 | 3 | 0.0 | 0.0% | Auto-generated daily snapshot |

@@ -50,14 +50,18 @@ def _admin_guard(admin_token: str) -> dict[str, object] | None:
     if not expected:
         return fail(
             "ADMIN_AUTH_NOT_CONFIGURED",
-            errors=["Set TTRL_ADMIN_TOKEN in the backend environment before admin license actions."],
+            errors=[
+                "Set TTRL_ADMIN_TOKEN in the backend environment before admin license actions."
+            ],
         )
     if admin_token != expected:
         return fail("ADMIN_AUTH_FAILED", errors=["Admin token is missing or invalid."])
     return None
 
 
-def _status_payload(license_id: str, status: LicenseStatus, request: AdminTokenRequest) -> dict[str, object]:
+def _status_payload(
+    license_id: str, status: LicenseStatus, request: AdminTokenRequest
+) -> dict[str, object]:
     guarded = _admin_guard(request.admin_token)
     if guarded:
         return guarded
@@ -68,7 +72,9 @@ def _status_payload(license_id: str, status: LicenseStatus, request: AdminTokenR
 
 
 @router.post("/admin/licenses/generate")
-def generate_license(request: GenerateLicenseRequest = GenerateLicenseRequest()) -> dict[str, object]:
+def generate_license(
+    request: GenerateLicenseRequest = GenerateLicenseRequest(),
+) -> dict[str, object]:
     guarded = _admin_guard(request.admin_token)
     if guarded:
         return guarded
@@ -121,27 +127,37 @@ def get_license(license_id: str, admin_token: str = "") -> dict[str, object]:
 
 
 @router.post("/admin/licenses/{license_id}/disable")
-def disable_license(license_id: str, request: AdminTokenRequest = AdminTokenRequest()) -> dict[str, object]:
+def disable_license(
+    license_id: str, request: AdminTokenRequest = AdminTokenRequest()
+) -> dict[str, object]:
     return _status_payload(license_id, LicenseStatus.DISABLED, request)
 
 
 @router.post("/admin/licenses/{license_id}/revoke")
-def revoke_license(license_id: str, request: AdminTokenRequest = AdminTokenRequest()) -> dict[str, object]:
+def revoke_license(
+    license_id: str, request: AdminTokenRequest = AdminTokenRequest()
+) -> dict[str, object]:
     return _status_payload(license_id, LicenseStatus.REVOKED, request)
 
 
 @router.post("/admin/licenses/{license_id}/suspend")
-def suspend_license(license_id: str, request: AdminTokenRequest = AdminTokenRequest()) -> dict[str, object]:
+def suspend_license(
+    license_id: str, request: AdminTokenRequest = AdminTokenRequest()
+) -> dict[str, object]:
     return _status_payload(license_id, LicenseStatus.SUSPENDED, request)
 
 
 @router.post("/admin/licenses/{license_id}/activate")
-def activate_license(license_id: str, request: AdminTokenRequest = AdminTokenRequest()) -> dict[str, object]:
+def activate_license(
+    license_id: str, request: AdminTokenRequest = AdminTokenRequest()
+) -> dict[str, object]:
     return _status_payload(license_id, LicenseStatus.ACTIVE, request)
 
 
 @router.post("/license/validate")
-def validate_license(request: ValidateLicenseRequest = ValidateLicenseRequest()) -> dict[str, object]:
+def validate_license(
+    request: ValidateLicenseRequest = ValidateLicenseRequest(),
+) -> dict[str, object]:
     result = _service().validate(
         license_key=request.license_key,
         package_name=request.package_name,

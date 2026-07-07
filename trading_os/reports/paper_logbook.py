@@ -163,7 +163,10 @@ def update_logbook_summary(logbook: Path, day: str, performance: dict[str, Any])
     text = logbook.read_text(encoding="utf-8")
     marker = "## Auto-Generated Daily Snapshots"
     if marker not in text:
-        text = text.rstrip() + f"\n\n{marker}\n\n| Date | Decisions | Paper Trades | Skipped | Realized PnL | Drawdown | Notes |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n"
+        text = (
+            text.rstrip()
+            + f"\n\n{marker}\n\n| Date | Decisions | Paper Trades | Skipped | Realized PnL | Drawdown | Notes |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n"
+        )
     lines = text.splitlines()
     lines = [existing for existing in lines if not existing.startswith(f"| {day} |")]
     insert_at = len(lines)

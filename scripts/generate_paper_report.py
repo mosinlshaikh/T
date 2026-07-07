@@ -10,10 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from trading_os.reports.paper_logbook import export_daily_paper_report
-
 
 def main() -> int:
+    from trading_os.reports.paper_logbook import export_daily_paper_report
+
     parser = argparse.ArgumentParser(description="Generate a paper trading daily report.")
     parser.add_argument("--day", default=None, help="Report date in YYYY-MM-DD format.")
     parser.add_argument("--output-dir", default="reports/paper/daily")

@@ -19,9 +19,7 @@ class PrivateStrategyBoundary:
 
     visibility: StrategyPackVisibility = StrategyPackVisibility.PUBLIC_INTERFACE
     production_pack_loaded: bool = False
-    note: str = (
-        "No proprietary whale/news/scoring formula is hardcoded in the public APK or repo."
-    )
+    note: str = "No proprietary whale/news/scoring formula is hardcoded in the public APK or repo."
 
     def assert_public_safe(self) -> None:
         if self.visibility == StrategyPackVisibility.PRIVATE_PRODUCTION_PACK:

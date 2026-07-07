@@ -3,7 +3,6 @@ from __future__ import annotations
 import secrets
 import string
 
-
 ALPHABET = string.ascii_uppercase + string.digits
 
 

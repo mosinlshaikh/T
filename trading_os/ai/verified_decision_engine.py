@@ -8,7 +8,6 @@ from trading_os.ai.decision_types import (
     DecisionProposal,
     EvidenceItem,
     EvidenceType,
-    SignalAssessment,
     VerifiedDecision,
 )
 

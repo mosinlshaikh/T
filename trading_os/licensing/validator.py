@@ -37,23 +37,94 @@ def validate_license_record(
 ) -> LicenseValidationResult:
     redacted = redact_license_key(license_key)
     if not is_valid_key_format(license_key):
-        return LicenseValidationResult(False, "INVALID", "License key format is invalid.", redacted_license_key=redacted)
+        return LicenseValidationResult(
+            False, "INVALID", "License key format is invalid.", redacted_license_key=redacted
+        )
     if record is None:
-        return LicenseValidationResult(False, "INVALID", "License key was not found.", redacted_license_key=redacted)
+        return LicenseValidationResult(
+            False, "INVALID", "License key was not found.", redacted_license_key=redacted
+        )
     if record.status != LicenseStatus.ACTIVE:
-        return LicenseValidationResult(False, record.status, f"License is {record.status.value}.", record.license_type, record.expiry_date, 0, redacted_license_key=redacted, license_id=record.license_id)
+        return LicenseValidationResult(
+            False,
+            record.status,
+            f"License is {record.status.value}.",
+            record.license_type,
+            record.expiry_date,
+            0,
+            redacted_license_key=redacted,
+            license_id=record.license_id,
+        )
     if is_expired(record.expiry_date):
-        return LicenseValidationResult(False, LicenseStatus.EXPIRED, "License is expired.", record.license_type, record.expiry_date, 0, redacted_license_key=redacted, license_id=record.license_id)
+        return LicenseValidationResult(
+            False,
+            LicenseStatus.EXPIRED,
+            "License is expired.",
+            record.license_type,
+            record.expiry_date,
+            0,
+            redacted_license_key=redacted,
+            license_id=record.license_id,
+        )
     if record.activation_count > record.device_limit:
-        return LicenseValidationResult(False, "DEVICE_LIMIT_REACHED", "Device activation limit reached.", record.license_type, record.expiry_date, 0, redacted_license_key=redacted, license_id=record.license_id)
+        return LicenseValidationResult(
+            False,
+            "DEVICE_LIMIT_REACHED",
+            "Device activation limit reached.",
+            record.license_type,
+            record.expiry_date,
+            0,
+            redacted_license_key=redacted,
+            license_id=record.license_id,
+        )
     if record.allowed_app_package and record.allowed_app_package != package_name:
-        return LicenseValidationResult(False, "PACKAGE_NOT_ALLOWED", "App package is not allowed.", record.license_type, record.expiry_date, 0, redacted_license_key=redacted, license_id=record.license_id)
+        return LicenseValidationResult(
+            False,
+            "PACKAGE_NOT_ALLOWED",
+            "App package is not allowed.",
+            record.license_type,
+            record.expiry_date,
+            0,
+            redacted_license_key=redacted,
+            license_id=record.license_id,
+        )
     if record.backend_url_binding and backend_url and record.backend_url_binding != backend_url:
-        return LicenseValidationResult(False, "BACKEND_URL_MISMATCH", "Backend URL binding mismatch.", record.license_type, record.expiry_date, 0, redacted_license_key=redacted, license_id=record.license_id)
-    if record.device_fingerprint_binding and device_fingerprint and record.device_fingerprint_binding != device_fingerprint:
-        return LicenseValidationResult(False, "DEVICE_MISMATCH", "Device fingerprint binding mismatch.", record.license_type, record.expiry_date, 0, redacted_license_key=redacted, license_id=record.license_id)
+        return LicenseValidationResult(
+            False,
+            "BACKEND_URL_MISMATCH",
+            "Backend URL binding mismatch.",
+            record.license_type,
+            record.expiry_date,
+            0,
+            redacted_license_key=redacted,
+            license_id=record.license_id,
+        )
+    if (
+        record.device_fingerprint_binding
+        and device_fingerprint
+        and record.device_fingerprint_binding != device_fingerprint
+    ):
+        return LicenseValidationResult(
+            False,
+            "DEVICE_MISMATCH",
+            "Device fingerprint binding mismatch.",
+            record.license_type,
+            record.expiry_date,
+            0,
+            redacted_license_key=redacted,
+            license_id=record.license_id,
+        )
     remaining = max(record.device_limit - record.activation_count, 0)
-    return LicenseValidationResult(True, record.status, "License is valid.", record.license_type, record.expiry_date, remaining, redacted_license_key=redacted, license_id=record.license_id)
+    return LicenseValidationResult(
+        True,
+        record.status,
+        "License is valid.",
+        record.license_type,
+        record.expiry_date,
+        remaining,
+        redacted_license_key=redacted,
+        license_id=record.license_id,
+    )
 
 
 def mark_validated(record: LicenseRecord, increment_activation: bool = True) -> LicenseRecord:

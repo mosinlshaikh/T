@@ -20,7 +20,6 @@ from trading_os.licensing.validator import (
     validate_license_record,
 )
 
-
 DEFAULT_PACKAGE = "com.ttechnologyresearchlab.tradingos"
 
 
@@ -68,9 +67,13 @@ class LicenseService:
     ) -> LicenseValidationResult:
         raw = self.repository.get_by_key(license_key)
         record = self._record_from_payload(raw) if raw else None
-        result = validate_license_record(license_key, record, package_name, backend_url, device_fingerprint)
+        result = validate_license_record(
+            license_key, record, package_name, backend_url, device_fingerprint
+        )
         if result.valid and record is not None:
-            should_increment = record.last_validation_at is None and record.activation_count < record.device_limit
+            should_increment = (
+                record.last_validation_at is None and record.activation_count < record.device_limit
+            )
             self.repository.save(mark_validated(record, increment_activation=should_increment))
         return result
 

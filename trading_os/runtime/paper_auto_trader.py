@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+import json
+from pathlib import Path
 from threading import Event, Lock, Thread
 from time import sleep
 from typing import Any
 from uuid import uuid4
 
 from trading_os.market.live_public_data import BinancePublicMarketDataClient
+
+DEFAULT_WATCHLIST_PATH = "config/watchlist.json"
 
 
 def utc_now() -> str:
@@ -37,7 +41,7 @@ class PaperAutoTrader:
     """
 
     backend: Any
-    default_symbols: tuple[str, ...] = ("BTCUSDT", "ETHUSDT")
+    default_symbols: tuple[str, ...] = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT")
     default_timeframe: str = "5m"
     default_trade_notional_usdt: float = 50.0
     min_interval_seconds: int = 30
@@ -120,14 +124,16 @@ class PaperAutoTrader:
         timeframe: str = "5m",
         trade_notional_usdt: float = 50.0,
     ) -> dict[str, Any]:
-        safe_symbols = [item.strip().upper() for item in (symbols or list(self.default_symbols))]
-        safe_symbols = [item for item in safe_symbols if item][:5]
+        watchlist = load_watchlist_config()
+        configured_symbols = watchlist.get("symbols", list(self.default_symbols))
+        max_symbols = int(watchlist.get("max_symbols_per_scan", 5) or 5)
+        safe_symbols = normalize_watchlist(symbols or configured_symbols, max_symbols=max_symbols)
         results: list[dict[str, Any]] = []
         errors: list[dict[str, str]] = []
         for symbol in safe_symbols:
             try:
                 result = self.run_once(symbol, timeframe, trade_notional_usdt)
-                results.append(asdict(result))
+                results.append(enrich_scan_result(asdict(result)))
             except Exception as exc:
                 errors.append(
                     {
@@ -173,7 +179,12 @@ class PaperAutoTrader:
         with self._lock:
             if self.running:
                 return self.status()
-            safe_symbols = [item.upper() for item in (symbols or list(self.default_symbols))][:5]
+            watchlist = load_watchlist_config()
+            configured_symbols = watchlist.get("symbols", list(self.default_symbols))
+            max_symbols = int(watchlist.get("max_symbols_per_scan", 5) or 5)
+            safe_symbols = normalize_watchlist(
+                symbols or configured_symbols, max_symbols=max_symbols
+            )
             safe_interval = max(int(interval_seconds), self.min_interval_seconds)
             self._stop.clear()
             self.running = True
@@ -236,3 +247,69 @@ class PaperAutoTrader:
             sleep(interval_seconds)
         with self._lock:
             self.running = False
+
+
+def load_watchlist_config(path: str = DEFAULT_WATCHLIST_PATH) -> dict[str, Any]:
+    file_path = Path(path)
+    if not file_path.exists():
+        return {
+            "symbols": ["BTCUSDT", "ETHUSDT"],
+            "default_timeframe": "5m",
+            "max_symbols_per_scan": 5,
+            "paper_trade_notional_usdt": 50.0,
+        }
+    try:
+        payload = json.loads(file_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"symbols": ["BTCUSDT", "ETHUSDT"], "max_symbols_per_scan": 5}
+    return payload if isinstance(payload, dict) else {"symbols": ["BTCUSDT", "ETHUSDT"]}
+
+
+def normalize_watchlist(symbols: list[str] | tuple[str, ...], max_symbols: int = 5) -> list[str]:
+    normalized: list[str] = []
+    for symbol in symbols:
+        clean = str(symbol).strip().upper()
+        if not clean or not clean.endswith("USDT") or clean in normalized:
+            continue
+        normalized.append(clean)
+        if len(normalized) >= max(1, max_symbols):
+            break
+    return normalized
+
+
+def confidence_band(confidence: float) -> str:
+    if confidence >= 0.7:
+        return "HIGH"
+    if confidence >= 0.45:
+        return "MEDIUM"
+    if confidence > 0:
+        return "LOW"
+    return "UNKNOWN"
+
+
+def trade_allowed(action: str, confidence: float, status: str) -> bool:
+    return action in {"BUY", "SELL"} and confidence >= 0.7 and status == "PAPER_OPEN"
+
+
+def why_not_traded(action: str, confidence: float, status: str, reason: str) -> str:
+    if trade_allowed(action, confidence, status):
+        return ""
+    if action in {"HOLD", "SKIP"}:
+        return reason or f"Action is {action}; paper trade not opened."
+    if confidence < 0.7:
+        return "Confidence below paper trade threshold."
+    return reason or "Paper trade was not opened by risk or verification policy."
+
+
+def enrich_scan_result(result: dict[str, Any]) -> dict[str, Any]:
+    confidence = float(result.get("confidence", 0.0) or 0.0)
+    action = str(result.get("action", "SKIP"))
+    status = str(result.get("status", "SKIP"))
+    reason = str(result.get("reason", ""))
+    return {
+        **result,
+        "confidence_band": confidence_band(confidence),
+        "trade_allowed": trade_allowed(action, confidence, status),
+        "why_not_traded": why_not_traded(action, confidence, status, reason),
+        "reason_summary": reason[:180],
+    }

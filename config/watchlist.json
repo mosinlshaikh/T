@@ -1,0 +1,7 @@
+{
+  "default_timeframe": "5m",
+  "max_symbols_per_scan": 5,
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT"],
+  "paper_trade_notional_usdt": 50.0,
+  "notes": "Public-market paper scanner only. No real Binance order execution."
+}

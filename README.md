@@ -141,6 +141,7 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 | Support Scope               | [docs/SUPPORT_SCOPE.md](docs/SUPPORT_SCOPE.md)                             |
 | Deployment Guide            | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)                       |
 | Go/Rust Extension Plan      | [docs/GO_RUST_EXTENSION_PLAN.md](docs/GO_RUST_EXTENSION_PLAN.md)           |
+| Local AI Learning Engine    | [docs/LOCAL_AI_LEARNING_ENGINE.md](docs/LOCAL_AI_LEARNING_ENGINE.md)       |
 
 Generate a local paper report:
 
@@ -266,6 +267,18 @@ The project includes safe Go and Rust support scaffolds:
 - `trading_os/runtime/paper_auto_trader.py` provides a public-market, paper-only auto trader loop.
 
 These components do not place real Binance orders, do not contain secrets, and do not enable withdrawals or live trading. See [docs/GO_RUST_EXTENSION_PLAN.md](docs/GO_RUST_EXTENSION_PLAN.md).
+
+### Local AI Learning Layer
+
+The backend includes a local, paper-only learning engine that does not require
+any external AI API key. It reviews persisted paper decisions, strategy signals,
+market intelligence snapshots, risk rejections, and paper journal entries to
+produce advisory readiness scoring at `/learning/local-ai`,
+`/learning/market-king-score`, and `/learning/recommendations`.
+
+It cannot enable live trading, cannot change strategy rules automatically, and
+does not make profit guarantees. See
+[docs/LOCAL_AI_LEARNING_ENGINE.md](docs/LOCAL_AI_LEARNING_ENGINE.md).
 
 ---
 

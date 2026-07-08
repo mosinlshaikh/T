@@ -218,6 +218,24 @@ API key submission endpoints are intentionally not added in Phase 6.
 
 Reports use persisted paper-mode data only. If history is missing, the API returns `unknown`, `insufficient_data`, or `NOT_ENOUGH_HISTORY` instead of inventing outcomes.
 
+## Local AI Learning Endpoints
+
+These routes expose the internal paper-only learning engine. They do not use an
+external AI API key and do not change live trading behavior.
+
+- `GET /learning/local-ai`
+- `GET /learning/market-king-score`
+- `GET /learning/recommendations`
+
+Rules:
+
+- uses persisted paper evidence only
+- returns `insufficient_data` when evidence is missing
+- advisory only
+- no automatic strategy changes
+- no live trading impact
+- no profit guarantee language
+
 ## Dashboard Data Contracts
 
 The backend includes response contracts for performance cards, PnL chart data, strategy score cards, risk summary cards, decision/trade/audit/shutdown timelines, and safety score.

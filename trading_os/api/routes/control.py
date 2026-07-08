@@ -155,6 +155,30 @@ def paper_auto_trader_tick(
     return ok(result.__dict__, "Paper auto trader tick completed.")
 
 
+@router.post("/paper-auto-trader/scan")
+def paper_auto_trader_scan(
+    symbols: str = "BTCUSDT,ETHUSDT",
+    timeframe: str = "5m",
+    trade_notional_usdt: float = 50.0,
+) -> dict[str, object]:
+    backend = get_backend()
+    if backend.config.enable_live_trading:
+        return fail("LIVE_TRADING_BLOCKED", errors=["Paper scanner cannot enable live trading."])
+    if backend.kill_switch.active:
+        return fail("KILL_SWITCH_ACTIVE", errors=["Emergency stop is active."])
+    safe_symbols = [item.strip().upper() for item in symbols.split(",") if item.strip()]
+    payload = backend.paper_auto_trader.scan_once(
+        symbols=safe_symbols,
+        timeframe=timeframe,
+        trade_notional_usdt=trade_notional_usdt,
+    )
+    return ok(
+        payload,
+        "Multi-symbol paper scanner completed.",
+        warnings=["Paper mode only. No real Binance orders are placed."],
+    )
+
+
 @router.post("/paper-auto-trader/start")
 def start_paper_auto_trader(
     symbols: str = "BTCUSDT",

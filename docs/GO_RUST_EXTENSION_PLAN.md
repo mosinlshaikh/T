@@ -32,12 +32,17 @@ trading_os/runtime/paper_auto_trader.py
 API endpoints:
 
 - `POST /control/paper-auto-trader/tick`
+- `POST /control/paper-auto-trader/scan`
 - `POST /control/paper-auto-trader/start`
 - `POST /control/paper-auto-trader/stop`
 - `GET /control/paper-auto-trader/status`
 
 The loop reads public market data, runs the existing evidence-first pipeline,
 updates paper portfolio/journal/audit state, and refuses live trading.
+
+The scanner evaluates a small watchlist, ranks paper decisions by action and
+confidence, and returns the best current paper candidate without placing real
+orders.
 
 ## Safety Boundary
 

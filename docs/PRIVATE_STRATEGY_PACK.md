@@ -15,3 +15,11 @@ Rules:
 The boundary helper lives at:
 
 `trading_os/strategies/private_strategy_boundary.py`
+
+Ignored private paths:
+
+- `private_strategy_pack/`
+- `client_keys/`
+- `deployment_secrets/`
+- `research_vault/private/`
+- signing material such as `*.keystore`, `*.jks`, `*.p12`, `*.pem`, `*.key`

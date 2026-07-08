@@ -37,7 +37,7 @@ class PaperAutoTrader:
     """
 
     backend: Any
-    default_symbols: tuple[str, ...] = ("BTCUSDT",)
+    default_symbols: tuple[str, ...] = ("BTCUSDT", "ETHUSDT")
     default_timeframe: str = "5m"
     default_trade_notional_usdt: float = 50.0
     min_interval_seconds: int = 30
@@ -113,6 +113,55 @@ class PaperAutoTrader:
             },
         )
         return auto_result
+
+    def scan_once(
+        self,
+        symbols: list[str] | None = None,
+        timeframe: str = "5m",
+        trade_notional_usdt: float = 50.0,
+    ) -> dict[str, Any]:
+        safe_symbols = [item.strip().upper() for item in (symbols or list(self.default_symbols))]
+        safe_symbols = [item for item in safe_symbols if item][:5]
+        results: list[dict[str, Any]] = []
+        errors: list[dict[str, str]] = []
+        for symbol in safe_symbols:
+            try:
+                result = self.run_once(symbol, timeframe, trade_notional_usdt)
+                results.append(asdict(result))
+            except Exception as exc:
+                errors.append(
+                    {
+                        "symbol": symbol,
+                        "error": exc.__class__.__name__,
+                        "reason": "Paper scanner skipped symbol safely.",
+                    }
+                )
+                self.backend.audit_logger.log_skipped_trade(
+                    {
+                        "symbol": symbol,
+                        "reason": "Paper scanner skipped symbol safely.",
+                        "error": exc.__class__.__name__,
+                    }
+                )
+        ranked = sorted(
+            results,
+            key=lambda item: (
+                1 if item.get("action") in {"BUY", "SELL"} else 0,
+                float(item.get("confidence", 0.0) or 0.0),
+            ),
+            reverse=True,
+        )
+        payload = {
+            "symbols": safe_symbols,
+            "timeframe": timeframe,
+            "results": ranked,
+            "errors": errors,
+            "best_candidate": ranked[0] if ranked else None,
+            "live_trading_enabled": False,
+            "public_data_only": True,
+        }
+        self.backend.audit_logger.log("paper_auto_trader_scan", payload)
+        return payload
 
     def start(
         self,

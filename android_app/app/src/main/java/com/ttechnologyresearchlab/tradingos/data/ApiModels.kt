@@ -113,6 +113,15 @@ data class LicenseStatusUi(
     val warnings: List<String> = emptyList()
 )
 
+data class StrategyCatalogUi(
+    val name: String,
+    val family: String,
+    val purpose: String,
+    val requiredData: List<String> = emptyList(),
+    val status: String = "PAPER_ADVISORY",
+    val safetyRules: List<String> = emptyList()
+)
+
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
     val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
@@ -135,5 +144,6 @@ data class TradingOsUiState(
     val auditEvents: List<AuditEventRow> = emptyList(),
     val settings: AppSettingsUi = AppSettingsUi(),
     val licenseStatus: LicenseStatusUi = LicenseStatusUi(),
+    val strategyCatalog: List<StrategyCatalogUi> = emptyList(),
     val shutdownState: String = "RUNNING"
 )

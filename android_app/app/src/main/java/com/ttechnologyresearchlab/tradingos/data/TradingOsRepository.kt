@@ -20,6 +20,7 @@ class TradingOsRepository(
                 val monitorState = monitorResult.toMonitorState()
                 val readinessResult = apiClient.getRealWorldReadiness()
                 val safetyScore = readinessResult.toSafetyScore()
+                val strategyCatalog = apiClient.getStrategyCatalog().toStrategyCatalog()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
@@ -33,6 +34,7 @@ class TradingOsRepository(
                     auditEvents = monitorState.auditEvents,
                     portfolio = monitorState.portfolio ?: PreviewData.state.portfolio,
                     safetyScore = safetyScore,
+                    strategyCatalog = strategyCatalog.ifEmpty { PreviewData.state.strategyCatalog },
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -246,6 +248,23 @@ class TradingOsRepository(
         )
     }
 
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toStrategyCatalog(): List<StrategyCatalogUi> {
+        if (!ok || !body.contains("strategies", ignoreCase = true)) return emptyList()
+        val section = body.arraySection("strategies")
+        if (section.isBlank()) return emptyList()
+        return section.objectChunks().mapNotNull { chunk ->
+            val name = chunk.jsonString("name") ?: return@mapNotNull null
+            StrategyCatalogUi(
+                name = name,
+                family = chunk.jsonString("family") ?: "Strategy",
+                purpose = chunk.jsonString("purpose") ?: "Evidence-first paper strategy.",
+                requiredData = chunk.jsonArrayItems("required_data"),
+                status = chunk.jsonString("status") ?: "PAPER_ADVISORY",
+                safetyRules = chunk.jsonArrayItems("safety_rules")
+            )
+        }
+    }
+
     private fun String.jsonObjectFieldValues(name: String): List<String> {
         val pattern = Regex(""""$name"\s*:\s*"([^"]+)"""")
         return pattern.findAll(this).map { it.groupValues[1] }.toList()
@@ -309,5 +328,27 @@ class TradingOsRepository(
             }
         }
         return ""
+    }
+
+    private fun String.objectChunks(): List<String> {
+        val chunks = mutableListOf<String>()
+        var depth = 0
+        var start = -1
+        for (index in indices) {
+            when (this[index]) {
+                '{' -> {
+                    if (depth == 0) start = index
+                    depth += 1
+                }
+                '}' -> {
+                    depth -= 1
+                    if (depth == 0 && start >= 0) {
+                        chunks.add(substring(start, index + 1))
+                        start = -1
+                    }
+                }
+            }
+        }
+        return chunks
     }
 }

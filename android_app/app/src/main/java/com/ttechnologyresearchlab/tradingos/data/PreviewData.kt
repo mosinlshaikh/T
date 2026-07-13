@@ -20,6 +20,26 @@ object PreviewData {
         ),
         journal = listOf(
             TradeRow("preview-fill", "BTCUSDT", "PAPER", "FILL_PREVIEW", "0.00")
+        ),
+        strategyCatalog = listOf(
+            StrategyCatalogUi(
+                "MULTI_TIMEFRAME_TREND_ALIGNMENT",
+                "Candle / Structure",
+                "DEVELOPMENT PREVIEW DATA: backend strategy catalog loads when connected.",
+                listOf("candles_1m", "candles_5m", "candles_15m")
+            ),
+            StrategyCatalogUi(
+                "ORDER_BOOK_IMBALANCE_SCALPER",
+                "Order Book",
+                "DEVELOPMENT PREVIEW DATA: spread, wall, and depth evidence required.",
+                listOf("order_book_bids", "order_book_asks", "spread")
+            ),
+            StrategyCatalogUi(
+                "MULTI_FACTOR_MASTER_COMBINER",
+                "Composite",
+                "DEVELOPMENT PREVIEW DATA: combines evidence only; no live execution.",
+                listOf("candle_signal", "order_book_signal", "risk_result")
+            )
         )
     )
 }

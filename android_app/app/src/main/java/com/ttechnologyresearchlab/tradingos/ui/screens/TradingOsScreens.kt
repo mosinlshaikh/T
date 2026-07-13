@@ -304,7 +304,7 @@ fun BinanceEcosystemScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Binance Ecosystem", "Advanced Spot strategy map. Paper/advisory only.") {
         BackendStatusBanner(state) {}
         MetricCard("Exchange scope", "Binance Spot", "No margin / futures / withdrawals")
-        MetricCard("Strategy count", "15", "Evidence-first modules")
+        MetricCard("Strategy count", state.strategyCatalog.size.toString(), "Backend dynamic catalog")
         MetricCard("Live execution", "BLOCKED", "Backend controls paper intents only")
         ListCard(
             "Master rules",
@@ -318,46 +318,9 @@ fun BinanceEcosystemScreen(state: TradingOsUiState) = ScrollScreen {
                 "Phone never places Binance orders"
             )
         )
-        StrategyFamilyCard(
-            "Candle / Structure",
-            listOf(
-                "MULTI_TIMEFRAME_TREND_ALIGNMENT",
-                "BREAKOUT_RETEST_CONFIRMATION",
-                "REVERSAL_WICK_REJECTION",
-                "SUPPORT_RESISTANCE_ZONE_REACTION"
-            )
-        )
-        StrategyFamilyCard(
-            "Order Book / Liquidity",
-            listOf(
-                "ORDER_BOOK_IMBALANCE_SCALPER",
-                "LIQUIDITY_WALL_FAKEOUT_FILTER"
-            )
-        )
-        StrategyFamilyCard(
-            "Whale / Volume",
-            listOf(
-                "VOLUME_SPIKE_WITH_STRUCTURE",
-                "WHALE_TRADE_CONFIRMATION",
-                "FAKE_WHALE_MOVEMENT_FILTER"
-            )
-        )
-        StrategyFamilyCard(
-            "News / Exchange Risk",
-            listOf(
-                "NEWS_RISK_EMERGENCY_FILTER",
-                "BINANCE_ANNOUNCEMENT_WATCH"
-            )
-        )
-        StrategyFamilyCard(
-            "Risk / Local AI / Master Combiner",
-            listOf(
-                "VOLATILITY_REGIME_GUARD",
-                "RISK_FIRST_POSITION_FILTER",
-                "LOCAL_AI_CONFIDENCE_CALIBRATION",
-                "MULTI_FACTOR_MASTER_COMBINER"
-            )
-        )
+        state.strategyCatalog.groupBy { it.family }.toSortedMap().forEach { (family, strategies) ->
+            DynamicStrategyFamilyCard(family, strategies)
+        }
         GlassCard {
             Text("Current bot behavior", color = TradingGold, fontWeight = FontWeight.Bold)
             Text("Decision: ${state.latestDecision.action}")
@@ -757,11 +720,16 @@ private fun NotificationSettingsPanel() {
 }
 
 @Composable
-private fun StrategyFamilyCard(title: String, strategies: List<String>) {
+private fun DynamicStrategyFamilyCard(
+    title: String,
+    strategies: List<com.ttechnologyresearchlab.tradingos.data.StrategyCatalogUi>
+) {
     GlassCard {
         Text(title, color = TradingGold, fontWeight = FontWeight.Bold)
         strategies.forEach { strategy ->
-            Text("- $strategy")
+            Text("- ${strategy.name}", fontWeight = FontWeight.Bold)
+            Text(strategy.purpose)
+            Text("Needs: ${strategy.requiredData.take(4).joinToString()}")
         }
         Text("Status: PAPER_ADVISORY | Evidence required | No live execution")
     }

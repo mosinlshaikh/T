@@ -62,6 +62,8 @@ class BackendApiClient(
     suspend fun getPaperLiveMonitor() = get("/monitor/paper-live")
     suspend fun getMarketEvidenceFeed() = get("/monitor/market-evidence")
     suspend fun getCandleDetail() = get("/monitor/candle-detail?symbol=BTCUSDT&timeframe=5m&limit=40")
+    suspend fun getPaperScanSummary() = get("/monitor/paper-scan-summary")
+    suspend fun getPaperDemoReadiness() = get("/monitor/paper-demo-readiness")
     suspend fun startBot() = post("/control/start")
     suspend fun stopGraceful() = post("/control/stop-graceful")
     suspend fun emergencyStop() = post("/control/emergency-stop")

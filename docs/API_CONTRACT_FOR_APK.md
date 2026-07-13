@@ -129,6 +129,8 @@ trading.
 - `GET /monitor/paper-live`
 - `GET /monitor/market-evidence`
 - `GET /monitor/candle-detail?symbol=BTCUSDT&timeframe=5m&limit=40`
+- `GET /monitor/paper-scan-summary`
+- `GET /monitor/paper-demo-readiness`
 
 `/monitor/paper-live` is the main APK dashboard feed for public market data,
 paper-only decisions, paper positions, paper journal, and audit timeline.
@@ -141,6 +143,14 @@ is evidence-only and returns `live_trading_enabled=false`.
 volume, and missing-data status for APK display. If candle data is unavailable,
 the response keeps `missing_data=["candles"]` and the decision rule remains
 `Missing candle data = SKIP`.
+
+`/monitor/paper-scan-summary` returns the latest public-data paper scan result:
+symbol, action, confidence, why no trade was opened, paper fill ID when present,
+and safety flags.
+
+`/monitor/paper-demo-readiness` returns computed readiness percentages for the
+paper backend/APK monitoring contract and paper demo contract. It must always
+return `real_money_ready=false` in this build.
 
 Graceful shutdown:
 

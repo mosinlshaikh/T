@@ -26,6 +26,8 @@ class TradingOsRepository(
                 val timelines = apiClient.getDashboardTimelines().toDashboardTimelines()
                 val marketEvidenceFeed = apiClient.getMarketEvidenceFeed().toMarketEvidenceFeed()
                 val candleDetail = apiClient.getCandleDetail().toCandleDetail()
+                val paperScanSummary = apiClient.getPaperScanSummary().toPaperScanSummary()
+                val paperDemoReadiness = apiClient.getPaperDemoReadiness().toPaperDemoReadiness()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
@@ -47,6 +49,8 @@ class TradingOsRepository(
                     auditTimeline = timelines.auditTimeline,
                     marketEvidenceFeed = marketEvidenceFeed,
                     candleDetail = candleDetail,
+                    paperScanSummary = paperScanSummary,
+                    paperDemoReadiness = paperDemoReadiness,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -366,6 +370,32 @@ class TradingOsRepository(
             missingData = body.jsonArrayItems("missing_data"),
             decisionRule = body.jsonString("decision_rule") ?: "Missing candle data = SKIP",
             sparklineCloses = closeValues
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPaperScanSummary(): PaperScanSummaryUi {
+        if (!ok) return PreviewData.state.paperScanSummary
+        return PaperScanSummaryUi(
+            symbol = body.jsonString("latest_symbol") ?: "unknown",
+            timeframe = body.jsonString("latest_timeframe") ?: "unknown",
+            action = body.jsonString("latest_action") ?: "unknown",
+            status = body.jsonString("latest_status") ?: "unknown",
+            confidence = body.jsonNumber("latest_confidence") ?: "0.00",
+            reason = body.jsonString("latest_reason") ?: "No paper scan result available.",
+            whyNotTraded = body.jsonString("why_not_traded") ?: "No paper trade was opened by policy.",
+            timestamp = body.jsonString("latest_timestamp") ?: "unknown",
+            runCount = body.jsonNumber("run_count")?.toIntOrNull() ?: 0,
+            tradeAllowed = body.jsonBoolean("trade_allowed") ?: false
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPaperDemoReadiness(): PaperDemoReadinessUi {
+        if (!ok) return PreviewData.state.paperDemoReadiness
+        return PaperDemoReadinessUi(
+            monitoringPercent = body.jsonNumber("paper_backend_apk_monitoring_percent")?.toIntOrNull() ?: 0,
+            demoPercent = body.jsonNumber("paper_demo_readiness_percent")?.toIntOrNull() ?: 0,
+            readyForPaperDemo = body.jsonBoolean("ready_for_paper_demo") ?: false,
+            remaining = body.jsonObjectFieldValues("name").takeLast(8)
         )
     }
 

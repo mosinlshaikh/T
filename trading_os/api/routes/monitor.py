@@ -52,6 +52,14 @@ def _latest_decision_payload() -> dict[str, Any] | None:
     return decisions[-1] if decisions else None
 
 
+def _latest_audit_payload(event_type: str, limit: int = 200) -> dict[str, Any] | None:
+    for event in reversed(latest_audit_events(limit=limit)):
+        if event.get("event_type") == event_type:
+            payload = _payload(event)
+            return {"created_at": event.get("created_at", ""), **payload}
+    return None
+
+
 @router.get("/paper-live")
 def paper_live_monitor() -> dict[str, object]:
     backend = get_backend()
@@ -116,6 +124,41 @@ def paper_live_monitor() -> dict[str, object]:
     return ok(redact_sensitive(payload), "Live paper monitor loaded.")
 
 
+@router.get("/paper-scan-summary")
+def paper_scan_summary() -> dict[str, object]:
+    backend = get_backend()
+    auto_status = backend.paper_auto_trader.status()
+    latest_tick = _latest_audit_payload("paper_auto_trader_tick")
+    latest_scan = _latest_audit_payload("paper_auto_trader_scan")
+    latest_pipeline = _latest_audit_payload("decision_to_trade_pipeline_result")
+    latest_skip = _latest_audit_payload("skipped_trade")
+    latest_fill = _latest_audit_payload("paper_order_fill")
+    latest = latest_tick or auto_status.get("last_result") or {}
+    payload = {
+        "latest_symbol": latest.get("symbol", "unknown"),
+        "latest_timeframe": latest.get("timeframe", "unknown"),
+        "latest_action": latest.get("action", latest.get("status", "unknown")),
+        "latest_status": latest.get("status", "unknown"),
+        "latest_confidence": latest.get("confidence", 0.0),
+        "latest_reason": latest.get("reason", "No paper scan result available."),
+        "latest_timestamp": latest.get("timestamp", latest.get("created_at", "")),
+        "trade_allowed": bool(latest.get("paper_fill_id")),
+        "paper_fill_id": latest.get("paper_fill_id", ""),
+        "why_not_traded": (
+            latest.get("reason")
+            or (latest_skip or {}).get("reason")
+            or "No paper trade was opened by policy."
+        ),
+        "latest_scan_available": latest_scan is not None,
+        "latest_pipeline_status": (latest_pipeline or {}).get("status", "unknown"),
+        "latest_fill_available": latest_fill is not None,
+        "run_count": auto_status.get("run_count", 0),
+        "live_trading_enabled": False,
+        "public_data_only": True,
+    }
+    return ok(redact_sensitive(payload), "Paper scan summary loaded.")
+
+
 def _evidence_item(event: dict[str, Any]) -> dict[str, object]:
     payload = _payload(event)
     event_type = str(event.get("event_type", "unknown"))
@@ -162,6 +205,95 @@ def market_evidence_feed() -> dict[str, object]:
         "rule": "No Data = No Trade; No Proof = No Decision",
     }
     return ok(redact_sensitive(payload), "Market evidence feed loaded.")
+
+
+@router.get("/paper-demo-readiness")
+def paper_demo_readiness() -> dict[str, object]:
+    backend = get_backend()
+    audit_events = latest_audit_events(limit=250)
+    has_market_snapshot = any(
+        event.get("event_type") == "market_snapshot" for event in audit_events
+    )
+    has_ai_decision = bool(latest_decisions(limit=1))
+    has_evidence = any(event.get("event_type") in INTELLIGENCE_TYPES for event in audit_events)
+    has_pipeline = any(
+        event.get("event_type") == "decision_to_trade_pipeline_result" for event in audit_events
+    )
+    has_scan = any(event.get("event_type") == "paper_auto_trader_scan" for event in audit_events)
+    has_candle_data = bool(
+        backend.candle_engine.candles
+        or [
+            item
+            for item in backend.repository.list_market_intelligence_snapshots(limit=20)
+            if item.get("type") == "candle_archive"
+        ]
+    )
+    checks = [
+        {
+            "name": "Paper mode default",
+            "passed": backend.config.runtime_mode.value == "paper",
+            "detail": "Trading mode must remain paper.",
+        },
+        {
+            "name": "Live trading disabled",
+            "passed": not backend.config.enable_live_trading,
+            "detail": "No real Binance order placement is enabled.",
+        },
+        {
+            "name": "Withdrawals unsupported",
+            "passed": not backend.config.allow_withdraw_permissions,
+            "detail": "Withdrawal permission is blocked.",
+        },
+        {
+            "name": "Public market snapshot available",
+            "passed": has_market_snapshot,
+            "detail": "Paper scanner has read public market data.",
+        },
+        {
+            "name": "Candle detail available",
+            "passed": has_candle_data,
+            "detail": "Candle memory or persisted archive exists.",
+        },
+        {
+            "name": "Market evidence feed available",
+            "passed": has_evidence,
+            "detail": "Candle/order book/whale/news/structure evidence has been logged.",
+        },
+        {
+            "name": "AI decision recorded",
+            "passed": has_ai_decision,
+            "detail": "Latest BUY/SELL/HOLD/SKIP decision is persisted/audited.",
+        },
+        {
+            "name": "Pipeline result recorded",
+            "passed": has_pipeline,
+            "detail": "Decision-to-trade paper pipeline has completed.",
+        },
+        {
+            "name": "Paper scanner run available",
+            "passed": has_scan,
+            "detail": "At least one safe public-data paper scan is available.",
+        },
+        {
+            "name": "APK monitoring contract ready",
+            "passed": True,
+            "detail": "Status, charts, timelines, candle detail, and evidence routes exist.",
+        },
+    ]
+    passed = len([item for item in checks if item["passed"]])
+    monitoring_percent = int(round(passed / len(checks) * 100))
+    demo_percent = monitoring_percent if has_scan and has_pipeline else min(monitoring_percent, 80)
+    payload = {
+        "paper_backend_apk_monitoring_percent": monitoring_percent,
+        "paper_demo_readiness_percent": demo_percent,
+        "ready_for_paper_demo": demo_percent == 100,
+        "checks": checks,
+        "remaining": [item for item in checks if not item["passed"]],
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "real_money_ready": False,
+    }
+    return ok(redact_sensitive(payload), "Paper demo readiness loaded.")
 
 
 def _safe_float(value: float) -> float:

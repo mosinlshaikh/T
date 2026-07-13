@@ -99,6 +99,19 @@ object PreviewData {
             latestClose = "DEVELOPMENT PREVIEW DATA",
             missingData = listOf("backend_connection", "candles"),
             decisionRule = "Missing candle data = SKIP"
+        ),
+        paperScanSummary = PaperScanSummaryUi(
+            symbol = "BTCUSDT",
+            action = "SKIP",
+            status = "DEVELOPMENT PREVIEW DATA",
+            reason = "Backend paper scan summary loads when connected.",
+            whyNotTraded = "Preview only."
+        ),
+        paperDemoReadiness = PaperDemoReadinessUi(
+            monitoringPercent = 0,
+            demoPercent = 0,
+            readyForPaperDemo = false,
+            remaining = listOf("backend_connection")
         )
     )
 }

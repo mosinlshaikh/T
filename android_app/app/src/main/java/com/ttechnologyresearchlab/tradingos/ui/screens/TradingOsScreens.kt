@@ -282,6 +282,8 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         MetricCard("USDT Paper Balance", state.portfolio.paperBalanceUsdt)
         MetricCard("Daily PnL", state.portfolio.dailyPnl)
         MetricCard("Open Paper Trades", state.portfolio.openTrades.toString())
+        PaperReadinessCard(state)
+        LatestPaperScanCard(state)
         GlassCard {
             KeyValue("Latest decision", state.latestDecision.action, TradingGold)
             KeyValue("Confidence", state.latestDecision.confidence)
@@ -392,6 +394,8 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
             Text("Graceful stop blocks new trades immediately, keeps active paper trades managed, saves logs, then stops after safe state.")
             Text("Live-market paper demo reads public market data only and never places Binance orders.")
         }
+        PaperReadinessCard(state)
+        LatestPaperScanCard(state)
         PaperSessionCard(state)
     }
 }
@@ -590,6 +594,8 @@ fun ReleaseReadinessScreen(state: TradingOsUiState) = ScrollScreen {
                 L.text("paper_mode", state.language),
                 L.text("live_disabled", state.language),
                 L.text("withdrawals_unsupported", state.language),
+                "Monitoring readiness: ${state.paperDemoReadiness.monitoringPercent}%",
+                "Paper demo readiness: ${state.paperDemoReadiness.demoPercent}%",
                 "Safety score: ${state.safetyScore.score}",
                 "Last heartbeat: ${state.lastHeartbeat}",
                 "API readiness: ${state.botStatus.apiReadinessStatus}",
@@ -598,6 +604,9 @@ fun ReleaseReadinessScreen(state: TradingOsUiState) = ScrollScreen {
                 "Final APK build pending"
             )
         )
+        if (state.paperDemoReadiness.remaining.isNotEmpty()) {
+            ListCard("Remaining paper checks", state.paperDemoReadiness.remaining)
+        }
     }
 }
 
@@ -706,6 +715,34 @@ private fun CurrentTradeWatchCard(state: TradingOsUiState) {
         Text("- Structure: ${state.marketIntelligence.marketStructureSignal}")
         Text("Missing / blocked reasons", color = TradingGold, fontWeight = FontWeight.Bold)
         state.latestDecision.missingData.ifEmpty { listOf("none") }.forEach { Text("- $it") }
+    }
+}
+
+@Composable
+private fun PaperReadinessCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("Paper Demo Readiness", color = TradingGold, fontWeight = FontWeight.Bold)
+        KeyValue("Backend + APK monitoring", "${state.paperDemoReadiness.monitoringPercent}%", SafeGreen)
+        KeyValue("Paper demo", "${state.paperDemoReadiness.demoPercent}%", SafeGreen)
+        KeyValue("Ready", state.paperDemoReadiness.readyForPaperDemo.toString())
+        Text("Target for this phase is paper-only 100%. Real-money trading remains blocked.")
+    }
+}
+
+@Composable
+private fun LatestPaperScanCard(state: TradingOsUiState) {
+    val scan = state.paperScanSummary
+    GlassCard {
+        Text("Latest Paper Scan", color = TradingGold, fontWeight = FontWeight.Bold)
+        KeyValue("Symbol / TF", "${scan.symbol} ${scan.timeframe}", TradingGold)
+        KeyValue("Action", scan.action, timelineColor(scan.action))
+        KeyValue("Status", scan.status)
+        KeyValue("Confidence", scan.confidence)
+        KeyValue("Trade allowed", scan.tradeAllowed.toString())
+        KeyValue("Run count", scan.runCount.toString())
+        Text(scan.reason)
+        Text("Why not traded: ${scan.whyNotTraded}")
+        Text("Timestamp: ${scan.timestamp}")
     }
 }
 

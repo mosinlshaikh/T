@@ -183,6 +183,26 @@ data class CandleDetailUi(
     val sparklineCloses: List<String> = emptyList()
 )
 
+data class PaperScanSummaryUi(
+    val symbol: String = "unknown",
+    val timeframe: String = "unknown",
+    val action: String = "unknown",
+    val status: String = "unknown",
+    val confidence: String = "0.00",
+    val reason: String = "No paper scan result available.",
+    val whyNotTraded: String = "No paper trade was opened by policy.",
+    val timestamp: String = "unknown",
+    val runCount: Int = 0,
+    val tradeAllowed: Boolean = false
+)
+
+data class PaperDemoReadinessUi(
+    val monitoringPercent: Int = 0,
+    val demoPercent: Int = 0,
+    val readyForPaperDemo: Boolean = false,
+    val remaining: List<String> = emptyList()
+)
+
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
     val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
@@ -213,5 +233,7 @@ data class TradingOsUiState(
     val auditTimeline: List<TimelineEventUi> = emptyList(),
     val marketEvidenceFeed: List<MarketEvidenceUi> = emptyList(),
     val candleDetail: CandleDetailUi = CandleDetailUi(),
+    val paperScanSummary: PaperScanSummaryUi = PaperScanSummaryUi(),
+    val paperDemoReadiness: PaperDemoReadinessUi = PaperDemoReadinessUi(),
     val shutdownState: String = "RUNNING"
 )

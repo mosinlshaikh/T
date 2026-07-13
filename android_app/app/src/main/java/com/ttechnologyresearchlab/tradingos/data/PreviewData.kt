@@ -81,6 +81,17 @@ object PreviewData {
                 detail = "DEVELOPMENT PREVIEW DATA",
                 status = "paper"
             )
+        ),
+        marketEvidenceFeed = listOf(
+            MarketEvidenceUi(
+                timestamp = "preview",
+                layer = "Candle",
+                signal = "unknown",
+                confidence = "unknown",
+                summary = "DEVELOPMENT PREVIEW DATA: backend market evidence loads when connected.",
+                symbol = "BTCUSDT",
+                source = "preview"
+            )
         )
     )
 }

@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.ttechnologyresearchlab.tradingos.R
 import com.ttechnologyresearchlab.tradingos.data.BackendConnectionState
+import com.ttechnologyresearchlab.tradingos.data.MarketEvidenceUi
 import com.ttechnologyresearchlab.tradingos.data.TimelineEventUi
 import com.ttechnologyresearchlab.tradingos.data.TradingOsUiState
 import com.ttechnologyresearchlab.tradingos.localization.AppLanguage
@@ -287,6 +288,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         }
         CurrentTradeWatchCard(state)
         DashboardChartsCard(state)
+        MarketEvidenceFeedCard(state.marketEvidenceFeed.takeLast(5))
         TimelineCard("Decision Timeline", state.decisionTimeline.takeLast(5))
         EvidenceDrillDownCard(state)
         PaperSessionCard(state)
@@ -302,6 +304,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
 fun MarketIntelligenceScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Market Intelligence", "Evidence-first signals. No unsupported market claims.") {
         IntelligenceCard(state)
+        MarketEvidenceFeedCard(state.marketEvidenceFeed)
         ListCard("Missing data", state.marketIntelligence.missingData)
         ListCard("Conflicts", state.marketIntelligence.conflicts.ifEmpty { listOf("none") })
     }
@@ -346,6 +349,7 @@ fun BotBrainScreen(state: TradingOsUiState) = ScrollScreen {
         MetricCard("Latest AI Decision", state.latestDecision.action)
         MetricCard("Confidence", state.latestDecision.confidence)
         IntelligenceCard(state)
+        MarketEvidenceFeedCard(state.marketEvidenceFeed.takeLast(8))
         EvidenceDrillDownCard(state)
         GlassCard {
             KeyValue("Zero hallucination", state.latestDecision.zeroHallucinationVerified.toString())
@@ -785,6 +789,29 @@ private fun TimelineCard(title: String, events: List<TimelineEventUi>) {
             }
         }
         Text("Paper/audit data only. No phone-side Binance execution.")
+    }
+}
+
+@Composable
+private fun MarketEvidenceFeedCard(items: List<MarketEvidenceUi>) {
+    GlassCard {
+        Text("Market Evidence Feed", color = TradingGold, fontWeight = FontWeight.Bold)
+        if (items.isEmpty()) {
+            Text("unknown / insufficient data")
+        } else {
+            items.takeLast(8).forEach { item ->
+                KeyValue("${item.layer} ${item.symbol}".trim(), item.signal, timelineColor(item.signal))
+                Text("${item.timestamp} | confidence=${item.confidence} | source=${item.source}")
+                Text(item.summary)
+                if (item.missingData.isNotEmpty()) {
+                    Text("Missing: ${item.missingData.take(3).joinToString()}", color = TradingGold)
+                }
+                if (item.conflicts.isNotEmpty()) {
+                    Text("Conflicts: ${item.conflicts.take(3).joinToString()}", color = DangerRed)
+                }
+            }
+        }
+        Text("Evidence only. If data is missing, backend returns HOLD/SKIP.")
     }
 }
 

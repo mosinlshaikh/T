@@ -21,6 +21,17 @@ INTELLIGENCE_TYPES = {
     "conflict_reason",
 }
 
+INTELLIGENCE_LABELS = {
+    "candle_analysis": "Candle",
+    "order_book_analysis": "Order Book",
+    "whale_analysis": "Whale",
+    "news_risk_analysis": "News Risk",
+    "market_structure_analysis": "Market Structure",
+    "combined_signal_result": "Combined Signal",
+    "missing_data": "Missing Data",
+    "conflict_reason": "Conflict",
+}
+
 
 def _payload(event: dict[str, Any]) -> dict[str, Any]:
     payload = event.get("payload", event)
@@ -101,3 +112,51 @@ def paper_live_monitor() -> dict[str, object]:
         "audit_timeline": audit_timeline,
     }
     return ok(redact_sensitive(payload), "Live paper monitor loaded.")
+
+
+def _evidence_item(event: dict[str, Any]) -> dict[str, object]:
+    payload = _payload(event)
+    event_type = str(event.get("event_type", "unknown"))
+    signal = str(
+        payload.get("signal")
+        or payload.get("final_signal")
+        or payload.get("status")
+        or payload.get("action")
+        or "unknown"
+    )
+    confidence = payload.get("confidence_score", payload.get("confidence", "unknown"))
+    summary = str(
+        payload.get("reason")
+        or payload.get("summary")
+        or payload.get("detail")
+        or "Evidence unavailable."
+    )
+    missing_data = payload.get("missing_data", [])
+    conflicts = payload.get("conflicts", payload.get("conflict_signals", []))
+    return {
+        "timestamp": event.get("created_at", payload.get("timestamp", "")),
+        "layer": INTELLIGENCE_LABELS.get(event_type, event_type.replace("_", " ").title()),
+        "event_type": event_type,
+        "symbol": payload.get("symbol", ""),
+        "signal": signal,
+        "confidence": confidence,
+        "summary": summary,
+        "missing_data": missing_data if isinstance(missing_data, list) else [str(missing_data)],
+        "conflicts": conflicts if isinstance(conflicts, list) else [str(conflicts)],
+        "source": payload.get("source", event_type),
+    }
+
+
+@router.get("/market-evidence")
+def market_evidence_feed() -> dict[str, object]:
+    events = latest_audit_events(limit=300)
+    evidence = [
+        _evidence_item(event) for event in events if event.get("event_type") in INTELLIGENCE_TYPES
+    ]
+    payload = {
+        "items": evidence[-50:],
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "rule": "No Data = No Trade; No Proof = No Decision",
+    }
+    return ok(redact_sensitive(payload), "Market evidence feed loaded.")

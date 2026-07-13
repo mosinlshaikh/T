@@ -24,6 +24,7 @@ class TradingOsRepository(
                 val paperSession = apiClient.getPaperSessionStatus().toPaperSession()
                 val dashboardCharts = apiClient.getDashboardCharts().toDashboardCharts()
                 val timelines = apiClient.getDashboardTimelines().toDashboardTimelines()
+                val marketEvidenceFeed = apiClient.getMarketEvidenceFeed().toMarketEvidenceFeed()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
@@ -43,6 +44,7 @@ class TradingOsRepository(
                     decisionTimeline = timelines.decisionTimeline,
                     tradeTimeline = timelines.tradeTimeline,
                     auditTimeline = timelines.auditTimeline,
+                    marketEvidenceFeed = marketEvidenceFeed,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -320,6 +322,25 @@ class TradingOsRepository(
             tradeTimeline = body.timelineRowsFromSection("trade_timeline").ifEmpty { PreviewData.state.tradeTimeline },
             auditTimeline = body.timelineRowsFromSection("audit_timeline").ifEmpty { PreviewData.state.auditTimeline }
         )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toMarketEvidenceFeed(): List<MarketEvidenceUi> {
+        if (!ok) return PreviewData.state.marketEvidenceFeed
+        val section = body.arraySection("items")
+        if (section.isBlank()) return PreviewData.state.marketEvidenceFeed
+        return section.objectChunks().map { chunk ->
+            MarketEvidenceUi(
+                timestamp = chunk.jsonString("timestamp") ?: "unknown",
+                layer = chunk.jsonString("layer") ?: "unknown",
+                signal = chunk.jsonString("signal") ?: "unknown",
+                confidence = chunk.jsonNumber("confidence") ?: chunk.jsonString("confidence") ?: "unknown",
+                summary = chunk.jsonString("summary") ?: "unknown / insufficient data",
+                symbol = chunk.jsonString("symbol") ?: "",
+                source = chunk.jsonString("source") ?: "unknown",
+                missingData = chunk.jsonArrayItems("missing_data"),
+                conflicts = chunk.jsonArrayItems("conflicts")
+            )
+        }.takeLast(20).ifEmpty { PreviewData.state.marketEvidenceFeed }
     }
 
     private fun String.jsonObjectFieldValues(name: String): List<String> {

@@ -60,6 +60,7 @@ class BackendApiClient(
     suspend fun getMarketKingScore() = get("/learning/market-king-score")
     suspend fun getLearningRecommendations() = get("/learning/recommendations")
     suspend fun getPaperLiveMonitor() = get("/monitor/paper-live")
+    suspend fun getMarketEvidenceFeed() = get("/monitor/market-evidence")
     suspend fun startBot() = post("/control/start")
     suspend fun stopGraceful() = post("/control/stop-graceful")
     suspend fun emergencyStop() = post("/control/emergency-stop")

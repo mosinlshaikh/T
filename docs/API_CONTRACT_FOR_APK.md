@@ -124,6 +124,18 @@ Paper session endpoints run repeated public-market paper scans for learning and
 monitoring. They do not place real Binance orders and cannot enable live
 trading.
 
+## Monitor Endpoints
+
+- `GET /monitor/paper-live`
+- `GET /monitor/market-evidence`
+
+`/monitor/paper-live` is the main APK dashboard feed for public market data,
+paper-only decisions, paper positions, paper journal, and audit timeline.
+
+`/monitor/market-evidence` returns the latest candle, order book, whale, news,
+market structure, conflict, and missing-data evidence rows for APK display. It
+is evidence-only and returns `live_trading_enabled=false`.
+
 Graceful shutdown:
 
 - blocks new trades

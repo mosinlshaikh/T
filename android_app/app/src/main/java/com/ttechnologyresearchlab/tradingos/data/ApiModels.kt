@@ -156,6 +156,18 @@ data class TimelineEventUi(
     val symbol: String = ""
 )
 
+data class MarketEvidenceUi(
+    val timestamp: String = "unknown",
+    val layer: String = "unknown",
+    val signal: String = "unknown",
+    val confidence: String = "unknown",
+    val summary: String = "unknown / insufficient data",
+    val symbol: String = "",
+    val source: String = "unknown",
+    val missingData: List<String> = emptyList(),
+    val conflicts: List<String> = emptyList()
+)
+
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
     val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
@@ -184,5 +196,6 @@ data class TradingOsUiState(
     val decisionTimeline: List<TimelineEventUi> = emptyList(),
     val tradeTimeline: List<TimelineEventUi> = emptyList(),
     val auditTimeline: List<TimelineEventUi> = emptyList(),
+    val marketEvidenceFeed: List<MarketEvidenceUi> = emptyList(),
     val shutdownState: String = "RUNNING"
 )

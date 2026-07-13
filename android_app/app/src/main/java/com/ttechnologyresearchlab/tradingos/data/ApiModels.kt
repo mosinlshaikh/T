@@ -136,6 +136,17 @@ data class PaperSessionUi(
     val liveTradingEnabled: Boolean = false
 )
 
+data class DashboardChartsUi(
+    val buyCount: Int = 0,
+    val sellCount: Int = 0,
+    val holdCount: Int = 0,
+    val skipCount: Int = 0,
+    val highConfidence: Int = 0,
+    val mediumConfidence: Int = 0,
+    val lowConfidence: Int = 0,
+    val averageConfidence: String = "0.00"
+)
+
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
     val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
@@ -160,5 +171,6 @@ data class TradingOsUiState(
     val licenseStatus: LicenseStatusUi = LicenseStatusUi(),
     val strategyCatalog: List<StrategyCatalogUi> = emptyList(),
     val paperSession: PaperSessionUi = PaperSessionUi(),
+    val dashboardCharts: DashboardChartsUi = DashboardChartsUi(),
     val shutdownState: String = "RUNNING"
 )

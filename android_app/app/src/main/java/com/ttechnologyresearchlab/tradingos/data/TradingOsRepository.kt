@@ -22,6 +22,7 @@ class TradingOsRepository(
                 val safetyScore = readinessResult.toSafetyScore()
                 val strategyCatalog = apiClient.getStrategyCatalog().toStrategyCatalog()
                 val paperSession = apiClient.getPaperSessionStatus().toPaperSession()
+                val dashboardCharts = apiClient.getDashboardCharts().toDashboardCharts()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
@@ -37,6 +38,7 @@ class TradingOsRepository(
                     safetyScore = safetyScore,
                     strategyCatalog = strategyCatalog.ifEmpty { PreviewData.state.strategyCatalog },
                     paperSession = paperSession,
+                    dashboardCharts = dashboardCharts,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -284,6 +286,20 @@ class TradingOsRepository(
             bestConfidence = best.jsonNumber("confidence") ?: "0.00",
             lastReason = best.jsonString("reason") ?: body.jsonString("last_error") ?: "No paper session scan yet.",
             liveTradingEnabled = body.jsonBoolean("live_trading_enabled") ?: false
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toDashboardCharts(): DashboardChartsUi {
+        if (!ok) return PreviewData.state.dashboardCharts
+        return DashboardChartsUi(
+            buyCount = body.jsonNumber("BUY")?.toIntOrNull() ?: 0,
+            sellCount = body.jsonNumber("SELL")?.toIntOrNull() ?: 0,
+            holdCount = body.jsonNumber("HOLD")?.toIntOrNull() ?: 0,
+            skipCount = body.jsonNumber("SKIP")?.toIntOrNull() ?: 0,
+            highConfidence = body.jsonNumber("high")?.toIntOrNull() ?: 0,
+            mediumConfidence = body.jsonNumber("medium")?.toIntOrNull() ?: 0,
+            lowConfidence = body.jsonNumber("low")?.toIntOrNull() ?: 0,
+            averageConfidence = body.jsonNumber("average") ?: "0.00"
         )
     }
 

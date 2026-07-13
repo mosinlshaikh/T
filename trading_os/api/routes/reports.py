@@ -67,3 +67,42 @@ def strategy_report() -> dict[str, object]:
 @router.get("/runtime")
 def runtime_report() -> dict[str, object]:
     return ok(_generator().shutdown_runtime_report(), "Runtime report loaded.")
+
+
+@router.get("/dashboard-charts")
+def dashboard_charts() -> dict[str, object]:
+    backend = get_backend()
+    decisions = backend.repository.list_ai_decisions(500)
+    action_counts = {"BUY": 0, "SELL": 0, "HOLD": 0, "SKIP": 0}
+    confidence_values: list[float] = []
+    for decision in decisions:
+        action = str(decision.get("action", "SKIP")).upper()
+        action_counts[action if action in action_counts else "SKIP"] += 1
+        confidence_values.append(float(decision.get("confidence", 0.0) or 0.0))
+    confidence_profile = {
+        "average": (
+            round(sum(confidence_values) / len(confidence_values), 4) if confidence_values else 0.0
+        ),
+        "high": len([item for item in confidence_values if item >= 0.7]),
+        "medium": len([item for item in confidence_values if 0.45 <= item < 0.7]),
+        "low": len([item for item in confidence_values if item < 0.45]),
+    }
+    session = backend.paper_session_scheduler.status()
+    return ok(
+        {
+            "action_counts": action_counts,
+            "confidence_profile": confidence_profile,
+            "paper_session": {
+                "running": session["running"],
+                "scan_count": session["scan_count"],
+                "best_candidate": (
+                    session.get("last_scan", {}).get("best_candidate")
+                    if isinstance(session.get("last_scan"), dict)
+                    else None
+                ),
+            },
+            "live_trading_enabled": False,
+            "public_data_only": True,
+        },
+        "Dashboard chart data loaded.",
+    )

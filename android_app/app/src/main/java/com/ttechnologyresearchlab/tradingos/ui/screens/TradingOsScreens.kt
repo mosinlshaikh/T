@@ -1,11 +1,14 @@
 package com.ttechnologyresearchlab.tradingos.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -282,6 +285,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
             Text(state.latestDecision.reason)
         }
         CurrentTradeWatchCard(state)
+        DashboardChartsCard(state)
         EvidenceDrillDownCard(state)
         PaperSessionCard(state)
         if (connected) {
@@ -498,6 +502,7 @@ fun TradeJournalScreen(state: TradingOsUiState) = ScrollScreen {
 @Composable
 fun ReportsScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Reports", "Analytics use persisted paper records only.") {
+        DashboardChartsCard(state)
         state.reports.forEach { report ->
             GlassCard {
                 Text(report.title, color = TradingGold, fontWeight = FontWeight.Bold)
@@ -719,6 +724,45 @@ private fun EvidenceDrillDownCard(state: TradingOsUiState) {
             state.latestDecision.missingData.take(6).forEach { Text("- $it") }
         }
         Text("Rule: missing data or strong conflict means HOLD/SKIP. Phone never executes Binance orders.")
+    }
+}
+
+@Composable
+private fun DashboardChartsCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("Paper Charts", color = TradingGold, fontWeight = FontWeight.Bold)
+        Text("Decision mix", color = TradingGold)
+        ChartBar("BUY", state.dashboardCharts.buyCount, TradingGold)
+        ChartBar("SELL", state.dashboardCharts.sellCount, DangerRed)
+        ChartBar("HOLD", state.dashboardCharts.holdCount, SafeGreen)
+        ChartBar("SKIP", state.dashboardCharts.skipCount, Color.White)
+        Text("Confidence profile", color = TradingGold)
+        ChartBar("High", state.dashboardCharts.highConfidence, SafeGreen)
+        ChartBar("Medium", state.dashboardCharts.mediumConfidence, TradingGold)
+        ChartBar("Low", state.dashboardCharts.lowConfidence, DangerRed)
+        KeyValue("Average confidence", state.dashboardCharts.averageConfidence)
+        KeyValue("Paper scans", state.paperSession.scanCount.toString())
+    }
+}
+
+@Composable
+private fun ChartBar(label: String, value: Int, color: Color) {
+    val width = ((value.coerceAtLeast(0) + 1).coerceAtMost(25)) / 25f
+    Column {
+        KeyValue(label, value.toString(), color)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .background(Color(0xFF20242E), RoundedCornerShape(4.dp))
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth(width)
+                    .height(8.dp)
+                    .background(color, RoundedCornerShape(4.dp))
+            )
+        }
     }
 }
 

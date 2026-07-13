@@ -48,6 +48,11 @@ object PreviewData {
             bestCandidate = "DEVELOPMENT PREVIEW DATA",
             bestAction = "HOLD",
             lastReason = "Backend paper session status loads when connected."
+        ),
+        dashboardCharts = DashboardChartsUi(
+            holdCount = 3,
+            lowConfidence = 3,
+            averageConfidence = "0.43"
         )
     )
 }

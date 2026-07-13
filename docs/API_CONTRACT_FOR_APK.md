@@ -233,8 +233,12 @@ API key submission endpoints are intentionally not added in Phase 6.
 - `GET /reports/skipped-trades`
 - `GET /reports/strategies`
 - `GET /reports/runtime`
+- `GET /reports/dashboard-charts`
 
 Reports use persisted paper-mode data only. If history is missing, the API returns `unknown`, `insufficient_data`, or `NOT_ENOUGH_HISTORY` instead of inventing outcomes.
+
+`/reports/dashboard-charts` returns APK-friendly chart data for decision action
+counts, confidence buckets, and paper-session scan status.
 
 ## Local AI Learning Endpoints
 

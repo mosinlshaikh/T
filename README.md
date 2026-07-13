@@ -143,6 +143,7 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 | Go/Rust Extension Plan      | [docs/GO_RUST_EXTENSION_PLAN.md](docs/GO_RUST_EXTENSION_PLAN.md)           |
 | Local AI Learning Engine    | [docs/LOCAL_AI_LEARNING_ENGINE.md](docs/LOCAL_AI_LEARNING_ENGINE.md)       |
 | Binance Strategy Ecosystem  | [docs/BINANCE_STRATEGY_ECOSYSTEM.md](docs/BINANCE_STRATEGY_ECOSYSTEM.md)   |
+| Paper Session Scheduler     | [docs/PAPER_SESSION_SCHEDULER.md](docs/PAPER_SESSION_SCHEDULER.md)         |
 
 Generate a local paper report:
 

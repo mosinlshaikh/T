@@ -86,6 +86,7 @@ def paper_live_monitor() -> dict[str, object]:
         "open_positions": open_positions,
         "closed_positions": closed_positions[-50:],
         "paper_journal": journal[-100:],
+        "paper_session": backend.paper_session_scheduler.status(),
         "portfolio": {
             "usdt_balance": wallet.usdt_balance,
             "reserved_capital": wallet.reserved_capital,

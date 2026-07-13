@@ -114,8 +114,15 @@ It must return `ready_for_real_money=false` and
 - `POST /control/restart-runtime`
 - `POST /control/pause-new-trades`
 - `POST /control/resume-paper-trades`
+- `POST /control/paper-session/start`
+- `POST /control/paper-session/stop`
+- `GET /control/paper-session/status`
 
 There is no live mode endpoint.
+
+Paper session endpoints run repeated public-market paper scans for learning and
+monitoring. They do not place real Binance orders and cannot enable live
+trading.
 
 Graceful shutdown:
 

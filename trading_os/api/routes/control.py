@@ -214,3 +214,40 @@ def stop_paper_auto_trader() -> dict[str, object]:
 def paper_auto_trader_status() -> dict[str, object]:
     backend = get_backend()
     return ok(backend.paper_auto_trader.status(), "Paper auto trader status loaded.")
+
+
+@router.post("/paper-session/start")
+def start_paper_session(
+    symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT",
+    timeframe: str = "5m",
+    interval_seconds: int = 300,
+    trade_notional_usdt: float = 50.0,
+) -> dict[str, object]:
+    backend = get_backend()
+    if backend.config.enable_live_trading:
+        return fail("LIVE_TRADING_BLOCKED", errors=["Paper session cannot enable live trading."])
+    if backend.kill_switch.active:
+        return fail("KILL_SWITCH_ACTIVE", errors=["Emergency stop is active."])
+    safe_symbols = [item.strip().upper() for item in symbols.split(",") if item.strip()]
+    return ok(
+        backend.paper_session_scheduler.start(
+            symbols=safe_symbols,
+            timeframe=timeframe,
+            interval_seconds=interval_seconds,
+            trade_notional_usdt=trade_notional_usdt,
+        ),
+        "24x7 paper session scheduler started.",
+        warnings=["Paper mode only. No real Binance orders are placed."],
+    )
+
+
+@router.post("/paper-session/stop")
+def stop_paper_session() -> dict[str, object]:
+    backend = get_backend()
+    return ok(backend.paper_session_scheduler.stop(), "Paper session scheduler stopped.")
+
+
+@router.get("/paper-session/status")
+def paper_session_status() -> dict[str, object]:
+    backend = get_backend()
+    return ok(backend.paper_session_scheduler.status(), "Paper session scheduler status loaded.")

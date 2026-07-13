@@ -32,6 +32,7 @@ from trading_os.risk.risk_engine import RiskEngine
 from trading_os.runtime.supervisor import RuntimeSupervisor
 from trading_os.runtime.shutdown_engine import SmartShutdownEngine
 from trading_os.runtime.paper_auto_trader import PaperAutoTrader
+from trading_os.runtime.paper_session_scheduler import PaperSessionScheduler
 from trading_os.security.api_key_vault import ApiKeyVaultDesign
 from trading_os.security.kill_switch import EmergencyKillSwitch
 from trading_os.security.permission_verifier import BinanceApiPermissionVerifier
@@ -76,6 +77,7 @@ class TradingOSBackend:
     permission_verifier: BinanceApiPermissionVerifier = field(init=False)
     runtime_supervisor: RuntimeSupervisor = field(init=False)
     paper_auto_trader: PaperAutoTrader = field(init=False)
+    paper_session_scheduler: PaperSessionScheduler = field(init=False)
     notifications: NotificationEngine = field(init=False)
 
     def __post_init__(self) -> None:
@@ -145,6 +147,7 @@ class TradingOSBackend:
             signal_combiner=self.signal_combiner,
         )
         self.paper_auto_trader = PaperAutoTrader(self)
+        self.paper_session_scheduler = PaperSessionScheduler(self)
 
     def health(self) -> dict[str, object]:
         config_health = self.config.health_report()

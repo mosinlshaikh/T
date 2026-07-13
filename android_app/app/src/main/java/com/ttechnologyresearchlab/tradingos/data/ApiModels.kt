@@ -168,6 +168,20 @@ data class MarketEvidenceUi(
     val conflicts: List<String> = emptyList()
 )
 
+data class CandleDetailUi(
+    val symbol: String = "BTCUSDT",
+    val timeframe: String = "5m",
+    val candleCount: Int = 0,
+    val trend: String = "unknown",
+    val latestClose: String = "unknown",
+    val rangeHigh: String = "unknown",
+    val rangeLow: String = "unknown",
+    val volumeTotal: String = "0.00",
+    val missingData: List<String> = listOf("candles"),
+    val decisionRule: String = "Missing candle data = SKIP",
+    val sparklineCloses: List<String> = emptyList()
+)
+
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
     val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
@@ -197,5 +211,6 @@ data class TradingOsUiState(
     val tradeTimeline: List<TimelineEventUi> = emptyList(),
     val auditTimeline: List<TimelineEventUi> = emptyList(),
     val marketEvidenceFeed: List<MarketEvidenceUi> = emptyList(),
+    val candleDetail: CandleDetailUi = CandleDetailUi(),
     val shutdownState: String = "RUNNING"
 )

@@ -25,6 +25,7 @@ class TradingOsRepository(
                 val dashboardCharts = apiClient.getDashboardCharts().toDashboardCharts()
                 val timelines = apiClient.getDashboardTimelines().toDashboardTimelines()
                 val marketEvidenceFeed = apiClient.getMarketEvidenceFeed().toMarketEvidenceFeed()
+                val candleDetail = apiClient.getCandleDetail().toCandleDetail()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
@@ -45,6 +46,7 @@ class TradingOsRepository(
                     tradeTimeline = timelines.tradeTimeline,
                     auditTimeline = timelines.auditTimeline,
                     marketEvidenceFeed = marketEvidenceFeed,
+                    candleDetail = candleDetail,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -341,6 +343,29 @@ class TradingOsRepository(
                 conflicts = chunk.jsonArrayItems("conflicts")
             )
         }.takeLast(20).ifEmpty { PreviewData.state.marketEvidenceFeed }
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toCandleDetail(): CandleDetailUi {
+        if (!ok) return PreviewData.state.candleDetail
+        val candlesSection = body.arraySection("candles")
+        val closeValues = Regex(""""close"\s*:\s*(-?\d+(?:\.\d+)?)""")
+            .findAll(candlesSection)
+            .map { it.groupValues[1] }
+            .toList()
+            .takeLast(12)
+        return CandleDetailUi(
+            symbol = body.jsonString("symbol") ?: "BTCUSDT",
+            timeframe = body.jsonString("timeframe") ?: "5m",
+            candleCount = closeValues.size,
+            trend = body.jsonString("trend") ?: "unknown",
+            latestClose = body.jsonNumber("latest_close") ?: body.jsonString("latest_close") ?: "unknown",
+            rangeHigh = body.jsonNumber("range_high") ?: body.jsonString("range_high") ?: "unknown",
+            rangeLow = body.jsonNumber("range_low") ?: body.jsonString("range_low") ?: "unknown",
+            volumeTotal = body.jsonNumber("volume_total") ?: "0.00",
+            missingData = body.jsonArrayItems("missing_data"),
+            decisionRule = body.jsonString("decision_rule") ?: "Missing candle data = SKIP",
+            sparklineCloses = closeValues
+        )
     }
 
     private fun String.jsonObjectFieldValues(name: String): List<String> {

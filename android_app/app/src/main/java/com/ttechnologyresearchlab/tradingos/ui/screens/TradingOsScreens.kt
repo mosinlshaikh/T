@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.ttechnologyresearchlab.tradingos.R
 import com.ttechnologyresearchlab.tradingos.data.BackendConnectionState
+import com.ttechnologyresearchlab.tradingos.data.CandleDetailUi
 import com.ttechnologyresearchlab.tradingos.data.MarketEvidenceUi
 import com.ttechnologyresearchlab.tradingos.data.TimelineEventUi
 import com.ttechnologyresearchlab.tradingos.data.TradingOsUiState
@@ -288,6 +289,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         }
         CurrentTradeWatchCard(state)
         DashboardChartsCard(state)
+        CandleDetailCard(state.candleDetail)
         MarketEvidenceFeedCard(state.marketEvidenceFeed.takeLast(5))
         TimelineCard("Decision Timeline", state.decisionTimeline.takeLast(5))
         EvidenceDrillDownCard(state)
@@ -304,6 +306,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
 fun MarketIntelligenceScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Market Intelligence", "Evidence-first signals. No unsupported market claims.") {
         IntelligenceCard(state)
+        CandleDetailCard(state.candleDetail)
         MarketEvidenceFeedCard(state.marketEvidenceFeed)
         ListCard("Missing data", state.marketIntelligence.missingData)
         ListCard("Conflicts", state.marketIntelligence.conflicts.ifEmpty { listOf("none") })
@@ -349,6 +352,7 @@ fun BotBrainScreen(state: TradingOsUiState) = ScrollScreen {
         MetricCard("Latest AI Decision", state.latestDecision.action)
         MetricCard("Confidence", state.latestDecision.confidence)
         IntelligenceCard(state)
+        CandleDetailCard(state.candleDetail)
         MarketEvidenceFeedCard(state.marketEvidenceFeed.takeLast(8))
         EvidenceDrillDownCard(state)
         GlassCard {
@@ -815,9 +819,34 @@ private fun MarketEvidenceFeedCard(items: List<MarketEvidenceUi>) {
     }
 }
 
+@Composable
+private fun CandleDetailCard(candle: CandleDetailUi) {
+    GlassCard {
+        Text("Candle Detail", color = TradingGold, fontWeight = FontWeight.Bold)
+        KeyValue("Symbol / TF", "${candle.symbol} ${candle.timeframe}", TradingGold)
+        KeyValue("Trend", candle.trend, timelineColor(candle.trend))
+        KeyValue("Latest close", candle.latestClose)
+        KeyValue("Range high", candle.rangeHigh)
+        KeyValue("Range low", candle.rangeLow)
+        KeyValue("Volume total", candle.volumeTotal)
+        KeyValue("Candles", candle.candleCount.toString())
+        if (candle.sparklineCloses.isNotEmpty()) {
+            Text("Close trail", color = TradingGold, fontWeight = FontWeight.Bold)
+            Text(candle.sparklineCloses.joinToString(" -> "))
+        }
+        if (candle.missingData.isNotEmpty()) {
+            Text("Missing: ${candle.missingData.joinToString()}", color = DangerRed)
+        }
+        Text(candle.decisionRule)
+        Text("Read-only paper evidence. Phone does not execute Binance orders.")
+    }
+}
+
 private fun timelineColor(status: String): Color = when {
     status.contains("BUY", ignoreCase = true) -> SafeGreen
+    status.contains("UPTREND", ignoreCase = true) -> SafeGreen
     status.contains("SELL", ignoreCase = true) -> DangerRed
+    status.contains("DOWNTREND", ignoreCase = true) -> DangerRed
     status.contains("SKIP", ignoreCase = true) -> TradingGold
     status.contains("BLOCK", ignoreCase = true) -> DangerRed
     else -> Color.White

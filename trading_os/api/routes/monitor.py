@@ -160,3 +160,68 @@ def market_evidence_feed() -> dict[str, object]:
         "rule": "No Data = No Trade; No Proof = No Decision",
     }
     return ok(redact_sensitive(payload), "Market evidence feed loaded.")
+
+
+def _safe_float(value: float) -> float:
+    return round(float(value), 8)
+
+
+@router.get("/candle-detail")
+def candle_detail(
+    symbol: str = "BTCUSDT", timeframe: str = "5m", limit: int = 40
+) -> dict[str, object]:
+    backend = get_backend()
+    safe_limit = min(max(int(limit), 5), 100)
+    candles = backend.candle_engine.by_timeframe(symbol.upper(), timeframe)[-safe_limit:]
+    if not candles:
+        payload = {
+            "symbol": symbol.upper(),
+            "timeframe": timeframe,
+            "candles": [],
+            "trend": "unknown",
+            "latest_close": None,
+            "range_high": None,
+            "range_low": None,
+            "volume_total": 0.0,
+            "missing_data": ["candles"],
+            "live_trading_enabled": False,
+            "public_data_only": True,
+            "decision_rule": "Missing candle data = SKIP",
+        }
+        return ok(payload, "Candle detail unavailable; missing candle data.")
+
+    closes = [candle.close for candle in candles]
+    trend = "range"
+    if len(closes) >= 3 and closes[-1] > closes[-2] > closes[-3]:
+        trend = "uptrend"
+    elif len(closes) >= 3 and closes[-1] < closes[-2] < closes[-3]:
+        trend = "downtrend"
+    range_high = max(candle.high for candle in candles)
+    range_low = min(candle.low for candle in candles)
+    volume_total = sum(candle.volume for candle in candles)
+    payload = {
+        "symbol": symbol.upper(),
+        "timeframe": getattr(candles[-1].timeframe, "value", str(candles[-1].timeframe)),
+        "candles": [
+            {
+                "open": _safe_float(candle.open),
+                "high": _safe_float(candle.high),
+                "low": _safe_float(candle.low),
+                "close": _safe_float(candle.close),
+                "volume": _safe_float(candle.volume),
+                "start_time_ms": candle.start_time_ms,
+                "end_time_ms": candle.end_time_ms,
+            }
+            for candle in candles
+        ],
+        "trend": trend,
+        "latest_close": _safe_float(candles[-1].close),
+        "range_high": _safe_float(range_high),
+        "range_low": _safe_float(range_low),
+        "volume_total": _safe_float(volume_total),
+        "missing_data": [],
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "decision_rule": "Candle evidence is advisory; risk and zero-hallucination gates still decide.",
+    }
+    return ok(redact_sensitive(payload), "Candle detail loaded.")

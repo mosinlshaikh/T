@@ -128,6 +128,7 @@ trading.
 
 - `GET /monitor/paper-live`
 - `GET /monitor/market-evidence`
+- `GET /monitor/candle-detail?symbol=BTCUSDT&timeframe=5m&limit=40`
 
 `/monitor/paper-live` is the main APK dashboard feed for public market data,
 paper-only decisions, paper positions, paper journal, and audit timeline.
@@ -135,6 +136,11 @@ paper-only decisions, paper positions, paper journal, and audit timeline.
 `/monitor/market-evidence` returns the latest candle, order book, whale, news,
 market structure, conflict, and missing-data evidence rows for APK display. It
 is evidence-only and returns `live_trading_enabled=false`.
+
+`/monitor/candle-detail` returns chart-ready OHLC candle rows plus trend, range,
+volume, and missing-data status for APK display. If candle data is unavailable,
+the response keeps `missing_data=["candles"]` and the decision rule remains
+`Missing candle data = SKIP`.
 
 Graceful shutdown:
 

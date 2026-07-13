@@ -92,6 +92,13 @@ object PreviewData {
                 symbol = "BTCUSDT",
                 source = "preview"
             )
+        ),
+        candleDetail = CandleDetailUi(
+            candleCount = 0,
+            trend = "unknown",
+            latestClose = "DEVELOPMENT PREVIEW DATA",
+            missingData = listOf("backend_connection", "candles"),
+            decisionRule = "Missing candle data = SKIP"
         )
     )
 }

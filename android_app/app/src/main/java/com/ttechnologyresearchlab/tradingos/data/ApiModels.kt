@@ -147,6 +147,15 @@ data class DashboardChartsUi(
     val averageConfidence: String = "0.00"
 )
 
+data class TimelineEventUi(
+    val timestamp: String = "unknown",
+    val type: String = "paper_event",
+    val title: String = "unknown",
+    val detail: String = "unknown / insufficient data",
+    val status: String = "paper",
+    val symbol: String = ""
+)
+
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
     val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
@@ -172,5 +181,8 @@ data class TradingOsUiState(
     val strategyCatalog: List<StrategyCatalogUi> = emptyList(),
     val paperSession: PaperSessionUi = PaperSessionUi(),
     val dashboardCharts: DashboardChartsUi = DashboardChartsUi(),
+    val decisionTimeline: List<TimelineEventUi> = emptyList(),
+    val tradeTimeline: List<TimelineEventUi> = emptyList(),
+    val auditTimeline: List<TimelineEventUi> = emptyList(),
     val shutdownState: String = "RUNNING"
 )

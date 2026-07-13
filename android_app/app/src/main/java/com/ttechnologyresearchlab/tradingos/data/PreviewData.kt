@@ -53,6 +53,34 @@ object PreviewData {
             holdCount = 3,
             lowConfidence = 3,
             averageConfidence = "0.43"
+        ),
+        decisionTimeline = listOf(
+            TimelineEventUi(
+                timestamp = "preview",
+                type = "ai_decision",
+                title = "SKIP BTCUSDT",
+                detail = "DEVELOPMENT PREVIEW DATA: missing evidence means no paper trade.",
+                status = "SKIP",
+                symbol = "BTCUSDT"
+            )
+        ),
+        tradeTimeline = listOf(
+            TimelineEventUi(
+                timestamp = "preview",
+                type = "paper_trade",
+                title = "No open paper trade",
+                detail = "DEVELOPMENT PREVIEW DATA: backend paper journal loads when connected.",
+                status = "PAPER_ONLY"
+            )
+        ),
+        auditTimeline = listOf(
+            TimelineEventUi(
+                timestamp = "preview",
+                type = "runtime_heartbeat",
+                title = "Runtime Heartbeat",
+                detail = "DEVELOPMENT PREVIEW DATA",
+                status = "paper"
+            )
         )
     )
 }

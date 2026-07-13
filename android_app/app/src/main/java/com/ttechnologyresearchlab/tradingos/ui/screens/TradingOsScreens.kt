@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.ttechnologyresearchlab.tradingos.R
 import com.ttechnologyresearchlab.tradingos.data.BackendConnectionState
+import com.ttechnologyresearchlab.tradingos.data.TimelineEventUi
 import com.ttechnologyresearchlab.tradingos.data.TradingOsUiState
 import com.ttechnologyresearchlab.tradingos.localization.AppLanguage
 import com.ttechnologyresearchlab.tradingos.localization.L
@@ -286,6 +287,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         }
         CurrentTradeWatchCard(state)
         DashboardChartsCard(state)
+        TimelineCard("Decision Timeline", state.decisionTimeline.takeLast(5))
         EvidenceDrillDownCard(state)
         PaperSessionCard(state)
         if (connected) {
@@ -491,6 +493,7 @@ fun TradeJournalScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Trade Journal", "Paper fills, partial exits, stop-loss and take-profit events only.") {
         CurrentTradeWatchCard(state)
         EvidenceDrillDownCard(state)
+        TimelineCard("Paper Trade Timeline", state.tradeTimeline)
         ListCard("Open trades", state.openTrades.map { "${it.symbol} ${it.side} ${it.status}" })
         ListCard("Closed trades", state.closedTrades.map { "${it.symbol} ${it.side} ${it.pnl}" })
         ListCard("Journal", state.journal.map { "${it.id} ${it.status} ${it.pnl}" })
@@ -503,6 +506,8 @@ fun TradeJournalScreen(state: TradingOsUiState) = ScrollScreen {
 fun ReportsScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Reports", "Analytics use persisted paper records only.") {
         DashboardChartsCard(state)
+        TimelineCard("Decision Timeline", state.decisionTimeline)
+        TimelineCard("Paper Trade Timeline", state.tradeTimeline)
         state.reports.forEach { report ->
             GlassCard {
                 Text(report.title, color = TradingGold, fontWeight = FontWeight.Bold)
@@ -556,6 +561,7 @@ fun AuditSafetyScreen(state: TradingOsUiState) = ScrollScreen {
         MetricCard("API readiness", state.botStatus.apiReadinessStatus)
         MetricCard("Config health", if (state.botStatus.liveTradingEnabled) "DANGER" else "SAFE")
         ListCard("Safety reasons", state.safetyScore.reasons)
+        TimelineCard("Audit Timeline", state.auditTimeline)
         ListCard("Audit timeline", state.auditEvents.map { "${it.timestamp} ${it.type}: ${it.detail}" })
         GlassCard {
             Text("Recommended action", color = TradingGold, fontWeight = FontWeight.Bold)
@@ -764,6 +770,30 @@ private fun ChartBar(label: String, value: Int, color: Color) {
             )
         }
     }
+}
+
+@Composable
+private fun TimelineCard(title: String, events: List<TimelineEventUi>) {
+    GlassCard {
+        Text(title, color = TradingGold, fontWeight = FontWeight.Bold)
+        if (events.isEmpty()) {
+            Text("unknown / insufficient data")
+        } else {
+            events.takeLast(8).forEach { event ->
+                KeyValue(event.title, event.status, timelineColor(event.status))
+                Text("${event.timestamp} | ${event.detail}")
+            }
+        }
+        Text("Paper/audit data only. No phone-side Binance execution.")
+    }
+}
+
+private fun timelineColor(status: String): Color = when {
+    status.contains("BUY", ignoreCase = true) -> SafeGreen
+    status.contains("SELL", ignoreCase = true) -> DangerRed
+    status.contains("SKIP", ignoreCase = true) -> TradingGold
+    status.contains("BLOCK", ignoreCase = true) -> DangerRed
+    else -> Color.White
 }
 
 @Composable

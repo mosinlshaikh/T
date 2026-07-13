@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from trading_os.analytics.safety_score import SafetyScoreEngine
 from trading_os.api.dependencies import get_backend
 from trading_os.api.framework import APIRouter
@@ -105,4 +107,112 @@ def dashboard_charts() -> dict[str, object]:
             "public_data_only": True,
         },
         "Dashboard chart data loaded.",
+    )
+
+
+def _timeline_item(
+    timestamp: str,
+    event_type: str,
+    title: str,
+    detail: str,
+    status: str = "paper",
+    symbol: str = "",
+) -> dict[str, str]:
+    return {
+        "timestamp": timestamp or "unknown",
+        "event_type": event_type,
+        "title": title,
+        "detail": detail or "unknown / insufficient data",
+        "status": status,
+        "symbol": symbol,
+    }
+
+
+def _decision_timeline(decisions: list[dict[str, Any]]) -> list[dict[str, str]]:
+    items: list[dict[str, str]] = []
+    for decision in decisions[-25:]:
+        action = str(decision.get("action", decision.get("final_decision", "SKIP"))).upper()
+        symbol = str(decision.get("symbol", ""))
+        confidence = decision.get("confidence", "0.00")
+        reason = str(decision.get("reason", "No reason persisted."))
+        timestamp = str(decision.get("timestamp", decision.get("created_at", "")))
+        items.append(
+            _timeline_item(
+                timestamp=timestamp,
+                event_type="ai_decision",
+                title=f"{action} {symbol}".strip(),
+                detail=f"confidence={confidence}; {reason}",
+                status=action,
+                symbol=symbol,
+            )
+        )
+    return items
+
+
+def _trade_timeline(journal: list[dict[str, Any]]) -> list[dict[str, str]]:
+    items: list[dict[str, str]] = []
+    for entry in journal[-25:]:
+        symbol = str(entry.get("symbol", ""))
+        status = str(entry.get("status", entry.get("event_type", "paper_trade_event")))
+        side = str(entry.get("side", entry.get("action", "PAPER")))
+        price = entry.get("price", entry.get("fill_price", "unknown"))
+        pnl = entry.get("realized_pnl", entry.get("unrealized_pnl", "0.00"))
+        timestamp = str(entry.get("timestamp", entry.get("created_at", "")))
+        items.append(
+            _timeline_item(
+                timestamp=timestamp,
+                event_type="paper_trade",
+                title=f"{side} {symbol}".strip(),
+                detail=f"status={status}; price={price}; pnl={pnl}",
+                status=status,
+                symbol=symbol,
+            )
+        )
+    return items
+
+
+def _audit_timeline(events: list[dict[str, Any]]) -> list[dict[str, str]]:
+    items: list[dict[str, str]] = []
+    for event in events[-25:]:
+        payload = event.get("payload", event)
+        if not isinstance(payload, dict):
+            payload = {}
+        event_type = str(event.get("event_type", payload.get("event_type", "audit_event")))
+        timestamp = str(event.get("created_at", payload.get("timestamp", "")))
+        detail = str(
+            payload.get("reason")
+            or payload.get("summary")
+            or payload.get("status")
+            or payload.get("message")
+            or "audit event"
+        )
+        items.append(
+            _timeline_item(
+                timestamp=timestamp,
+                event_type=event_type,
+                title=event_type.replace("_", " ").title(),
+                detail=detail,
+                status=str(payload.get("status", event_type)),
+                symbol=str(payload.get("symbol", "")),
+            )
+        )
+    return items
+
+
+@router.get("/timelines")
+def dashboard_timelines() -> dict[str, object]:
+    backend = get_backend()
+    decisions = backend.repository.list_ai_decisions(100)
+    journal = backend.repository.list_trade_journal(100)
+    audit_events = backend.repository.list_audit_events(100)
+    return ok(
+        {
+            "decision_timeline": _decision_timeline(decisions),
+            "trade_timeline": _trade_timeline(journal),
+            "audit_timeline": _audit_timeline(audit_events),
+            "live_trading_enabled": False,
+            "public_data_only": True,
+            "source": "persisted_paper_backend",
+        },
+        "Dashboard timelines loaded.",
     )

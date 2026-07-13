@@ -23,6 +23,7 @@ class TradingOsRepository(
                 val strategyCatalog = apiClient.getStrategyCatalog().toStrategyCatalog()
                 val paperSession = apiClient.getPaperSessionStatus().toPaperSession()
                 val dashboardCharts = apiClient.getDashboardCharts().toDashboardCharts()
+                val timelines = apiClient.getDashboardTimelines().toDashboardTimelines()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
@@ -39,6 +40,9 @@ class TradingOsRepository(
                     strategyCatalog = strategyCatalog.ifEmpty { PreviewData.state.strategyCatalog },
                     paperSession = paperSession,
                     dashboardCharts = dashboardCharts,
+                    decisionTimeline = timelines.decisionTimeline,
+                    tradeTimeline = timelines.tradeTimeline,
+                    auditTimeline = timelines.auditTimeline,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -127,6 +131,12 @@ class TradingOsRepository(
         val journal: List<TradeRow> = emptyList(),
         val auditEvents: List<AuditEventRow> = emptyList(),
         val portfolio: PortfolioSummary? = null
+    )
+
+    private data class DashboardTimelines(
+        val decisionTimeline: List<TimelineEventUi> = PreviewData.state.decisionTimeline,
+        val tradeTimeline: List<TimelineEventUi> = PreviewData.state.tradeTimeline,
+        val auditTimeline: List<TimelineEventUi> = PreviewData.state.auditTimeline
     )
 
     private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toMonitorState(): MonitorState {
@@ -303,6 +313,15 @@ class TradingOsRepository(
         )
     }
 
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toDashboardTimelines(): DashboardTimelines {
+        if (!ok) return DashboardTimelines()
+        return DashboardTimelines(
+            decisionTimeline = body.timelineRowsFromSection("decision_timeline").ifEmpty { PreviewData.state.decisionTimeline },
+            tradeTimeline = body.timelineRowsFromSection("trade_timeline").ifEmpty { PreviewData.state.tradeTimeline },
+            auditTimeline = body.timelineRowsFromSection("audit_timeline").ifEmpty { PreviewData.state.auditTimeline }
+        )
+    }
+
     private fun String.jsonObjectFieldValues(name: String): List<String> {
         val pattern = Regex(""""$name"\s*:\s*"([^"]+)"""")
         return pattern.findAll(this).map { it.groupValues[1] }.toList()
@@ -342,6 +361,21 @@ class TradingOsRepository(
                 detail = chunk.jsonString("reason") ?: chunk.jsonString("summary") ?: chunk.jsonString("status") ?: "paper monitor event"
             )
         }.toList().takeLast(20)
+    }
+
+    private fun String.timelineRowsFromSection(sectionName: String): List<TimelineEventUi> {
+        val section = arraySection(sectionName)
+        if (section.isBlank()) return emptyList()
+        return section.objectChunks().map { chunk ->
+            TimelineEventUi(
+                timestamp = chunk.jsonString("timestamp") ?: "unknown",
+                type = chunk.jsonString("event_type") ?: chunk.jsonString("type") ?: "paper_event",
+                title = chunk.jsonString("title") ?: "paper event",
+                detail = chunk.jsonString("detail") ?: "unknown / insufficient data",
+                status = chunk.jsonString("status") ?: "paper",
+                symbol = chunk.jsonString("symbol") ?: ""
+            )
+        }.takeLast(20)
     }
 
     private fun String.section(name: String): String {

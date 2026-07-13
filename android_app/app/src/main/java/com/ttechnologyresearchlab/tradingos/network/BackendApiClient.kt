@@ -55,6 +55,7 @@ class BackendApiClient(
     suspend fun getStrategyReport() = get("/reports/strategies")
     suspend fun getRuntimeReport() = get("/reports/runtime")
     suspend fun getDashboardCharts() = get("/reports/dashboard-charts")
+    suspend fun getDashboardTimelines() = get("/reports/timelines")
     suspend fun getLocalAiLearning() = get("/learning/local-ai")
     suspend fun getMarketKingScore() = get("/learning/market-king-score")
     suspend fun getLearningRecommendations() = get("/learning/recommendations")

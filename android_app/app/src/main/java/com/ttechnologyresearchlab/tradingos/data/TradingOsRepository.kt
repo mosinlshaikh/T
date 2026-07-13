@@ -21,6 +21,7 @@ class TradingOsRepository(
                 val readinessResult = apiClient.getRealWorldReadiness()
                 val safetyScore = readinessResult.toSafetyScore()
                 val strategyCatalog = apiClient.getStrategyCatalog().toStrategyCatalog()
+                val paperSession = apiClient.getPaperSessionStatus().toPaperSession()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
@@ -35,6 +36,7 @@ class TradingOsRepository(
                     portfolio = monitorState.portfolio ?: PreviewData.state.portfolio,
                     safetyScore = safetyScore,
                     strategyCatalog = strategyCatalog.ifEmpty { PreviewData.state.strategyCatalog },
+                    paperSession = paperSession,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -61,6 +63,8 @@ class TradingOsRepository(
     suspend fun pauseNewTrades() = runCatching { apiClient.pauseNewTrades() }
     suspend fun resumePaperTrades() = runCatching { apiClient.resumePaperTrades() }
     suspend fun runLiveMarketPaperDemo() = runCatching { apiClient.runLiveMarketPaperDemo() }
+    suspend fun startPaperSession() = runCatching { apiClient.startPaperSession() }
+    suspend fun stopPaperSession() = runCatching { apiClient.stopPaperSession() }
     suspend fun refreshLearningSummary() = runCatching { apiClient.getLocalAiLearning() }
 
     suspend fun validateLicense(licenseKey: String): LicenseStatusUi {
@@ -263,6 +267,24 @@ class TradingOsRepository(
                 safetyRules = chunk.jsonArrayItems("safety_rules")
             )
         }
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPaperSession(): PaperSessionUi {
+        if (!ok) return PreviewData.state.paperSession
+        val best = body.section("best_candidate")
+        return PaperSessionUi(
+            running = body.jsonBoolean("running") ?: false,
+            sessionId = body.jsonString("session_id") ?: "",
+            symbols = body.jsonArrayItems("symbols"),
+            timeframe = body.jsonString("timeframe") ?: "5m",
+            intervalSeconds = body.jsonNumber("interval_seconds") ?: "300",
+            scanCount = body.jsonNumber("scan_count")?.toIntOrNull() ?: 0,
+            bestCandidate = best.jsonString("symbol") ?: "unknown",
+            bestAction = best.jsonString("action") ?: "unknown",
+            bestConfidence = best.jsonNumber("confidence") ?: "0.00",
+            lastReason = best.jsonString("reason") ?: body.jsonString("last_error") ?: "No paper session scan yet.",
+            liveTradingEnabled = body.jsonBoolean("live_trading_enabled") ?: false
+        )
     }
 
     private fun String.jsonObjectFieldValues(name: String): List<String> {

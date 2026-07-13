@@ -282,6 +282,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
             Text(state.latestDecision.reason)
         }
         CurrentTradeWatchCard(state)
+        PaperSessionCard(state)
         if (connected) {
             EmergencyStopButton(emergencyStop)
         } else {
@@ -360,6 +361,8 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
             QuietButton("Pause New Trades", viewModel::pauseNewTrades)
             QuietButton("Resume Paper Trades", viewModel::resumePaperTrades)
             GoldButton("Run Live-Market Paper Demo", viewModel::runLiveMarketPaperDemo)
+            GoldButton("Start 24x7 Paper Session", viewModel::startPaperSession)
+            QuietButton("Stop Paper Session", viewModel::stopPaperSession)
         } else {
             MetricCard("Controls Disabled", "Backend offline", "Reconnect before sending control commands.")
         }
@@ -373,6 +376,7 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
             Text("Graceful stop blocks new trades immediately, keeps active paper trades managed, saves logs, then stops after safe state.")
             Text("Live-market paper demo reads public market data only and never places Binance orders.")
         }
+        PaperSessionCard(state)
     }
 }
 
@@ -679,6 +683,23 @@ private fun CurrentTradeWatchCard(state: TradingOsUiState) {
         Text("- Structure: ${state.marketIntelligence.marketStructureSignal}")
         Text("Missing / blocked reasons", color = TradingGold, fontWeight = FontWeight.Bold)
         state.latestDecision.missingData.ifEmpty { listOf("none") }.forEach { Text("- $it") }
+    }
+}
+
+@Composable
+private fun PaperSessionCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("24x7 Paper Session", color = TradingGold, fontWeight = FontWeight.Bold)
+        KeyValue("Running", state.paperSession.running.toString(), if (state.paperSession.running) SafeGreen else TradingGold)
+        KeyValue("Symbols", state.paperSession.symbols.joinToString().ifBlank { "not configured" })
+        KeyValue("Timeframe", state.paperSession.timeframe)
+        KeyValue("Interval", "${state.paperSession.intervalSeconds}s")
+        KeyValue("Scan count", state.paperSession.scanCount.toString())
+        KeyValue("Best candidate", state.paperSession.bestCandidate, TradingGold)
+        KeyValue("Action", state.paperSession.bestAction)
+        KeyValue("Confidence", state.paperSession.bestConfidence)
+        Text(state.paperSession.lastReason)
+        Text("Paper mode only. Phone does not place Binance orders.")
     }
 }
 

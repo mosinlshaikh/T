@@ -40,6 +40,14 @@ object PreviewData {
                 "DEVELOPMENT PREVIEW DATA: combines evidence only; no live execution.",
                 listOf("candle_signal", "order_book_signal", "risk_result")
             )
+        ),
+        paperSession = PaperSessionUi(
+            running = false,
+            symbols = listOf("BTCUSDT", "ETHUSDT"),
+            scanCount = 0,
+            bestCandidate = "DEVELOPMENT PREVIEW DATA",
+            bestAction = "HOLD",
+            lastReason = "Backend paper session status loads when connected."
         )
     )
 }

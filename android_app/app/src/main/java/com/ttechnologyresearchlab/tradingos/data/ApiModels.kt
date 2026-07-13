@@ -122,6 +122,20 @@ data class StrategyCatalogUi(
     val safetyRules: List<String> = emptyList()
 )
 
+data class PaperSessionUi(
+    val running: Boolean = false,
+    val sessionId: String = "",
+    val symbols: List<String> = emptyList(),
+    val timeframe: String = "5m",
+    val intervalSeconds: String = "300",
+    val scanCount: Int = 0,
+    val bestCandidate: String = "unknown",
+    val bestAction: String = "unknown",
+    val bestConfidence: String = "0.00",
+    val lastReason: String = "No paper session scan yet.",
+    val liveTradingEnabled: Boolean = false
+)
+
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
     val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
@@ -145,5 +159,6 @@ data class TradingOsUiState(
     val settings: AppSettingsUi = AppSettingsUi(),
     val licenseStatus: LicenseStatusUi = LicenseStatusUi(),
     val strategyCatalog: List<StrategyCatalogUi> = emptyList(),
+    val paperSession: PaperSessionUi = PaperSessionUi(),
     val shutdownState: String = "RUNNING"
 )

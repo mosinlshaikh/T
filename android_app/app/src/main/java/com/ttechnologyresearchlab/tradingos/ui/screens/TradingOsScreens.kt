@@ -282,6 +282,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
             Text(state.latestDecision.reason)
         }
         CurrentTradeWatchCard(state)
+        EvidenceDrillDownCard(state)
         PaperSessionCard(state)
         if (connected) {
             EmergencyStopButton(emergencyStop)
@@ -339,6 +340,7 @@ fun BotBrainScreen(state: TradingOsUiState) = ScrollScreen {
         MetricCard("Latest AI Decision", state.latestDecision.action)
         MetricCard("Confidence", state.latestDecision.confidence)
         IntelligenceCard(state)
+        EvidenceDrillDownCard(state)
         GlassCard {
             KeyValue("Zero hallucination", state.latestDecision.zeroHallucinationVerified.toString())
             KeyValue("Risk result", state.latestDecision.riskStatus)
@@ -465,6 +467,7 @@ fun DecisionsScreen(state: TradingOsUiState) = ScrollScreen {
             KeyValue("Risk", state.latestDecision.riskStatus)
         }
         ListCard("Evidence", state.latestDecision.evidence)
+        EvidenceDrillDownCard(state)
         GlassCard {
             Text("Candle / Whale / News Detail", color = TradingGold, fontWeight = FontWeight.Bold)
             KeyValue("Candle", state.marketIntelligence.candleSignal)
@@ -483,6 +486,7 @@ fun DecisionsScreen(state: TradingOsUiState) = ScrollScreen {
 fun TradeJournalScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Trade Journal", "Paper fills, partial exits, stop-loss and take-profit events only.") {
         CurrentTradeWatchCard(state)
+        EvidenceDrillDownCard(state)
         ListCard("Open trades", state.openTrades.map { "${it.symbol} ${it.side} ${it.status}" })
         ListCard("Closed trades", state.closedTrades.map { "${it.symbol} ${it.side} ${it.pnl}" })
         ListCard("Journal", state.journal.map { "${it.id} ${it.status} ${it.pnl}" })
@@ -683,6 +687,63 @@ private fun CurrentTradeWatchCard(state: TradingOsUiState) {
         Text("- Structure: ${state.marketIntelligence.marketStructureSignal}")
         Text("Missing / blocked reasons", color = TradingGold, fontWeight = FontWeight.Bold)
         state.latestDecision.missingData.ifEmpty { listOf("none") }.forEach { Text("- $it") }
+    }
+}
+
+@Composable
+private fun EvidenceDrillDownCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("Trade / Candidate Drill-Down", color = TradingGold, fontWeight = FontWeight.Bold)
+        KeyValue("Candidate", state.paperSession.bestCandidate, TradingGold)
+        KeyValue("Candidate action", state.paperSession.bestAction)
+        KeyValue("Candidate confidence", state.paperSession.bestConfidence)
+        Text(state.paperSession.lastReason)
+        Text("Decision layers", color = TradingGold, fontWeight = FontWeight.Bold)
+        DrillDownRow("AI", state.latestDecision.action, state.latestDecision.reason)
+        DrillDownRow("Candle", signalStatus(state.marketIntelligence.candleSignal), state.marketIntelligence.candleSignal)
+        DrillDownRow("Order book", signalStatus(state.marketIntelligence.orderBookSignal), state.marketIntelligence.orderBookSignal)
+        DrillDownRow("Whale", signalStatus(state.marketIntelligence.whaleSignal), state.marketIntelligence.whaleSignal)
+        DrillDownRow("News", signalStatus(state.marketIntelligence.newsRiskSignal), state.marketIntelligence.newsRiskSignal)
+        DrillDownRow("Structure", signalStatus(state.marketIntelligence.marketStructureSignal), state.marketIntelligence.marketStructureSignal)
+        DrillDownRow("Risk", state.latestDecision.riskStatus, "Risk approval/rejection is backend controlled.")
+        Text("Evidence", color = TradingGold, fontWeight = FontWeight.Bold)
+        state.latestDecision.evidence.ifEmpty { listOf("unknown / insufficient data") }.take(6).forEach {
+            Text("- $it")
+        }
+        if (state.latestDecision.conflicts.isNotEmpty()) {
+            Text("Conflicts", color = TradingGold, fontWeight = FontWeight.Bold)
+            state.latestDecision.conflicts.take(6).forEach { Text("- $it") }
+        }
+        if (state.latestDecision.missingData.isNotEmpty()) {
+            Text("Missing data", color = TradingGold, fontWeight = FontWeight.Bold)
+            state.latestDecision.missingData.take(6).forEach { Text("- $it") }
+        }
+        Text("Rule: missing data or strong conflict means HOLD/SKIP. Phone never executes Binance orders.")
+    }
+}
+
+@Composable
+private fun DrillDownRow(layer: String, status: String, detail: String) {
+    GlassCard {
+        KeyValue(layer, status, when {
+            status.contains("BUY", ignoreCase = true) -> SafeGreen
+            status.contains("SELL", ignoreCase = true) -> DangerRed
+            status.contains("SKIP", ignoreCase = true) -> TradingGold
+            status.contains("unknown", ignoreCase = true) -> Color.White
+            else -> TradingGold
+        })
+        Text(detail.ifBlank { "unknown / insufficient data" })
+    }
+}
+
+private fun signalStatus(value: String): String {
+    val upper = value.uppercase()
+    return when {
+        upper.contains("BUY") || upper.contains("BULL") || upper.contains("UPTREND") -> "BULLISH / WATCH"
+        upper.contains("SELL") || upper.contains("BEAR") || upper.contains("DOWNTREND") -> "BEARISH / WATCH"
+        upper.contains("RISK") || upper.contains("REGULATORY") || upper.contains("EMERGENCY") -> "RISK / SKIP"
+        upper.contains("UNKNOWN") || upper.isBlank() -> "unknown"
+        else -> "NEUTRAL / HOLD"
     }
 }
 

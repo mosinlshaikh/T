@@ -49,6 +49,7 @@ class TradingOSConfig:
     runtime_mode: RuntimeMode = RuntimeMode.PAPER
     default_symbol: str = "BTCUSDT"
     enable_live_trading: bool = False
+    manual_live_unlock: bool = False
     allow_withdraw_permissions: bool = False
     require_verified_evidence: bool = True
     database_url: str = "sqlite:///data/trading_os.sqlite3"
@@ -73,6 +74,7 @@ class TradingOSConfig:
             runtime_mode=RuntimeMode(mode),
             default_symbol=os.getenv("T_DEFAULT_SYMBOL", "BTCUSDT").upper(),
             enable_live_trading=False,
+            manual_live_unlock=_env_bool(os.getenv("MANUAL_LIVE_UNLOCK"), False),
             allow_withdraw_permissions=False,
             require_verified_evidence=True,
             database_url=os.getenv("T_DATABASE_URL", "sqlite:///data/trading_os.sqlite3"),
@@ -84,6 +86,8 @@ class TradingOSConfig:
     def assert_safe(self) -> None:
         if self.enable_live_trading:
             raise RuntimeError("Live trading is disabled in this backend foundation.")
+        if self.manual_live_unlock:
+            raise RuntimeError("Manual live unlock is disabled in this backend foundation.")
         if self.allow_withdraw_permissions:
             raise RuntimeError("Withdraw permissions are not supported.")
 
@@ -92,6 +96,8 @@ class TradingOSConfig:
         warnings: list[str] = []
         if self.enable_live_trading:
             errors.append("LIVE_TRADING_ENABLED must remain false.")
+        if self.manual_live_unlock:
+            errors.append("MANUAL_LIVE_UNLOCK must remain false.")
         if self.allow_withdraw_permissions:
             errors.append("BINANCE_WITHDRAWALS_SUPPORTED must remain false.")
         if self.runtime_mode not in {
@@ -111,6 +117,7 @@ class TradingOSConfig:
             {
                 "TRADING_MODE": self.runtime_mode.value,
                 "LIVE_TRADING_ENABLED": self.enable_live_trading,
+                "MANUAL_LIVE_UNLOCK": self.manual_live_unlock,
                 "BINANCE_WITHDRAWALS_SUPPORTED": self.allow_withdraw_permissions,
                 "DEFAULT_SYMBOL": self.default_symbol,
                 "DATABASE_URL": self.database_url,
@@ -125,6 +132,7 @@ class TradingOSConfig:
         return {
             "runtime_mode": self.runtime_mode.value,
             "live_trading_enabled": self.enable_live_trading,
+            "manual_live_unlock": self.manual_live_unlock,
             "withdrawals_supported": self.allow_withdraw_permissions,
             "config_valid": validation.valid,
             "errors": validation.errors,

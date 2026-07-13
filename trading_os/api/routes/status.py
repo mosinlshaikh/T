@@ -3,6 +3,8 @@ from __future__ import annotations
 from trading_os.api.dependencies import get_backend, latest_audit_events, latest_decisions
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import ok
+from trading_os.learning.local_ai_engine import LocalAIMarketKingEngine
+from trading_os.runtime.real_world_readiness import RealWorldReadinessGate, report_to_dict
 
 router = APIRouter(prefix="/status", tags=["status"])
 
@@ -68,3 +70,20 @@ def shutdown_status() -> dict[str, object]:
 @router.get("/runtime")
 def runtime_status() -> dict[str, object]:
     return ok(_runtime_payload(), "Runtime status loaded.")
+
+
+@router.get("/real-world-readiness")
+def real_world_readiness() -> dict[str, object]:
+    backend = get_backend()
+    gate = RealWorldReadinessGate(
+        config=backend.config,
+        vault=backend.api_vault,
+        permission_verifier=backend.permission_verifier,
+        risk_engine=backend.risk_engine,
+        kill_switch=backend.kill_switch,
+        local_ai=LocalAIMarketKingEngine(backend.repository),
+    )
+    return ok(
+        report_to_dict(gate.evaluate()),
+        "Real-world readiness report loaded. Real-money execution remains blocked.",
+    )

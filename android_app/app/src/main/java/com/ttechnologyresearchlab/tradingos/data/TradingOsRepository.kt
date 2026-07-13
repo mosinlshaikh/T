@@ -18,6 +18,8 @@ class TradingOsRepository(
                 val openTrades = openPositionsResult.toTradeRows()
                 val monitorResult = apiClient.getPaperLiveMonitor()
                 val monitorState = monitorResult.toMonitorState()
+                val readinessResult = apiClient.getRealWorldReadiness()
+                val safetyScore = readinessResult.toSafetyScore()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
@@ -30,6 +32,7 @@ class TradingOsRepository(
                     journal = monitorState.journal,
                     auditEvents = monitorState.auditEvents,
                     portfolio = monitorState.portfolio ?: PreviewData.state.portfolio,
+                    safetyScore = safetyScore,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -56,6 +59,7 @@ class TradingOsRepository(
     suspend fun pauseNewTrades() = runCatching { apiClient.pauseNewTrades() }
     suspend fun resumePaperTrades() = runCatching { apiClient.resumePaperTrades() }
     suspend fun runLiveMarketPaperDemo() = runCatching { apiClient.runLiveMarketPaperDemo() }
+    suspend fun refreshLearningSummary() = runCatching { apiClient.getLocalAiLearning() }
 
     suspend fun validateLicense(licenseKey: String): LicenseStatusUi {
         val result = apiClient.validateLicense(licenseKey)
@@ -207,6 +211,38 @@ class TradingOsRepository(
                 status = status,
                 pnl = pnl
             )
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toSafetyScore(): SafetyScoreUi {
+        if (!ok) {
+            return PreviewData.state.safetyScore.copy(
+                level = "UNKNOWN",
+                reasons = listOf(safeError.ifBlank { "Backend readiness unavailable." })
+            )
+        }
+        val readyForPaper = body.jsonBoolean("ready_for_paper") ?: false
+        val readyForRealMoney = body.jsonBoolean("ready_for_real_money") ?: false
+        val liveExecution = body.jsonBoolean("live_execution_available") ?: false
+        val score = when {
+            readyForRealMoney || liveExecution -> 15
+            readyForPaper -> 92
+            else -> 55
+        }
+        val level = when {
+            readyForRealMoney || liveExecution -> "DANGER"
+            readyForPaper -> "SAFE"
+            else -> "CAUTION"
+        }
+        val reasons = body.jsonArrayItems("blockers").ifEmpty {
+            listOf("Paper readiness verified", "Live execution unavailable", "Withdrawals unsupported")
+        }
+        return SafetyScoreUi(
+            score = score,
+            level = level,
+            reasons = reasons.take(6),
+            recommendedAction = body.jsonArrayItems("next_steps").firstOrNull()
+                ?: "Continue paper-only monitoring."
         )
     }
 

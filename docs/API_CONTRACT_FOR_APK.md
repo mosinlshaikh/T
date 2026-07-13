@@ -81,6 +81,7 @@ generation routes, Binance credentials, or direct Binance execution.
 - `GET /status/binance-readiness`
 - `GET /status/shutdown`
 - `GET /status/runtime`
+- `GET /status/real-world-readiness`
 
 Example:
 
@@ -99,6 +100,11 @@ Example:
 ```
 
 Vault status reports availability only. It never returns API keys or secrets.
+
+`/status/real-world-readiness` reports paper readiness, local AI evidence
+readiness, risk guard status, kill-switch state, and live-execution blockers.
+It must return `ready_for_real_money=false` and
+`live_execution_available=false` in this build.
 
 ## Control Endpoints
 

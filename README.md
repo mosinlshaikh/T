@@ -142,6 +142,7 @@ T is useful for developers, researchers, students, analysts, and builders who wa
 | Deployment Guide            | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)                       |
 | Go/Rust Extension Plan      | [docs/GO_RUST_EXTENSION_PLAN.md](docs/GO_RUST_EXTENSION_PLAN.md)           |
 | Local AI Learning Engine    | [docs/LOCAL_AI_LEARNING_ENGINE.md](docs/LOCAL_AI_LEARNING_ENGINE.md)       |
+| Binance Strategy Ecosystem  | [docs/BINANCE_STRATEGY_ECOSYSTEM.md](docs/BINANCE_STRATEGY_ECOSYSTEM.md)   |
 
 Generate a local paper report:
 

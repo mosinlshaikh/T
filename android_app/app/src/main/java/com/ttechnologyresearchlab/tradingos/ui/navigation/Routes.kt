@@ -6,6 +6,7 @@ enum class AppRoute(val title: String) {
     SetupWizard("Setup"),
     Dashboard("Dashboard"),
     Market("Intelligence"),
+    BinanceEcosystem("Binance Eco"),
     BotBrain("Brain"),
     Control("Control"),
     Portfolio("Portfolio"),

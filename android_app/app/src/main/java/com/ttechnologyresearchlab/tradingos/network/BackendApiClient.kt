@@ -66,6 +66,7 @@ class BackendApiClient(
     suspend fun runLiveMarketPaperDemo() = post("/control/run-live-market-paper-demo")
     suspend fun getRiskSettings() = get("/settings/risk")
     suspend fun getStrategySettings() = get("/settings/strategy")
+    suspend fun getStrategyCatalog() = get("/settings/strategy-catalog")
     suspend fun getSecuritySettings() = get("/settings/security")
     suspend fun getNotificationSettings() = get("/settings/notifications")
     suspend fun validateLicense(licenseKey: String) = postJson(

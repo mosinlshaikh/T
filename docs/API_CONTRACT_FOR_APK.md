@@ -194,6 +194,7 @@ Audit routes read persisted audit events when available.
 - `PUT /settings/risk`
 - `GET /settings/strategy`
 - `PUT /settings/strategy`
+- `GET /settings/strategy-catalog`
 - `GET /settings/security`
 - `GET /settings/notifications`
 - `PUT /settings/notifications`
@@ -201,6 +202,10 @@ Audit routes read persisted audit events when available.
 Risk settings enforce safe limits. Stop-loss and take-profit remain required.
 
 Settings updates are persisted locally and continue to enforce paper mode, live trading disabled, withdrawals disabled, and margin/futures disabled.
+
+`/settings/strategy-catalog` returns the Binance Spot paper strategy ecosystem:
+candle/structure, order book, volume, whale, news, risk, local AI, and master
+combiner modules. It is advisory only and does not enable live execution.
 
 Security settings cannot:
 

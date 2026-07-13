@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from trading_os.api.dependencies import get_backend
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import ok
+from trading_os.strategies.catalog import strategy_catalog_payload
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -72,6 +73,11 @@ def get_strategy() -> dict[str, object]:
         "settings": backend.repository.get_settings("strategy") or _strategy_settings,
     }
     return ok(data, "Strategy settings loaded.")
+
+
+@router.get("/strategy-catalog")
+def get_strategy_catalog() -> dict[str, object]:
+    return ok(strategy_catalog_payload(), "Binance Spot paper strategy catalog loaded.")
 
 
 @router.put("/strategy")

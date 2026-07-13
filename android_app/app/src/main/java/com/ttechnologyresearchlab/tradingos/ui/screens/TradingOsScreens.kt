@@ -84,6 +84,7 @@ fun TradingOsApp(viewModel: TradingOsViewModel) {
         AppRoute.SetupWizard,
         AppRoute.Dashboard,
         AppRoute.Market,
+        AppRoute.BinanceEcosystem,
         AppRoute.BotBrain,
         AppRoute.Control,
         AppRoute.Portfolio,
@@ -189,6 +190,7 @@ fun TradingOsApp(viewModel: TradingOsViewModel) {
                 AppRoute.SetupWizard -> ApiSetupWizardScreen(state, viewModel::refresh) { route = AppRoute.Dashboard }
                 AppRoute.Dashboard -> DashboardScreen(state, viewModel::emergencyStop)
                 AppRoute.Market -> MarketIntelligenceScreen(state)
+                AppRoute.BinanceEcosystem -> BinanceEcosystemScreen(state)
                 AppRoute.BotBrain -> BotBrainScreen(state)
                 AppRoute.Control -> TradeControlScreen(state, viewModel)
                 AppRoute.Portfolio -> PortfolioScreen(state)
@@ -212,6 +214,7 @@ private fun iconFor(route: AppRoute): ImageVector = when (route) {
     AppRoute.SetupWizard -> Icons.Outlined.Tune
     AppRoute.Dashboard -> Icons.Outlined.Dashboard
     AppRoute.Market -> Icons.Outlined.Timeline
+    AppRoute.BinanceEcosystem -> Icons.Outlined.Assessment
     AppRoute.BotBrain -> Icons.Outlined.Psychology
     AppRoute.Control -> Icons.Outlined.Memory
     AppRoute.Portfolio -> Icons.Outlined.PieChart
@@ -293,6 +296,75 @@ fun MarketIntelligenceScreen(state: TradingOsUiState) = ScrollScreen {
         IntelligenceCard(state)
         ListCard("Missing data", state.marketIntelligence.missingData)
         ListCard("Conflicts", state.marketIntelligence.conflicts.ifEmpty { listOf("none") })
+    }
+}
+
+@Composable
+fun BinanceEcosystemScreen(state: TradingOsUiState) = ScrollScreen {
+    ScreenShell("Binance Ecosystem", "Advanced Spot strategy map. Paper/advisory only.") {
+        BackendStatusBanner(state) {}
+        MetricCard("Exchange scope", "Binance Spot", "No margin / futures / withdrawals")
+        MetricCard("Strategy count", "15", "Evidence-first modules")
+        MetricCard("Live execution", "BLOCKED", "Backend controls paper intents only")
+        ListCard(
+            "Master rules",
+            listOf(
+                "No Data = No Trade",
+                "No Proof = No Decision",
+                "Conflicts = HOLD/SKIP",
+                "Risk unsafe = SKIP",
+                "Low confidence = SKIP",
+                "External AI key required: no",
+                "Phone never places Binance orders"
+            )
+        )
+        StrategyFamilyCard(
+            "Candle / Structure",
+            listOf(
+                "MULTI_TIMEFRAME_TREND_ALIGNMENT",
+                "BREAKOUT_RETEST_CONFIRMATION",
+                "REVERSAL_WICK_REJECTION",
+                "SUPPORT_RESISTANCE_ZONE_REACTION"
+            )
+        )
+        StrategyFamilyCard(
+            "Order Book / Liquidity",
+            listOf(
+                "ORDER_BOOK_IMBALANCE_SCALPER",
+                "LIQUIDITY_WALL_FAKEOUT_FILTER"
+            )
+        )
+        StrategyFamilyCard(
+            "Whale / Volume",
+            listOf(
+                "VOLUME_SPIKE_WITH_STRUCTURE",
+                "WHALE_TRADE_CONFIRMATION",
+                "FAKE_WHALE_MOVEMENT_FILTER"
+            )
+        )
+        StrategyFamilyCard(
+            "News / Exchange Risk",
+            listOf(
+                "NEWS_RISK_EMERGENCY_FILTER",
+                "BINANCE_ANNOUNCEMENT_WATCH"
+            )
+        )
+        StrategyFamilyCard(
+            "Risk / Local AI / Master Combiner",
+            listOf(
+                "VOLATILITY_REGIME_GUARD",
+                "RISK_FIRST_POSITION_FILTER",
+                "LOCAL_AI_CONFIDENCE_CALIBRATION",
+                "MULTI_FACTOR_MASTER_COMBINER"
+            )
+        )
+        GlassCard {
+            Text("Current bot behavior", color = TradingGold, fontWeight = FontWeight.Bold)
+            Text("Decision: ${state.latestDecision.action}")
+            Text("Confidence: ${state.latestDecision.confidence}")
+            Text("Reason: ${state.latestDecision.reason}")
+            Text("Ye screen strategy ecosystem dikhaati hai. Actual paper decision backend evidence aur risk gate se hi aata hai.")
+        }
     }
 }
 
@@ -681,6 +753,17 @@ private fun NotificationSettingsPanel() {
                 "Telegram / WhatsApp / Email adapters remain backend placeholders"
             )
         )
+    }
+}
+
+@Composable
+private fun StrategyFamilyCard(title: String, strategies: List<String>) {
+    GlassCard {
+        Text(title, color = TradingGold, fontWeight = FontWeight.Bold)
+        strategies.forEach { strategy ->
+            Text("- $strategy")
+        }
+        Text("Status: PAPER_ADVISORY | Evidence required | No live execution")
     }
 }
 

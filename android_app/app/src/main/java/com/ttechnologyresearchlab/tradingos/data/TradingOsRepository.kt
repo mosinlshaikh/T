@@ -362,6 +362,7 @@ class TradingOsRepository(
             rangeHigh = body.jsonNumber("range_high") ?: body.jsonString("range_high") ?: "unknown",
             rangeLow = body.jsonNumber("range_low") ?: body.jsonString("range_low") ?: "unknown",
             volumeTotal = body.jsonNumber("volume_total") ?: "0.00",
+            source = body.jsonString("source") ?: "unknown",
             missingData = body.jsonArrayItems("missing_data"),
             decisionRule = body.jsonString("decision_rule") ?: "Missing candle data = SKIP",
             sparklineCloses = closeValues

@@ -70,6 +70,31 @@ class PaperAutoTrader:
 
         self.backend.market_data.ingest_rest_snapshot(bundle.snapshot)
         self.backend.candle_engine.collect(bundle.candles)
+        self.backend.repository.save_market_intelligence_snapshot(
+            {
+                "type": "candle_archive",
+                "symbol": bundle.symbol,
+                "timeframe": bundle.timeframe.value,
+                "source": "binance_public_klines",
+                "public_data_only": True,
+                "live_trading_enabled": False,
+                "timestamp": utc_now(),
+                "candles": [
+                    {
+                        "symbol": candle.symbol,
+                        "timeframe": candle.timeframe.value,
+                        "open": candle.open,
+                        "high": candle.high,
+                        "low": candle.low,
+                        "close": candle.close,
+                        "volume": candle.volume,
+                        "start_time_ms": candle.start_time_ms,
+                        "end_time_ms": candle.end_time_ms,
+                    }
+                    for candle in bundle.candles[-120:]
+                ],
+            }
+        )
         self.backend.order_book_engine.update_snapshot(bundle.order_book)
         self.backend.audit_logger.log_market_snapshot(
             {

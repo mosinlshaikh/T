@@ -6,6 +6,8 @@ from typing import Any
 from trading_os.api.dependencies import get_backend, latest_audit_events, latest_decisions
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import ok, redact_sensitive
+from trading_os.market.candle_engine import Candle
+from trading_os.market.timeframes import normalize_timeframe
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
 
@@ -166,6 +168,42 @@ def _safe_float(value: float) -> float:
     return round(float(value), 8)
 
 
+def _candle_from_payload(payload: dict[str, Any]) -> Candle | None:
+    try:
+        return Candle(
+            symbol=str(payload["symbol"]).upper(),
+            timeframe=normalize_timeframe(str(payload["timeframe"])),
+            open=float(payload["open"]),
+            high=float(payload["high"]),
+            low=float(payload["low"]),
+            close=float(payload["close"]),
+            volume=float(payload.get("volume", 0.0) or 0.0),
+            start_time_ms=int(payload.get("start_time_ms", 0) or 0),
+            end_time_ms=int(payload.get("end_time_ms", 0) or 0),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _persisted_candles(backend: Any, symbol: str, timeframe: str, limit: int) -> list[Candle]:
+    snapshots = backend.repository.list_market_intelligence_snapshots(limit=200)
+    for snapshot in reversed(snapshots):
+        if snapshot.get("type") != "candle_archive":
+            continue
+        if str(snapshot.get("symbol", "")).upper() != symbol.upper():
+            continue
+        if str(snapshot.get("timeframe", "")).lower() != str(timeframe).lower():
+            continue
+        candles = [
+            candle
+            for candle in (_candle_from_payload(item) for item in snapshot.get("candles", []))
+            if candle is not None
+        ]
+        if candles:
+            return candles[-limit:]
+    return []
+
+
 @router.get("/candle-detail")
 def candle_detail(
     symbol: str = "BTCUSDT", timeframe: str = "5m", limit: int = 40
@@ -173,6 +211,10 @@ def candle_detail(
     backend = get_backend()
     safe_limit = min(max(int(limit), 5), 100)
     candles = backend.candle_engine.by_timeframe(symbol.upper(), timeframe)[-safe_limit:]
+    source = "memory_candle_engine"
+    if not candles:
+        candles = _persisted_candles(backend, symbol.upper(), timeframe, safe_limit)
+        source = "persisted_candle_archive" if candles else "none"
     if not candles:
         payload = {
             "symbol": symbol.upper(),
@@ -184,6 +226,7 @@ def candle_detail(
             "range_low": None,
             "volume_total": 0.0,
             "missing_data": ["candles"],
+            "source": source,
             "live_trading_enabled": False,
             "public_data_only": True,
             "decision_rule": "Missing candle data = SKIP",
@@ -220,6 +263,7 @@ def candle_detail(
         "range_low": _safe_float(range_low),
         "volume_total": _safe_float(volume_total),
         "missing_data": [],
+        "source": source,
         "live_trading_enabled": False,
         "public_data_only": True,
         "decision_rule": "Candle evidence is advisory; risk and zero-hallucination gates still decide.",

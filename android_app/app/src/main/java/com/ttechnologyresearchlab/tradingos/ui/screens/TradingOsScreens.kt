@@ -830,6 +830,7 @@ private fun CandleDetailCard(candle: CandleDetailUi) {
         KeyValue("Range low", candle.rangeLow)
         KeyValue("Volume total", candle.volumeTotal)
         KeyValue("Candles", candle.candleCount.toString())
+        KeyValue("Source", candle.source)
         if (candle.sparklineCloses.isNotEmpty()) {
             Text("Close trail", color = TradingGold, fontWeight = FontWeight.Bold)
             Text(candle.sparklineCloses.joinToString(" -> "))

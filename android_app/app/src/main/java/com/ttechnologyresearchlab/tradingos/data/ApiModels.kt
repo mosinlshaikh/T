@@ -177,6 +177,7 @@ data class CandleDetailUi(
     val rangeHigh: String = "unknown",
     val rangeLow: String = "unknown",
     val volumeTotal: String = "0.00",
+    val source: String = "unknown",
     val missingData: List<String> = listOf("candles"),
     val decisionRule: String = "Missing candle data = SKIP",
     val sparklineCloses: List<String> = emptyList()

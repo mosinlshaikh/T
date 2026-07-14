@@ -73,6 +73,7 @@ def _latest_paper_scan_payload() -> dict[str, Any]:
 @router.get("/paper-live")
 def paper_live_monitor() -> dict[str, object]:
     backend = get_backend()
+    backend.paper_session_scheduler.auto_resume_if_configured()
     events = latest_audit_events(limit=250)
     latest_decision = _latest_decision_payload()
     latest_market = _latest_by_type(events, "market_snapshot")

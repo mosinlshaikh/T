@@ -31,6 +31,7 @@ class PaperSessionScheduler:
     _thread: Thread | None = field(default=None, init=False, repr=False)
     _stop: Event = field(default_factory=Event, init=False, repr=False)
     _lock: Lock = field(default_factory=Lock, init=False, repr=False)
+    settings_key: str = "paper_session"
 
     def start(
         self,
@@ -61,6 +62,7 @@ class PaperSessionScheduler:
             self.running = True
             self._thread = Thread(target=self._loop, daemon=True)
             self._thread.start()
+            self._save_desired_state(enabled=True)
 
         self.backend.audit_logger.log(
             "paper_session_started",
@@ -80,6 +82,7 @@ class PaperSessionScheduler:
         with self._lock:
             self.running = False
             self.stopped_at = utc_now()
+        self._save_desired_state(enabled=False)
         self.backend.audit_logger.log(
             "paper_session_stopped",
             {"session_id": self.session_id, "stopped_at": self.stopped_at},
@@ -102,6 +105,43 @@ class PaperSessionScheduler:
             "live_trading_enabled": False,
             "public_data_only": True,
         }
+
+    def auto_resume_if_configured(self) -> dict[str, Any]:
+        settings = self.backend.repository.get_settings(self.settings_key) or {}
+        if self.running or not settings.get("enabled"):
+            return self.status()
+        if self.backend.config.enable_live_trading or self.backend.kill_switch.active:
+            self.backend.audit_logger.log_skipped_trade(
+                {
+                    "reason": "Paper session auto-resume blocked by safety state.",
+                    "live_trading_enabled": bool(self.backend.config.enable_live_trading),
+                    "kill_switch_active": bool(self.backend.kill_switch.active),
+                }
+            )
+            return self.status()
+        symbols = settings.get("symbols", [])
+        if not isinstance(symbols, list):
+            symbols = []
+        status = self.start(
+            symbols=[str(item).upper() for item in symbols[:25]],
+            timeframe=str(settings.get("timeframe", "5m")),
+            interval_seconds=int(settings.get("interval_seconds", self.interval_seconds) or 300),
+            trade_notional_usdt=float(
+                settings.get("trade_notional_usdt", self.trade_notional_usdt) or 50.0
+            ),
+        )
+        self.backend.audit_logger.log(
+            "paper_session_auto_resumed",
+            {
+                "session_id": self.session_id,
+                "symbols": self.symbols,
+                "timeframe": self.timeframe,
+                "interval_seconds": self.interval_seconds,
+                "live_trading_enabled": False,
+                "public_data_only": True,
+            },
+        )
+        return status
 
     def _loop(self) -> None:
         while not self._stop.is_set():
@@ -141,3 +181,18 @@ class PaperSessionScheduler:
             self.running = False
             if not self.stopped_at:
                 self.stopped_at = utc_now()
+
+    def _save_desired_state(self, enabled: bool) -> None:
+        self.backend.repository.save_settings(
+            self.settings_key,
+            {
+                "enabled": enabled,
+                "symbols": self.symbols,
+                "timeframe": self.timeframe,
+                "interval_seconds": self.interval_seconds,
+                "trade_notional_usdt": self.trade_notional_usdt,
+                "updated_at": utc_now(),
+                "live_trading_enabled": False,
+                "public_data_only": True,
+            },
+        )

@@ -603,4 +603,5 @@ def stop_paper_session() -> dict[str, object]:
 @router.get("/paper-session/status")
 def paper_session_status() -> dict[str, object]:
     backend = get_backend()
+    backend.paper_session_scheduler.auto_resume_if_configured()
     return ok(backend.paper_session_scheduler.status(), "Paper session scheduler status loaded.")

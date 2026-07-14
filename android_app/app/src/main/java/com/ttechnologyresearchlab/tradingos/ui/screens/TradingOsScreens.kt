@@ -318,6 +318,14 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         )
         BackendStatusBanner(state) {}
         OfflineSyncCard(state)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) {
+                MetricCard("Daily Target", "${state.dailyTarget.targetPnlPct}% PnL", state.dailyTarget.recommendedMode)
+            }
+            Column(Modifier.weight(1f)) {
+                MetricCard("Target Progress", "${state.dailyTarget.progressPct}%", "No guarantee")
+            }
+        }
         PerformanceWheel(
             overallScore = state.performanceWheel.overallScore,
             segments = state.performanceWheel.segments

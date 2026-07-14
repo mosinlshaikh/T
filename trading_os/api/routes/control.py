@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from trading_os.api.dependencies import get_backend
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import fail, ok
@@ -8,6 +10,10 @@ from trading_os.market.live_public_data import BinancePublicMarketDataClient
 from trading_os.runtime.shutdown_engine import ShutdownState
 
 router = APIRouter(prefix="/control", tags=["control"])
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 @router.post("/start")
@@ -231,6 +237,12 @@ def _latest_memory_position_id() -> str | None:
     return next(reversed(backend.portfolio.open_positions))
 
 
+def _latest_persisted_position() -> dict[str, object] | None:
+    backend = get_backend()
+    positions = backend.repository.list_open_positions()
+    return positions[-1] if positions else None
+
+
 def _manual_exit_intent(
     position_id: str, intent_type: OrderIntentType, reason: str
 ) -> ExecutionIntent:
@@ -267,16 +279,88 @@ def _paper_exit_payload(fill: object, reason: str, exit_type: str) -> dict[str, 
     }
 
 
+def _paper_exit_payload_from_position(
+    position: dict[str, object],
+    fill_price: float,
+    fee: float,
+    realized_pnl: float,
+    reason: str,
+    exit_type: str,
+) -> dict[str, object]:
+    return {
+        "status": "PAPER_CLOSED",
+        "exit_type": exit_type,
+        "symbol": str(position.get("symbol", "")).upper(),
+        "position_id": str(position.get("position_id", "")),
+        "side": "SELL",
+        "quantity": float(position.get("quantity", 0.0) or 0.0),
+        "fill_price": fill_price,
+        "fee": round(fee, 8),
+        "realized_pnl": round(realized_pnl, 8),
+        "reason": reason,
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "manual_demo": True,
+    }
+
+
+def _close_persisted_position(
+    position: dict[str, object],
+    fill_price: float,
+    reason: str,
+    exit_type: str,
+) -> dict[str, object]:
+    backend = get_backend()
+    quantity = float(position.get("quantity", 0.0) or 0.0)
+    entry_price = float(position.get("entry_price", 0.0) or 0.0)
+    fee = quantity * fill_price * backend.paper_simulator.fee_rate
+    realized_pnl = (fill_price - entry_price) * quantity - fee
+    closed = {
+        **position,
+        "closed_at": utc_now(),
+        "realized_pnl": round(realized_pnl, 8),
+        "status": "CLOSED",
+    }
+    backend.repository.close_position(closed)
+    backend.repository.save_trade_journal_entry(
+        {
+            "symbol": str(position.get("symbol", "")).upper(),
+            "action": "PAPER_CLOSED",
+            "mode": "paper",
+            "reason": reason,
+            "realized_pnl": round(realized_pnl, 8),
+            "created_at": utc_now(),
+            "trade_id": str(position.get("position_id", "")),
+        }
+    )
+    payload = _paper_exit_payload_from_position(
+        position, fill_price, fee, realized_pnl, reason, exit_type
+    )
+    backend.audit_logger.log("manual_paper_demo_close", payload)
+    return payload
+
+
 @router.post("/manual-paper-demo/close-market")
 def manual_paper_demo_close_market() -> dict[str, object]:
     backend = get_backend()
     position_id = _latest_memory_position_id()
+    persisted_position = None
     if position_id is None:
-        return fail("NO_OPEN_PAPER_POSITION", errors=["No active in-memory paper position exists."])
-    position = backend.portfolio.open_positions[position_id]
+        persisted_position = _latest_persisted_position()
+    if position_id is None and persisted_position is None:
+        return fail("NO_OPEN_PAPER_POSITION", errors=["No active paper position exists."])
+    position = (
+        backend.portfolio.open_positions[position_id]
+        if position_id is not None
+        else persisted_position
+    )
     try:
         bundle = BinancePublicMarketDataClient().fetch_bundle(
-            symbol=position.symbol,
+            symbol=(
+                position.symbol
+                if position_id is not None
+                else str(position.get("symbol", "BTCUSDT"))
+            ),
             timeframe="5m",
             candle_limit=5,
             order_book_limit=5,
@@ -284,12 +368,19 @@ def manual_paper_demo_close_market() -> dict[str, object]:
         )
         price = float(bundle.snapshot.price)
     except Exception:
-        price = position.entry_price
+        price = (
+            float(position.entry_price)
+            if position_id is not None
+            else float(position.get("entry_price", 0.0) or 0.0)
+        )
     reason = "MANUAL PAPER DEMO: user-requested paper-only market close."
-    intent = _manual_exit_intent(position_id, OrderIntentType.MARKET_SELL, reason)
-    fill = backend.paper_simulator.close_trade(position_id, intent, price)
-    payload = _paper_exit_payload(fill, reason, "MARKET_CLOSE")
-    backend.audit_logger.log("manual_paper_demo_close", payload)
+    if position_id is not None:
+        intent = _manual_exit_intent(position_id, OrderIntentType.MARKET_SELL, reason)
+        fill = backend.paper_simulator.close_trade(position_id, intent, price)
+        payload = _paper_exit_payload(fill, reason, "MARKET_CLOSE")
+        backend.audit_logger.log("manual_paper_demo_close", payload)
+    else:
+        payload = _close_persisted_position(position, price, reason, "MARKET_CLOSE")
     return ok(
         payload,
         "Manual paper demo position closed.",
@@ -301,13 +392,24 @@ def manual_paper_demo_close_market() -> dict[str, object]:
 def manual_paper_demo_simulate_stop_loss() -> dict[str, object]:
     backend = get_backend()
     position_id = _latest_memory_position_id()
+    persisted_position = None
     if position_id is None:
-        return fail("NO_OPEN_PAPER_POSITION", errors=["No active in-memory paper position exists."])
+        persisted_position = _latest_persisted_position()
+    if position_id is None and persisted_position is None:
+        return fail("NO_OPEN_PAPER_POSITION", errors=["No active paper position exists."])
     reason = "MANUAL PAPER DEMO: stop-loss simulation."
-    intent = _manual_exit_intent(position_id, OrderIntentType.STOP_LOSS, reason)
-    fill = backend.paper_simulator.simulate_stop_loss_hit(position_id, intent)
-    payload = _paper_exit_payload(fill, reason, "STOP_LOSS")
-    backend.audit_logger.log("manual_paper_demo_stop_loss", payload)
+    if position_id is not None:
+        intent = _manual_exit_intent(position_id, OrderIntentType.STOP_LOSS, reason)
+        fill = backend.paper_simulator.simulate_stop_loss_hit(position_id, intent)
+        payload = _paper_exit_payload(fill, reason, "STOP_LOSS")
+        backend.audit_logger.log("manual_paper_demo_stop_loss", payload)
+    else:
+        payload = _close_persisted_position(
+            persisted_position,
+            float(persisted_position.get("stop_loss", 0.0) or 0.0),
+            reason,
+            "STOP_LOSS",
+        )
     return ok(
         payload,
         "Manual paper stop-loss simulation completed.",
@@ -319,13 +421,24 @@ def manual_paper_demo_simulate_stop_loss() -> dict[str, object]:
 def manual_paper_demo_simulate_take_profit() -> dict[str, object]:
     backend = get_backend()
     position_id = _latest_memory_position_id()
+    persisted_position = None
     if position_id is None:
-        return fail("NO_OPEN_PAPER_POSITION", errors=["No active in-memory paper position exists."])
+        persisted_position = _latest_persisted_position()
+    if position_id is None and persisted_position is None:
+        return fail("NO_OPEN_PAPER_POSITION", errors=["No active paper position exists."])
     reason = "MANUAL PAPER DEMO: take-profit simulation."
-    intent = _manual_exit_intent(position_id, OrderIntentType.TAKE_PROFIT, reason)
-    fill = backend.paper_simulator.simulate_take_profit_hit(position_id, intent)
-    payload = _paper_exit_payload(fill, reason, "TAKE_PROFIT")
-    backend.audit_logger.log("manual_paper_demo_take_profit", payload)
+    if position_id is not None:
+        intent = _manual_exit_intent(position_id, OrderIntentType.TAKE_PROFIT, reason)
+        fill = backend.paper_simulator.simulate_take_profit_hit(position_id, intent)
+        payload = _paper_exit_payload(fill, reason, "TAKE_PROFIT")
+        backend.audit_logger.log("manual_paper_demo_take_profit", payload)
+    else:
+        payload = _close_persisted_position(
+            persisted_position,
+            float(persisted_position.get("take_profit", 0.0) or 0.0),
+            reason,
+            "TAKE_PROFIT",
+        )
     return ok(
         payload,
         "Manual paper take-profit simulation completed.",

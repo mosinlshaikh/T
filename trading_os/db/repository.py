@@ -67,7 +67,16 @@ class TradingOSRepository:
         return self._save("closed_position", position)
 
     def list_open_positions(self) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("open_position", 500)]
+        closed_ids = {
+            str(item["payload"].get("position_id", ""))
+            for item in self.storage.list_records("closed_position", 500)
+        }
+        return [
+            item["payload"]
+            for item in self.storage.list_records("open_position", 500)
+            if str(item["payload"].get("position_id", "")) not in closed_ids
+            and str(item["payload"].get("status", "OPEN")).upper() != "CLOSED"
+        ]
 
     def list_closed_positions(self) -> list[dict[str, Any]]:
         return [item["payload"] for item in self.storage.list_records("closed_position", 500)]

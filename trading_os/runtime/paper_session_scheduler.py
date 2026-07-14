@@ -90,6 +90,7 @@ class PaperSessionScheduler:
         return self.status()
 
     def status(self) -> dict[str, Any]:
+        desired = self.backend.repository.get_settings(self.settings_key) or {}
         return {
             "running": self.running,
             "session_id": self.session_id,
@@ -102,6 +103,10 @@ class PaperSessionScheduler:
             "scan_count": self.scan_count,
             "last_scan": self.last_scan,
             "last_error": self.last_error,
+            "auto_resume_enabled": bool(desired.get("enabled")),
+            "desired_symbols": desired.get("symbols", []),
+            "desired_timeframe": desired.get("timeframe", self.timeframe),
+            "desired_interval_seconds": desired.get("interval_seconds", self.interval_seconds),
             "live_trading_enabled": False,
             "public_data_only": True,
         }

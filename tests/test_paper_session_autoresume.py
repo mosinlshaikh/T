@@ -55,11 +55,13 @@ def test_paper_session_start_and_stop_persist_desired_state() -> None:
 
     started = scheduler.start(symbols=["BTCUSDT"], interval_seconds=999)
     assert started["running"] is True
+    assert started["auto_resume_enabled"] is True
     assert backend.repository.get_settings("paper_session")["enabled"] is True
     assert backend.repository.get_settings("paper_session")["live_trading_enabled"] is False
 
     stopped = scheduler.stop()
     assert stopped["running"] is False
+    assert stopped["auto_resume_enabled"] is False
     assert backend.repository.get_settings("paper_session")["enabled"] is False
 
 
@@ -82,6 +84,7 @@ def test_paper_session_auto_resume_uses_persisted_safe_settings() -> None:
     status = scheduler.auto_resume_if_configured()
 
     assert status["running"] is True
+    assert status["auto_resume_enabled"] is True
     assert status["symbols"] == ["BTCUSDT", "ETHUSDT"]
     assert status["live_trading_enabled"] is False
     assert repository.get_settings("paper_session")["enabled"] is True

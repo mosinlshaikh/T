@@ -1301,8 +1301,17 @@ private fun signalStatus(value: String): String {
 private fun PaperSessionCard(state: TradingOsUiState) {
     GlassCard {
         Text("24x7 Paper Session", color = TradingGold, fontWeight = FontWeight.Bold)
-        KeyValue("Running", state.paperSession.running.toString(), if (state.paperSession.running) SafeGreen else TradingGold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip(if (state.paperSession.running) "RUNNING" else "STOPPED", if (state.paperSession.running) SafeGreen else WarningAmber)
+            StatusChip(if (state.paperSession.autoResumeEnabled) "AUTO-RESUME ON" else "AUTO-RESUME OFF", if (state.paperSession.autoResumeEnabled) SafeGreen else WarningAmber)
+            StatusChip(if (state.paperSession.liveTradingEnabled) "LIVE ENABLED" else "LIVE DISABLED", if (state.paperSession.liveTradingEnabled) DangerRed else SafeGreen)
+        }
+        KeyValue("Session ID", state.paperSession.sessionId.ifBlank { "not started" })
+        KeyValue("Started at", state.paperSession.startedAt.ifBlank { "not started" })
         KeyValue("Symbols", state.paperSession.symbols.joinToString().ifBlank { "not configured" })
+        if (state.paperSession.desiredSymbols.isNotEmpty()) {
+            KeyValue("Auto-resume symbols", state.paperSession.desiredSymbols.joinToString())
+        }
         KeyValue("Timeframe", state.paperSession.timeframe)
         KeyValue("Interval", "${state.paperSession.intervalSeconds}s")
         KeyValue("Scan count", state.paperSession.scanCount.toString())
@@ -1310,7 +1319,7 @@ private fun PaperSessionCard(state: TradingOsUiState) {
         KeyValue("Action", state.paperSession.bestAction)
         KeyValue("Confidence", state.paperSession.bestConfidence)
         Text(state.paperSession.lastReason)
-        Text("Paper mode only. Phone does not place Binance orders.")
+        Text("Public data only: ${state.paperSession.publicDataOnly}. Paper mode only. Phone does not place Binance orders.")
     }
 }
 

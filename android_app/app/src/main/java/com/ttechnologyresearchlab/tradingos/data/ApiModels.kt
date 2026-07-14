@@ -162,6 +162,7 @@ data class StrategyCatalogUi(
 data class PaperSessionUi(
     val running: Boolean = false,
     val sessionId: String = "",
+    val startedAt: String = "",
     val symbols: List<String> = emptyList(),
     val timeframe: String = "5m",
     val intervalSeconds: String = "300",
@@ -170,6 +171,9 @@ data class PaperSessionUi(
     val bestAction: String = "unknown",
     val bestConfidence: String = "0.00",
     val lastReason: String = "No paper session scan yet.",
+    val autoResumeEnabled: Boolean = false,
+    val desiredSymbols: List<String> = emptyList(),
+    val publicDataOnly: Boolean = true,
     val liveTradingEnabled: Boolean = false
 )
 

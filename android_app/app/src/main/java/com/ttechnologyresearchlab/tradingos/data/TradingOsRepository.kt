@@ -402,6 +402,7 @@ class TradingOsRepository(
         return PaperSessionUi(
             running = body.jsonBoolean("running") ?: false,
             sessionId = body.jsonString("session_id") ?: "",
+            startedAt = body.jsonString("started_at") ?: "",
             symbols = body.jsonArrayItems("symbols"),
             timeframe = body.jsonString("timeframe") ?: "5m",
             intervalSeconds = body.jsonNumber("interval_seconds") ?: "300",
@@ -410,6 +411,9 @@ class TradingOsRepository(
             bestAction = best.jsonString("action") ?: "unknown",
             bestConfidence = best.jsonNumber("confidence") ?: "0.00",
             lastReason = best.jsonString("reason") ?: body.jsonString("last_error") ?: "No paper session scan yet.",
+            autoResumeEnabled = body.jsonBoolean("auto_resume_enabled") ?: false,
+            desiredSymbols = body.jsonArrayItems("desired_symbols"),
+            publicDataOnly = body.jsonBoolean("public_data_only") ?: true,
             liveTradingEnabled = body.jsonBoolean("live_trading_enabled") ?: false
         )
     }

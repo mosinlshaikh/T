@@ -248,6 +248,68 @@ data class PaperDemoReadinessUi(
     val remaining: List<String> = emptyList()
 )
 
+data class PerformanceWheelSegmentUi(
+    val name: String = "unknown",
+    val score: Int = 0,
+    val status: String = "UNKNOWN"
+)
+
+data class PerformanceWheelUi(
+    val overallScore: Int = 0,
+    val segments: List<PerformanceWheelSegmentUi> = emptyList(),
+    val netPnl: String = "0.00"
+)
+
+data class TradeQualityUi(
+    val score: Int = 0,
+    val level: String = "UNKNOWN",
+    val recommendedAction: String = "SKIP",
+    val tradeAllowed: Boolean = false,
+    val reason: String = "Trade quality unavailable.",
+    val missingData: List<String> = emptyList(),
+    val conflicts: List<String> = emptyList()
+)
+
+data class NoTradeZoneUi(
+    val active: Boolean = true,
+    val zone: String = "NO_TRADE",
+    val recommendedAction: String = "SKIP",
+    val reasons: List<String> = listOf("backend_connection")
+)
+
+data class ShadowModeUi(
+    val enabled: Boolean = true,
+    val mode: String = "PAPER_SHADOW_ONLY",
+    val wouldDo: String = "SKIP",
+    val reason: String = "Shadow mode unavailable.",
+    val noTradeZoneActive: Boolean = true
+)
+
+data class CoinUniverseUi(
+    val mode: String = "ALL_ACTIVE_USDT_SPOT",
+    val symbolCount: Int = 0,
+    val scanBatchLimit: Int = 0,
+    val symbolsPreview: List<String> = emptyList(),
+    val rule: String = "Coin universe unavailable."
+)
+
+data class DailyTargetUi(
+    val targetPnlPct: String = "10",
+    val targetAmountUsdt: String = "0.00",
+    val currentDailyPnlUsdt: String = "0.00",
+    val progressPct: String = "0.00",
+    val targetReached: Boolean = false,
+    val recommendedMode: String = "PAPER_DISCOVERY",
+    val rules: List<String> = emptyList()
+)
+
+data class OfflineSyncUi(
+    val status: String = "UNKNOWN",
+    val lastSuccessfulSync: String = "unknown",
+    val queuedLocalActions: Int = 0,
+    val cacheStatus: String = "DEVELOPMENT PREVIEW DATA"
+)
+
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
     val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
@@ -283,5 +345,12 @@ data class TradingOsUiState(
     val candleStudies: List<CandleStudyUi> = emptyList(),
     val paperScanSummary: PaperScanSummaryUi = PaperScanSummaryUi(),
     val paperDemoReadiness: PaperDemoReadinessUi = PaperDemoReadinessUi(),
+    val performanceWheel: PerformanceWheelUi = PerformanceWheelUi(),
+    val tradeQuality: TradeQualityUi = TradeQualityUi(),
+    val noTradeZone: NoTradeZoneUi = NoTradeZoneUi(),
+    val shadowMode: ShadowModeUi = ShadowModeUi(),
+    val coinUniverse: CoinUniverseUi = CoinUniverseUi(),
+    val dailyTarget: DailyTargetUi = DailyTargetUi(),
+    val offlineSync: OfflineSyncUi = OfflineSyncUi(),
     val shutdownState: String = "RUNNING"
 )

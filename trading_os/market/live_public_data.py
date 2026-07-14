@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+from time import time
 from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -51,6 +52,7 @@ class BinancePublicMarketDataClient:
     base_url: str = BINANCE_PUBLIC_BASE_URL
     fallback_base_urls: tuple[str, ...] = BINANCE_PUBLIC_FALLBACK_BASE_URLS
     timeout_seconds: int = 8
+    _symbol_cache: tuple[float, list[str]] = (0.0, None)  # type: ignore[assignment]
 
     def fetch_bundle(
         self,
@@ -224,6 +226,33 @@ class BinancePublicMarketDataClient:
                 )
             )
         return items
+
+    def fetch_active_spot_usdt_symbols(self, cache_seconds: int = 900) -> list[str]:
+        """Return active Binance Spot USDT symbols from public exchange metadata.
+
+        This is public metadata only. It does not require Binance credentials and
+        does not imply that every symbol should be scanned every second.
+        """
+
+        cached_at, cached_symbols = self._symbol_cache
+        if cached_symbols and time() - cached_at < cache_seconds:
+            return cached_symbols
+        payload = self._get_json("/api/v3/exchangeInfo", {})
+        symbols: list[str] = []
+        for item in payload.get("symbols", []) if isinstance(payload, dict) else []:
+            if item.get("status") != "TRADING":
+                continue
+            if item.get("quoteAsset") != "USDT":
+                continue
+            if not item.get("isSpotTradingAllowed", False):
+                continue
+            symbol = str(item.get("symbol", "")).upper()
+            permissions = {str(value).upper() for value in item.get("permissions", [])}
+            if symbol and ("SPOT" in permissions or not permissions):
+                symbols.append(symbol)
+        symbols = sorted(set(symbols))
+        self._symbol_cache = (time(), symbols)
+        return symbols
 
     def _get_json(self, path: str, params: dict[str, Any]) -> Any:
         errors: list[str] = []

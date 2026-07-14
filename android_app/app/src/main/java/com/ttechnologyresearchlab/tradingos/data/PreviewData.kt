@@ -112,6 +112,53 @@ object PreviewData {
             demoPercent = 0,
             readyForPaperDemo = false,
             remaining = listOf("backend_connection")
+        ),
+        performanceWheel = PerformanceWheelUi(
+            overallScore = 0,
+            netPnl = "0.00",
+            segments = listOf(
+                PerformanceWheelSegmentUi("Candle Reading", 0, "DEVELOPMENT PREVIEW DATA"),
+                PerformanceWheelSegmentUi("Whale Tracking", 0, "DEVELOPMENT PREVIEW DATA"),
+                PerformanceWheelSegmentUi("News Risk", 0, "DEVELOPMENT PREVIEW DATA"),
+                PerformanceWheelSegmentUi("Order Book", 0, "DEVELOPMENT PREVIEW DATA"),
+                PerformanceWheelSegmentUi("Risk Engine", 100, "PAPER SAFE"),
+                PerformanceWheelSegmentUi("Zero Hallucination", 100, "ACTIVE")
+            )
+        ),
+        tradeQuality = TradeQualityUi(
+            score = 0,
+            level = "UNKNOWN",
+            recommendedAction = "SKIP",
+            tradeAllowed = false,
+            reason = "DEVELOPMENT PREVIEW DATA: backend trade quality loads when connected.",
+            missingData = listOf("backend_connection")
+        ),
+        noTradeZone = NoTradeZoneUi(
+            active = true,
+            zone = "NO_TRADE",
+            recommendedAction = "SKIP",
+            reasons = listOf("DEVELOPMENT PREVIEW DATA")
+        ),
+        shadowMode = ShadowModeUi(
+            enabled = true,
+            mode = "PAPER_SHADOW_ONLY",
+            wouldDo = "SKIP",
+            reason = "DEVELOPMENT PREVIEW DATA: shadow-mode monitor loads when connected."
+        ),
+        coinUniverse = CoinUniverseUi(
+            symbolCount = 0,
+            scanBatchLimit = 40,
+            symbolsPreview = listOf("DEVELOPMENT PREVIEW DATA"),
+            rule = "Backend loads complete active Binance Spot USDT universe when connected."
+        ),
+        dailyTarget = DailyTargetUi(
+            targetPnlPct = "10",
+            recommendedMode = "PAPER_DISCOVERY",
+            rules = listOf("10% daily PnL is a target, not a promise.")
+        ),
+        offlineSync = OfflineSyncUi(
+            status = "PREVIEW",
+            cacheStatus = "DEVELOPMENT PREVIEW DATA"
         )
     )
 }

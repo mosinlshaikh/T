@@ -72,6 +72,7 @@ import com.ttechnologyresearchlab.tradingos.ui.components.GlassCard
 import com.ttechnologyresearchlab.tradingos.ui.components.GoldButton
 import com.ttechnologyresearchlab.tradingos.ui.components.KeyValue
 import com.ttechnologyresearchlab.tradingos.ui.components.MetricCard
+import com.ttechnologyresearchlab.tradingos.ui.components.PerformanceWheel
 import com.ttechnologyresearchlab.tradingos.ui.components.PremiumHero
 import com.ttechnologyresearchlab.tradingos.ui.components.QuietButton
 import com.ttechnologyresearchlab.tradingos.ui.components.ScreenShell
@@ -316,6 +317,16 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
             }
         )
         BackendStatusBanner(state) {}
+        OfflineSyncCard(state)
+        PerformanceWheel(
+            overallScore = state.performanceWheel.overallScore,
+            segments = state.performanceWheel.segments
+        )
+        CoinUniverseCard(state)
+        DailyTargetCard(state)
+        TradeQualityCard(state)
+        NoTradeZoneCard(state)
+        ShadowModeCard(state)
         val connected = state.backendConnectionState == BackendConnectionState.CONNECTED
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Column(Modifier.weight(1f)) { MetricCard("Bot", state.botStatus.botState) }
@@ -340,6 +351,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         CandleDetailCard(state.candleDetail)
         CandleStudyCard(state.candleStudies)
         MarketEvidenceFeedCard(state.marketEvidenceFeed.takeLast(5))
+        StrategyScoreboardCard(state)
         TimelineCard("Decision Timeline", state.decisionTimeline.takeLast(5))
         EvidenceDrillDownCard(state)
         PaperSessionCard(state)
@@ -833,6 +845,140 @@ private fun BackendStatusBanner(state: TradingOsUiState, reconnect: () -> Unit) 
             Text("Backend offline/degraded. Controls are disabled except local navigation.")
             QuietButton("Reconnect", reconnect)
         }
+    }
+}
+
+@Composable
+private fun OfflineSyncCard(state: TradingOsUiState) {
+    GlassCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip("SYNC ${state.offlineSync.status}", when {
+                state.offlineSync.status.contains("SYNCED", ignoreCase = true) -> SafeGreen
+                state.offlineSync.status.contains("OFFLINE", ignoreCase = true) -> WarningAmber
+                else -> ElectricBlue
+            })
+            StatusChip(state.backendConnectionState.name, timelineColor(state.backendConnectionState.name))
+        }
+        KeyValue("Last successful sync", state.offlineSync.lastSuccessfulSync)
+        KeyValue("Local queued actions", state.offlineSync.queuedLocalActions.toString())
+        Text(state.offlineSync.cacheStatus)
+        Text("Phone offline ho to last known data dikhega. Internet wapas aate hi Railway se full refresh hoga.")
+    }
+}
+
+@Composable
+private fun CoinUniverseCard(state: TradingOsUiState) {
+    GlassCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip("ALL COINS", ElectricBlue)
+            StatusChip("${state.coinUniverse.symbolCount} USDT SPOT", SafeGreen)
+        }
+        Text("Binance Spot Coin Universe", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        KeyValue("Universe mode", state.coinUniverse.mode)
+        KeyValue("Safe scan batch", state.coinUniverse.scanBatchLimit.toString())
+        Text(state.coinUniverse.rule)
+        val preview = state.coinUniverse.symbolsPreview.take(18)
+        if (preview.isNotEmpty()) {
+            Text(preview.joinToString("  |  "), color = MutedText)
+        }
+        Text("Saare active USDT Spot pairs backend ko pata rahenge; scanner rate-limit safe batches me rank karega.")
+    }
+}
+
+@Composable
+private fun DailyTargetCard(state: TradingOsUiState) {
+    GlassCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip("DAILY TARGET ${state.dailyTarget.targetPnlPct}%", WarningAmber)
+            StatusChip(state.dailyTarget.recommendedMode, timelineColor(state.dailyTarget.recommendedMode))
+        }
+        Text("Daily PnL Target Guard", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        SignalBar("Progress", "${state.dailyTarget.progressPct}%", if (state.dailyTarget.targetReached) SafeGreen else ElectricBlue)
+        KeyValue("Target amount", state.dailyTarget.targetAmountUsdt)
+        KeyValue("Current daily PnL", state.dailyTarget.currentDailyPnlUsdt, if (state.dailyTarget.currentDailyPnlUsdt.startsWith("-")) DangerRed else SafeGreen)
+        KeyValue("Target reached", state.dailyTarget.targetReached.toString())
+        state.dailyTarget.rules.take(4).forEach { Text("- $it") }
+        Text("10% per day target hai, promise nahi. Bot weak/conflicting data me SKIP/HOLD karega.")
+    }
+}
+
+@Composable
+private fun TradeQualityCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("Trade Quality Score", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        SignalBar("Score", "${state.tradeQuality.score}/100", when {
+            state.tradeQuality.score >= 70 -> SafeGreen
+            state.tradeQuality.score >= 45 -> WarningAmber
+            else -> DangerRed
+        })
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip(state.tradeQuality.level, timelineColor(state.tradeQuality.level))
+            StatusChip(state.tradeQuality.recommendedAction, timelineColor(state.tradeQuality.recommendedAction))
+            StatusChip(if (state.tradeQuality.tradeAllowed) "PAPER WATCH" else "NO TRADE", if (state.tradeQuality.tradeAllowed) SafeGreen else WarningAmber)
+        }
+        Text(state.tradeQuality.reason)
+        if (state.tradeQuality.missingData.isNotEmpty()) {
+            Text("Missing: ${state.tradeQuality.missingData.take(5).joinToString()}", color = WarningAmber)
+        }
+        if (state.tradeQuality.conflicts.isNotEmpty()) {
+            Text("Conflicts: ${state.tradeQuality.conflicts.take(5).joinToString()}", color = DangerRed)
+        }
+        Text("High quality ka matlab guarantee nahi. Ye sirf paper decision filter hai.")
+    }
+}
+
+@Composable
+private fun NoTradeZoneCard(state: TradingOsUiState) {
+    GlassCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip(state.noTradeZone.zone, if (state.noTradeZone.active) DangerRed else SafeGreen)
+            StatusChip(state.noTradeZone.recommendedAction, timelineColor(state.noTradeZone.recommendedAction))
+        }
+        Text("No-Trade Zone Detector", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        if (state.noTradeZone.reasons.isEmpty()) {
+            Text("No major no-trade reason reported.")
+        } else {
+            state.noTradeZone.reasons.take(6).forEach { Text("- $it") }
+        }
+        Text("Sideways, low-confidence, ya conflicting market me bot paper trade avoid karega.")
+    }
+}
+
+@Composable
+private fun ShadowModeCard(state: TradingOsUiState) {
+    GlassCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip(state.shadowMode.mode, ElectricBlue)
+            StatusChip("WOULD ${state.shadowMode.wouldDo}", timelineColor(state.shadowMode.wouldDo))
+        }
+        Text("Paper Shadow-Mode Monitoring", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        KeyValue("Enabled", state.shadowMode.enabled.toString(), SafeGreen)
+        KeyValue("No-trade zone", state.shadowMode.noTradeZoneActive.toString(), if (state.shadowMode.noTradeZoneActive) WarningAmber else SafeGreen)
+        Text(state.shadowMode.reason)
+        Text("Ye bot ka rehearsal mode hai: would-buy/would-sell record hota hai, real order nahi.")
+    }
+}
+
+@Composable
+private fun StrategyScoreboardCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("Strategy Scoreboard", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        if (state.strategyCatalog.isEmpty()) {
+            Text("Strategy catalog unavailable.")
+        } else {
+            state.strategyCatalog.take(6).forEachIndexed { index, strategy ->
+                val score = when {
+                    strategy.name.contains("CANDLE", ignoreCase = true) -> state.performanceWheel.segments.find { it.name.contains("Candle") }?.score ?: 0
+                    strategy.name.contains("WHALE", ignoreCase = true) -> state.performanceWheel.segments.find { it.name.contains("Whale") }?.score ?: 0
+                    strategy.name.contains("NEWS", ignoreCase = true) -> state.performanceWheel.segments.find { it.name.contains("News") }?.score ?: 0
+                    strategy.name.contains("ORDER", ignoreCase = true) -> state.performanceWheel.segments.find { it.name.contains("Order") }?.score ?: 0
+                    else -> state.performanceWheel.overallScore
+                }
+                KeyValue("${index + 1}. ${strategy.name}", "$score% ${strategy.status}", if (score >= 70) SafeGreen else WarningAmber)
+                Text(strategy.purpose, color = MutedText, maxLines = 2)
+            }
+        }
+        Text("Scoreboard advisory hai. Strategy rules backend/paper controlled rahenge.")
     }
 }
 

@@ -12,6 +12,7 @@ from uuid import uuid4
 from trading_os.market.live_public_data import BinancePublicMarketDataClient
 
 DEFAULT_WATCHLIST_PATH = "config/watchlist.json"
+DEFAULT_MAX_SYMBOLS_PER_SCAN = 40
 
 
 def utc_now() -> str:
@@ -148,11 +149,28 @@ class PaperAutoTrader:
         symbols: list[str] | None = None,
         timeframe: str = "5m",
         trade_notional_usdt: float = 50.0,
+        all_usdt_symbols: bool = False,
     ) -> dict[str, Any]:
         watchlist = load_watchlist_config()
         configured_symbols = watchlist.get("symbols", list(self.default_symbols))
-        max_symbols = int(watchlist.get("max_symbols_per_scan", 5) or 5)
-        safe_symbols = normalize_watchlist(symbols or configured_symbols, max_symbols=max_symbols)
+        max_symbols = int(
+            watchlist.get("max_symbols_per_scan", DEFAULT_MAX_SYMBOLS_PER_SCAN)
+            or DEFAULT_MAX_SYMBOLS_PER_SCAN
+        )
+        client = BinancePublicMarketDataClient()
+        universe_symbols: list[str] = []
+        if all_usdt_symbols or str(configured_symbols).upper() == "ALL_USDT":
+            try:
+                universe_symbols = client.fetch_active_spot_usdt_symbols()
+            except Exception as exc:
+                self.backend.audit_logger.log_skipped_trade(
+                    {
+                        "reason": "All-symbol universe discovery failed safely.",
+                        "error": exc.__class__.__name__,
+                    }
+                )
+        selected = universe_symbols if universe_symbols else (symbols or configured_symbols)
+        safe_symbols = normalize_watchlist(selected, max_symbols=max_symbols)
         results: list[dict[str, Any]] = []
         errors: list[dict[str, str]] = []
         for symbol in safe_symbols:
@@ -184,6 +202,11 @@ class PaperAutoTrader:
         )
         payload = {
             "symbols": safe_symbols,
+            "symbol_universe_count": (
+                len(universe_symbols) if universe_symbols else len(safe_symbols)
+            ),
+            "symbol_universe_mode": "ALL_ACTIVE_USDT_SPOT" if universe_symbols else "WATCHLIST",
+            "max_symbols_per_scan": max_symbols,
             "timeframe": timeframe,
             "results": ranked,
             "errors": errors,
@@ -200,13 +223,21 @@ class PaperAutoTrader:
         timeframe: str = "5m",
         interval_seconds: int = 60,
         trade_notional_usdt: float = 50.0,
+        all_usdt_symbols: bool = False,
     ) -> dict[str, Any]:
         with self._lock:
             if self.running:
                 return self.status()
             watchlist = load_watchlist_config()
             configured_symbols = watchlist.get("symbols", list(self.default_symbols))
-            max_symbols = int(watchlist.get("max_symbols_per_scan", 5) or 5)
+            max_symbols = int(
+                watchlist.get("max_symbols_per_scan", DEFAULT_MAX_SYMBOLS_PER_SCAN)
+                or DEFAULT_MAX_SYMBOLS_PER_SCAN
+            )
+            if all_usdt_symbols:
+                configured_symbols = (
+                    BinancePublicMarketDataClient().fetch_active_spot_usdt_symbols()
+                )
             safe_symbols = normalize_watchlist(
                 symbols or configured_symbols, max_symbols=max_symbols
             )
@@ -247,6 +278,24 @@ class PaperAutoTrader:
             "public_data_only": True,
         }
 
+    def symbol_universe(self, max_preview: int = 80) -> dict[str, Any]:
+        try:
+            symbols = BinancePublicMarketDataClient().fetch_active_spot_usdt_symbols()
+            error = ""
+        except Exception as exc:
+            symbols = list(self.default_symbols)
+            error = f"{exc.__class__.__name__}: public symbol discovery unavailable"
+        return {
+            "mode": "ALL_ACTIVE_USDT_SPOT",
+            "symbol_count": len(symbols),
+            "symbols_preview": symbols[: max(1, int(max_preview))],
+            "scan_batch_limit": DEFAULT_MAX_SYMBOLS_PER_SCAN,
+            "error": error,
+            "live_trading_enabled": False,
+            "public_data_only": True,
+            "rule": "Know full active Spot USDT universe; scan in safe rate-limit-aware batches.",
+        }
+
     def _loop(
         self,
         symbols: list[str],
@@ -280,13 +329,16 @@ def load_watchlist_config(path: str = DEFAULT_WATCHLIST_PATH) -> dict[str, Any]:
         return {
             "symbols": ["BTCUSDT", "ETHUSDT"],
             "default_timeframe": "5m",
-            "max_symbols_per_scan": 5,
+            "max_symbols_per_scan": DEFAULT_MAX_SYMBOLS_PER_SCAN,
             "paper_trade_notional_usdt": 50.0,
         }
     try:
         payload = json.loads(file_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
-        return {"symbols": ["BTCUSDT", "ETHUSDT"], "max_symbols_per_scan": 5}
+        return {
+            "symbols": ["BTCUSDT", "ETHUSDT"],
+            "max_symbols_per_scan": DEFAULT_MAX_SYMBOLS_PER_SCAN,
+        }
     return payload if isinstance(payload, dict) else {"symbols": ["BTCUSDT", "ETHUSDT"]}
 
 

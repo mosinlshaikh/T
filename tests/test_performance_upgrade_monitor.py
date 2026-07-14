@@ -1,0 +1,40 @@
+from trading_os.api.routes.monitor import (
+    no_trade_zone,
+    performance_wheel,
+    shadow_mode,
+    trade_quality,
+)
+
+
+def test_performance_wheel_is_paper_safe() -> None:
+    response = performance_wheel()
+    assert response["success"] is True
+    assert response["data"]["live_trading_enabled"] is False
+    assert response["data"]["public_data_only"] is True
+    assert response["data"]["segments"]
+    assert 0 <= response["data"]["overall_score"] <= 100
+
+
+def test_trade_quality_blocks_when_evidence_is_missing_or_weak() -> None:
+    response = trade_quality()
+    assert response["success"] is True
+    assert response["data"]["live_trading_enabled"] is False
+    assert response["data"]["public_data_only"] is True
+    assert response["data"]["recommended_action"] in {"BUY", "SELL", "HOLD", "SKIP"}
+    assert isinstance(response["data"]["trade_allowed"], bool)
+
+
+def test_no_trade_zone_is_safe() -> None:
+    response = no_trade_zone()
+    assert response["success"] is True
+    assert response["data"]["live_trading_enabled"] is False
+    assert response["data"]["public_data_only"] is True
+    assert response["data"]["recommended_action"] in {"SKIP", "HOLD_OR_PAPER_ONLY_WATCH"}
+
+
+def test_shadow_mode_never_enables_live_execution() -> None:
+    response = shadow_mode()
+    assert response["success"] is True
+    assert response["data"]["mode"] == "PAPER_SHADOW_ONLY"
+    assert response["data"]["live_trading_enabled"] is False
+    assert response["data"]["public_data_only"] is True

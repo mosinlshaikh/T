@@ -481,6 +481,7 @@ def paper_auto_trader_scan(
     symbols: str = "BTCUSDT,ETHUSDT",
     timeframe: str = "5m",
     trade_notional_usdt: float = 50.0,
+    all_usdt_symbols: bool = False,
 ) -> dict[str, object]:
     backend = get_backend()
     if backend.config.enable_live_trading:
@@ -492,11 +493,40 @@ def paper_auto_trader_scan(
         symbols=safe_symbols,
         timeframe=timeframe,
         trade_notional_usdt=trade_notional_usdt,
+        all_usdt_symbols=all_usdt_symbols,
     )
     return ok(
         payload,
         "Multi-symbol paper scanner completed.",
         warnings=["Paper mode only. No real Binance orders are placed."],
+    )
+
+
+@router.post("/paper-auto-trader/scan-all")
+def paper_auto_trader_scan_all(
+    timeframe: str = "5m",
+    trade_notional_usdt: float = 50.0,
+) -> dict[str, object]:
+    backend = get_backend()
+    if backend.config.enable_live_trading:
+        return fail(
+            "LIVE_TRADING_BLOCKED", errors=["All-coin paper scanner cannot enable live trading."]
+        )
+    if backend.kill_switch.active:
+        return fail("KILL_SWITCH_ACTIVE", errors=["Emergency stop is active."])
+    payload = backend.paper_auto_trader.scan_once(
+        symbols=None,
+        timeframe=timeframe,
+        trade_notional_usdt=trade_notional_usdt,
+        all_usdt_symbols=True,
+    )
+    return ok(
+        payload,
+        "All active Binance Spot USDT paper scanner completed in a safe batch.",
+        warnings=[
+            "Paper mode only. No real Binance orders are placed.",
+            "Full universe is discovered; scanning is batch-limited for rate-limit safety.",
+        ],
     )
 
 
@@ -506,6 +536,7 @@ def start_paper_auto_trader(
     timeframe: str = "5m",
     interval_seconds: int = 60,
     trade_notional_usdt: float = 50.0,
+    all_usdt_symbols: bool = False,
 ) -> dict[str, object]:
     backend = get_backend()
     if backend.config.enable_live_trading:
@@ -519,6 +550,7 @@ def start_paper_auto_trader(
             timeframe=timeframe,
             interval_seconds=interval_seconds,
             trade_notional_usdt=trade_notional_usdt,
+            all_usdt_symbols=all_usdt_symbols,
         ),
         "Paper auto trader started.",
         warnings=["Paper mode only. No real Binance orders are placed."],

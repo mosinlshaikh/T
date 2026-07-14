@@ -1,6 +1,7 @@
 package com.ttechnologyresearchlab.tradingos.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -28,10 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import com.ttechnologyresearchlab.tradingos.data.PerformanceWheelSegmentUi
 import com.ttechnologyresearchlab.tradingos.ui.theme.DangerRed
 import com.ttechnologyresearchlab.tradingos.ui.theme.DeepBlack
 import com.ttechnologyresearchlab.tradingos.ui.theme.ElectricBlue
@@ -206,8 +210,8 @@ fun PremiumHero(
                 .background(
                     Brush.linearGradient(
                         listOf(
-                            Color(0xFF101827),
-                            Color(0xFF0A1624),
+                            Color(0xFF082034),
+                            Color(0xFF071527),
                             accent.copy(alpha = 0.18f)
                         )
                     )
@@ -222,6 +226,71 @@ fun PremiumHero(
             Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 25.sp, lineHeight = 29.sp)
             Text(subtitle, color = MutedText, style = MaterialTheme.typography.bodyMedium)
         }
+    }
+}
+
+@Composable
+fun PerformanceWheel(
+    overallScore: Int,
+    segments: List<PerformanceWheelSegmentUi>
+) {
+    val visibleSegments = segments.ifEmpty {
+        listOf(PerformanceWheelSegmentUi("No data", 0, "UNKNOWN"))
+    }.take(10)
+    val colors = listOf(
+        ElectricBlue,
+        SafeGreen,
+        Color(0xFF7C8CFF),
+        Color(0xFF22D3EE),
+        WarningAmber,
+        DangerRed,
+        Color.White
+    )
+    GlassCard {
+        Text("Performance Wheel", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Canvas(modifier = Modifier.size(220.dp)) {
+                val strokeWidth = 22.dp.toPx()
+                val arcSize = size.minDimension - strokeWidth
+                val topLeft = androidx.compose.ui.geometry.Offset(strokeWidth / 2, strokeWidth / 2)
+                drawCircle(
+                    color = Color(0xFF122134),
+                    radius = arcSize / 2,
+                    style = Stroke(width = strokeWidth)
+                )
+                val sweepPerSegment = 360f / visibleSegments.size
+                visibleSegments.forEachIndexed { index, segment ->
+                    val scoreSweep = sweepPerSegment * (segment.score.coerceIn(0, 100) / 100f)
+                    drawArc(
+                        color = colors[index % colors.size],
+                        startAngle = -90f + index * sweepPerSegment,
+                        sweepAngle = scoreSweep,
+                        useCenter = false,
+                        topLeft = topLeft,
+                        size = androidx.compose.ui.geometry.Size(arcSize, arcSize),
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                }
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("${overallScore.coerceIn(0, 100)}", color = Color.White, fontSize = 42.sp, fontWeight = FontWeight.Bold)
+                Text("paper score", color = MutedText, fontSize = 12.sp)
+            }
+        }
+        visibleSegments.forEachIndexed { index, segment ->
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusDot(colors[index % colors.size])
+                    Text(segment.name, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Text("${segment.score}% ${segment.status}", color = colors[index % colors.size], fontWeight = FontWeight.SemiBold)
+            }
+        }
+        Text("Paper/audit monitoring only. Green segments do not guarantee profit.")
     }
 }
 

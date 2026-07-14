@@ -7,17 +7,17 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val TradingGold = Color(0xFFD4AF37)
-val SoftGold = Color(0xFFFFD76A)
-val DeepBlack = Color(0xFF05070C)
-val PanelBlack = Color(0xFF0E1420)
-val GlassStroke = Color(0x44FFD76A)
+val TradingGold = Color(0xFF4DD8FF)
+val SoftGold = Color(0xFFBFEFFF)
+val DeepBlack = Color(0xFF020817)
+val PanelBlack = Color(0xFF071527)
+val GlassStroke = Color(0x554DD8FF)
 val DangerRed = Color(0xFFFF4D5E)
 val SafeGreen = Color(0xFF4CE0A7)
 val ElectricBlue = Color(0xFF38BDF8)
-val VioletPulse = Color(0xFF8B5CF6)
+val VioletPulse = Color(0xFF7C8CFF)
 val WarningAmber = Color(0xFFFFB84D)
-val MutedText = Color(0xFF9AA4B2)
+val MutedText = Color(0xFFA9B8CC)
 
 private val TradingColorScheme: ColorScheme = darkColorScheme(
     primary = TradingGold,

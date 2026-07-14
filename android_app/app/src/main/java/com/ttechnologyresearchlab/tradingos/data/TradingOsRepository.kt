@@ -35,10 +35,21 @@ class TradingOsRepository(
                 val candleStudies = apiClient.getCandleStudy().toCandleStudies()
                 val paperScanSummary = apiClient.getPaperScanSummary().toPaperScanSummary()
                 val paperDemoReadiness = apiClient.getPaperDemoReadiness().toPaperDemoReadiness()
+                val performanceWheel = apiClient.getPerformanceWheel().toPerformanceWheel()
+                val tradeQuality = apiClient.getTradeQuality().toTradeQuality()
+                val noTradeZone = apiClient.getNoTradeZone().toNoTradeZone()
+                val shadowMode = apiClient.getShadowMode().toShadowMode()
+                val coinUniverse = apiClient.getSymbolUniverse().toCoinUniverse()
+                val dailyTarget = apiClient.getDailyTarget().toDailyTarget()
                 PreviewData.state.copy(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
                     backendConnectionState = BackendConnectionState.CONNECTED,
+                    offlineSync = OfflineSyncUi(
+                        status = "SYNCED",
+                        lastSuccessfulSync = health.body.jsonString("timestamp") ?: "latest",
+                        cacheStatus = "Fresh Railway backend data"
+                    ),
                     lastKnownBotState = supervisorState,
                     latestDecision = monitorState.latestDecision ?: latestDecision,
                     marketIntelligence = monitorState.marketIntelligence,
@@ -61,6 +72,12 @@ class TradingOsRepository(
                     candleStudies = candleStudies,
                     paperScanSummary = paperScanSummary,
                     paperDemoReadiness = paperDemoReadiness,
+                    performanceWheel = performanceWheel,
+                    tradeQuality = tradeQuality,
+                    noTradeZone = noTradeZone,
+                    shadowMode = shadowMode,
+                    coinUniverse = coinUniverse,
+                    dailyTarget = dailyTarget,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
                         liveTradingEnabled = liveTradingEnabled
@@ -70,13 +87,21 @@ class TradingOsRepository(
             } else {
                 PreviewData.state.copy(
                     connectionStatus = health.safeError,
-                    backendConnectionState = BackendConnectionState.DISCONNECTED
+                    backendConnectionState = BackendConnectionState.DISCONNECTED,
+                    offlineSync = OfflineSyncUi(
+                        status = "OFFLINE",
+                        cacheStatus = "DEVELOPMENT PREVIEW DATA"
+                    )
                 )
             }
         } catch (_: Exception) {
             PreviewData.state.copy(
                 connectionStatus = "DEVELOPMENT PREVIEW DATA",
-                backendConnectionState = BackendConnectionState.DISCONNECTED
+                backendConnectionState = BackendConnectionState.DISCONNECTED,
+                offlineSync = OfflineSyncUi(
+                    status = "OFFLINE",
+                    cacheStatus = "DEVELOPMENT PREVIEW DATA"
+                )
             )
         }
     }
@@ -482,6 +507,80 @@ class TradingOsRepository(
             demoPercent = body.jsonNumber("paper_demo_readiness_percent")?.toIntOrNull() ?: 0,
             readyForPaperDemo = body.jsonBoolean("ready_for_paper_demo") ?: false,
             remaining = body.jsonObjectFieldValues("name").takeLast(8)
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPerformanceWheel(): PerformanceWheelUi {
+        if (!ok) return PreviewData.state.performanceWheel
+        val segments = body.arraySection("segments").objectChunks().map { chunk ->
+            PerformanceWheelSegmentUi(
+                name = chunk.jsonString("name") ?: "unknown",
+                score = chunk.jsonNumber("score")?.toIntOrNull() ?: 0,
+                status = chunk.jsonString("status") ?: "UNKNOWN"
+            )
+        }
+        return PerformanceWheelUi(
+            overallScore = body.jsonNumber("overall_score")?.toIntOrNull() ?: 0,
+            segments = segments,
+            netPnl = body.jsonNumber("net_pnl") ?: "0.00"
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toTradeQuality(): TradeQualityUi {
+        if (!ok) return PreviewData.state.tradeQuality
+        return TradeQualityUi(
+            score = body.jsonNumber("score")?.toIntOrNull() ?: 0,
+            level = body.jsonString("level") ?: "UNKNOWN",
+            recommendedAction = body.jsonString("recommended_action") ?: "SKIP",
+            tradeAllowed = body.jsonBoolean("trade_allowed") ?: false,
+            reason = body.jsonString("reason") ?: "Trade quality unavailable.",
+            missingData = body.jsonArrayItems("missing_data"),
+            conflicts = body.jsonArrayItems("conflicts")
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toNoTradeZone(): NoTradeZoneUi {
+        if (!ok) return PreviewData.state.noTradeZone
+        return NoTradeZoneUi(
+            active = body.jsonBoolean("active") ?: true,
+            zone = body.jsonString("zone") ?: "NO_TRADE",
+            recommendedAction = body.jsonString("recommended_action") ?: "SKIP",
+            reasons = body.jsonArrayItems("reasons")
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toShadowMode(): ShadowModeUi {
+        if (!ok) return PreviewData.state.shadowMode
+        return ShadowModeUi(
+            enabled = body.jsonBoolean("enabled") ?: true,
+            mode = body.jsonString("mode") ?: "PAPER_SHADOW_ONLY",
+            wouldDo = body.jsonString("would_do") ?: "SKIP",
+            reason = body.jsonString("reason") ?: "Shadow mode unavailable.",
+            noTradeZoneActive = body.jsonBoolean("no_trade_zone_active") ?: true
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toCoinUniverse(): CoinUniverseUi {
+        if (!ok) return PreviewData.state.coinUniverse
+        return CoinUniverseUi(
+            mode = body.jsonString("mode") ?: "ALL_ACTIVE_USDT_SPOT",
+            symbolCount = body.jsonNumber("symbol_count")?.toIntOrNull() ?: 0,
+            scanBatchLimit = body.jsonNumber("scan_batch_limit")?.toIntOrNull() ?: 0,
+            symbolsPreview = body.jsonArrayItems("symbols_preview"),
+            rule = body.jsonString("rule") ?: "Know full active Spot USDT universe; scan in safe batches."
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toDailyTarget(): DailyTargetUi {
+        if (!ok) return PreviewData.state.dailyTarget
+        return DailyTargetUi(
+            targetPnlPct = body.jsonNumber("target_pnl_pct") ?: "10",
+            targetAmountUsdt = body.jsonNumber("target_amount_usdt") ?: "0.00",
+            currentDailyPnlUsdt = body.jsonNumber("current_daily_pnl_usdt") ?: "0.00",
+            progressPct = body.jsonNumber("progress_pct") ?: "0.00",
+            targetReached = body.jsonBoolean("target_reached") ?: false,
+            recommendedMode = body.jsonString("recommended_mode") ?: "PAPER_DISCOVERY",
+            rules = body.jsonArrayItems("rules")
         )
     }
 

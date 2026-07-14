@@ -1,8 +1,12 @@
 package com.ttechnologyresearchlab.tradingos.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ttechnologyresearchlab.tradingos.data.PreviewData
+import com.ttechnologyresearchlab.tradingos.data.BackendConnectionState
+import com.ttechnologyresearchlab.tradingos.data.LocalDashboardCache
+import com.ttechnologyresearchlab.tradingos.data.OfflineSyncUi
 import com.ttechnologyresearchlab.tradingos.data.TradingOsRepository
 import com.ttechnologyresearchlab.tradingos.data.TradingOsUiState
 import com.ttechnologyresearchlab.tradingos.localization.AppLanguage
@@ -11,10 +15,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class TradingOsViewModel : ViewModel() {
+class TradingOsViewModel(application: Application) : AndroidViewModel(application) {
     private val backendBaseUrl = MutableStateFlow("https://t-production-8efc.up.railway.app")
     private val repository = TradingOsRepository(BackendApiClient { backendBaseUrl.value })
-    private val _uiState = MutableStateFlow(PreviewData.state)
+    private val localCache = LocalDashboardCache(application.applicationContext)
+    private val _uiState = MutableStateFlow(localCache.load())
     val uiState: StateFlow<TradingOsUiState> = _uiState
 
     init {
@@ -47,12 +52,34 @@ class TradingOsViewModel : ViewModel() {
     fun refresh() {
         viewModelScope.launch {
             val current = _uiState.value
-            _uiState.value = repository.refreshDashboard().copy(
+            val fresh = repository.refreshDashboard()
+            val preserved = if (
+                fresh.backendConnectionState == BackendConnectionState.DISCONNECTED &&
+                !current.isPreviewData
+            ) {
+                current.copy(
+                    connectionStatus = fresh.connectionStatus.ifBlank { "Backend unavailable. Last known data shown." },
+                    backendConnectionState = BackendConnectionState.DISCONNECTED,
+                    offlineSync = OfflineSyncUi(
+                        status = "OFFLINE_CACHE",
+                        lastSuccessfulSync = current.offlineSync.lastSuccessfulSync,
+                        queuedLocalActions = 0,
+                        cacheStatus = "Last known Railway data shown; reconnect will refresh."
+                    )
+                )
+            } else {
+                fresh
+            }
+            val updated = preserved.copy(
                 backendBaseUrl = backendBaseUrl.value,
                 language = current.language,
                 appLocked = current.appLocked,
                 onboardingComplete = current.onboardingComplete
             )
+            _uiState.value = updated
+            if (updated.backendConnectionState == BackendConnectionState.CONNECTED) {
+                localCache.save(updated)
+            }
         }
     }
 

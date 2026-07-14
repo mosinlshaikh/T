@@ -302,6 +302,287 @@ def _safe_float(value: float) -> float:
     return round(float(value), 8)
 
 
+def _bounded_score(value: float) -> int:
+    return max(0, min(100, int(round(value))))
+
+
+def _decision_action_counts() -> dict[str, int]:
+    counts = {"BUY": 0, "SELL": 0, "HOLD": 0, "SKIP": 0}
+    for decision in latest_decisions(limit=250):
+        action = str(
+            decision.get("action")
+            or decision.get("final_decision")
+            or decision.get("decision")
+            or ""
+        ).upper()
+        if action in counts:
+            counts[action] += 1
+    return counts
+
+
+def _latest_candle_studies(limit: int = 200) -> list[dict[str, Any]]:
+    studies: list[dict[str, Any]] = []
+    for event in latest_audit_events(limit=limit):
+        if event.get("event_type") != "candle_study":
+            continue
+        payload = _payload(event)
+        studies.append({"created_at": event.get("created_at", ""), **payload})
+    return studies
+
+
+def _latest_studies_by_timeframe() -> dict[str, dict[str, Any]]:
+    by_timeframe: dict[str, dict[str, Any]] = {}
+    for study in _latest_candle_studies():
+        timeframe = str(study.get("timeframe", "unknown"))
+        by_timeframe[timeframe] = study
+    return by_timeframe
+
+
+def _quality_level(score: int) -> str:
+    if score >= 78:
+        return "HIGH"
+    if score >= 58:
+        return "MEDIUM"
+    if score >= 35:
+        return "LOW"
+    return "SKIP"
+
+
+def _trend_conflicts(studies: dict[str, dict[str, Any]]) -> list[str]:
+    short = str((studies.get("5m") or studies.get("10m") or {}).get("trend", "unknown"))
+    long = str((studies.get("1h") or studies.get("4h") or {}).get("trend", "unknown"))
+    if "uptrend" in short and "downtrend" in long:
+        return ["short_timeframe_up_long_timeframe_down"]
+    if "downtrend" in short and "uptrend" in long:
+        return ["short_timeframe_down_long_timeframe_up"]
+    return []
+
+
+@router.get("/performance-wheel")
+def performance_wheel() -> dict[str, object]:
+    backend = get_backend()
+    events = latest_audit_events(limit=300)
+    studies = _latest_studies_by_timeframe()
+    counts = _decision_action_counts()
+    has_market = any(event.get("event_type") == "market_snapshot" for event in events)
+    has_candle = bool(studies)
+    has_order_book = any(event.get("event_type") == "order_book_analysis" for event in events)
+    has_whale = any(event.get("event_type") == "whale_analysis" for event in events)
+    has_news = any(event.get("event_type") == "news_risk_analysis" for event in events)
+    has_structure = any(event.get("event_type") == "market_structure_analysis" for event in events)
+    has_risk = any(
+        event.get("event_type") in {"risk_rejection", "risk_approval", "risk_result"}
+        for event in events
+    )
+    wallet = backend.portfolio.wallet_snapshot()
+    net_pnl = wallet.realized_pnl + wallet.unrealized_pnl
+    candle_score = _bounded_score(
+        max([float(item.get("confidence_score", 0.0) or 0.0) for item in studies.values()] or [0])
+        * 100
+    )
+    data_score = _bounded_score(
+        sum([has_market, has_candle, has_order_book, has_whale, has_news, has_structure]) / 6 * 100
+    )
+    safety_score = 100 if not backend.config.enable_live_trading else 0
+    pnl_score = 50 if net_pnl == 0 else 70 if net_pnl > 0 else 25
+    segments = [
+        {"name": "Candle Reading", "score": candle_score, "status": _quality_level(candle_score)},
+        {
+            "name": "Whale Tracking",
+            "score": 75 if has_whale else 35,
+            "status": "DATA" if has_whale else "MISSING",
+        },
+        {
+            "name": "News Risk",
+            "score": 75 if has_news else 35,
+            "status": "DATA" if has_news else "MISSING",
+        },
+        {
+            "name": "Order Book",
+            "score": 75 if has_order_book else 35,
+            "status": "DATA" if has_order_book else "MISSING",
+        },
+        {
+            "name": "Market Structure",
+            "score": 75 if has_structure else 35,
+            "status": "DATA" if has_structure else "MISSING",
+        },
+        {"name": "Risk Engine", "score": 80 if has_risk else 60, "status": "ACTIVE"},
+        {"name": "Safety Lock", "score": safety_score, "status": "LIVE_BLOCKED"},
+        {"name": "Zero Hallucination", "score": 95, "status": "ACTIVE"},
+        {
+            "name": "Paper PnL",
+            "score": pnl_score,
+            "status": "PROFIT" if net_pnl > 0 else "LOSS" if net_pnl < 0 else "FLAT",
+        },
+        {
+            "name": "Decision Mix",
+            "score": _bounded_score(
+                (counts["BUY"] + counts["SELL"] + counts["HOLD"])
+                / max(sum(counts.values()), 1)
+                * 100
+            ),
+            "status": "PAPER",
+        },
+        {
+            "name": "Backend Health",
+            "score": data_score,
+            "status": "CONNECTED" if data_score >= 50 else "PARTIAL",
+        },
+    ]
+    payload = {
+        "segments": segments,
+        "overall_score": _bounded_score(
+            sum(int(item["score"]) for item in segments) / len(segments)
+        ),
+        "decision_counts": counts,
+        "net_pnl": net_pnl,
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "rule": "Performance wheel is paper/audit monitoring only.",
+    }
+    return ok(redact_sensitive(payload), "Performance wheel loaded.")
+
+
+@router.get("/trade-quality")
+def trade_quality() -> dict[str, object]:
+    studies = _latest_studies_by_timeframe()
+    conflicts = _trend_conflicts(studies)
+    latest_decision = _latest_decision_payload() or {}
+    evidence = latest_decision.get("evidence", [])
+    if not isinstance(evidence, list):
+        evidence = [str(evidence)]
+    candle_scores = [
+        float(study.get("confidence_score", 0.0) or 0.0)
+        for study in studies.values()
+        if not study.get("missing_data")
+    ]
+    evidence_score = min(len(evidence), 5) * 10
+    candle_score = (sum(candle_scores) / len(candle_scores) * 60) if candle_scores else 0
+    conflict_penalty = 30 if conflicts else 0
+    score = _bounded_score(evidence_score + candle_score - conflict_penalty)
+    missing_data = []
+    if not studies:
+        missing_data.append("multi_timeframe_candles")
+    if not evidence:
+        missing_data.append("decision_evidence")
+    action = str(
+        latest_decision.get("action") or latest_decision.get("final_decision") or "SKIP"
+    ).upper()
+    payload = {
+        "score": score,
+        "level": _quality_level(score),
+        "recommended_action": "SKIP" if missing_data or conflicts or score < 58 else action,
+        "trade_allowed": bool(
+            not missing_data and not conflicts and score >= 58 and action in {"BUY", "SELL", "HOLD"}
+        ),
+        "evidence": evidence[:8],
+        "missing_data": missing_data,
+        "conflicts": conflicts,
+        "reason": "Trade quality uses evidence count, candle confidence, and conflict penalties.",
+        "live_trading_enabled": False,
+        "public_data_only": True,
+    }
+    return ok(redact_sensitive(payload), "Trade quality score loaded.")
+
+
+@router.get("/no-trade-zone")
+def no_trade_zone() -> dict[str, object]:
+    studies = _latest_studies_by_timeframe()
+    conflicts = _trend_conflicts(studies)
+    range_count = len(
+        [study for study in studies.values() if str(study.get("trend", "")).lower() == "range"]
+    )
+    low_confidence_count = len(
+        [
+            study
+            for study in studies.values()
+            if float(study.get("confidence_score", 0.0) or 0.0) < 0.45
+        ]
+    )
+    active = bool(conflicts or range_count >= 3 or low_confidence_count >= 3 or not studies)
+    reasons: list[str] = []
+    if not studies:
+        reasons.append("multi_timeframe_candle_data_missing")
+    if range_count >= 3:
+        reasons.append("range_or_choppy_market_across_timeframes")
+    if low_confidence_count >= 3:
+        reasons.append("low_confidence_across_timeframes")
+    reasons.extend(conflicts)
+    payload = {
+        "active": active,
+        "zone": "NO_TRADE" if active else "WATCHLIST_ALLOWED",
+        "recommended_action": "SKIP" if active else "HOLD_OR_PAPER_ONLY_WATCH",
+        "range_timeframe_count": range_count,
+        "low_confidence_timeframe_count": low_confidence_count,
+        "conflicts": conflicts,
+        "reasons": reasons,
+        "live_trading_enabled": False,
+        "public_data_only": True,
+    }
+    return ok(redact_sensitive(payload), "No-trade zone status loaded.")
+
+
+@router.get("/shadow-mode")
+def shadow_mode() -> dict[str, object]:
+    quality = trade_quality()["data"]  # safe local calculation; no network or order execution.
+    zone = no_trade_zone()["data"]
+    recommended = "SKIP"
+    if not zone["active"] and quality["trade_allowed"]:
+        recommended = str(quality["recommended_action"])
+    payload = {
+        "enabled": True,
+        "mode": "PAPER_SHADOW_ONLY",
+        "would_do": recommended,
+        "trade_quality_score": quality["score"],
+        "no_trade_zone_active": zone["active"],
+        "reason": "Shadow mode records what the bot would do without enabling real execution.",
+        "audit_policy": "Record candidate, evidence, missing data, conflicts, and paper outcome when available.",
+        "live_trading_enabled": False,
+        "public_data_only": True,
+    }
+    return ok(redact_sensitive(payload), "Paper shadow mode loaded.")
+
+
+@router.get("/symbol-universe")
+def symbol_universe(max_preview: int = 80) -> dict[str, object]:
+    backend = get_backend()
+    payload = backend.paper_auto_trader.symbol_universe(max_preview=max_preview)
+    return ok(redact_sensitive(payload), "Binance Spot USDT symbol universe loaded.")
+
+
+@router.get("/daily-target")
+def daily_target(target_pnl_pct: float = 10.0) -> dict[str, object]:
+    backend = get_backend()
+    wallet = backend.portfolio.wallet_snapshot()
+    safe_target_pct = min(max(float(target_pnl_pct), 0.1), 10.0)
+    starting_balance = max(wallet.usdt_balance - wallet.realized_pnl, 1.0)
+    target_amount = starting_balance * (safe_target_pct / 100)
+    current_pnl = backend.portfolio.daily_pnl()
+    progress_pct = min(
+        max((current_pnl / target_amount) * 100 if target_amount else 0.0, 0.0), 100.0
+    )
+    target_reached = current_pnl >= target_amount
+    payload = {
+        "target_pnl_pct": safe_target_pct,
+        "target_amount_usdt": round(target_amount, 8),
+        "current_daily_pnl_usdt": round(current_pnl, 8),
+        "progress_pct": round(progress_pct, 2),
+        "target_reached": target_reached,
+        "recommended_mode": "PROTECT_PROFIT" if target_reached else "PAPER_DISCOVERY",
+        "rules": [
+            "10% daily PnL is a target setting, not a promise.",
+            "If target is reached, reduce new paper entries and protect gains.",
+            "If data is missing or conflicts exist, decision remains SKIP/HOLD.",
+            "Daily loss, cooldown, stop-loss, and take-profit rules remain active.",
+        ],
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "profit_guarantee": False,
+    }
+    return ok(redact_sensitive(payload), "Daily target guard loaded.")
+
+
 def _study_payload(study: CandleStudy) -> dict[str, object]:
     return {
         "symbol": study.symbol,

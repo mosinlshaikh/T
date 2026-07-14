@@ -117,12 +117,17 @@ It must return `ready_for_real_money=false` and
 - `POST /control/paper-session/start`
 - `POST /control/paper-session/stop`
 - `GET /control/paper-session/status`
+- `POST /control/manual-paper-demo/open`
 
 There is no live mode endpoint.
 
 Paper session endpoints run repeated public-market paper scans for learning and
 monitoring. They do not place real Binance orders and cannot enable live
 trading.
+
+`/control/manual-paper-demo/open` opens a capped paper-only walkthrough position
+using public ticker data. It is clearly labeled `MANUAL PAPER DEMO`; it is not
+an AI decision and never sends a real Binance order.
 
 ## Monitor Endpoints
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 from trading_os.api.dependencies import get_backend
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import fail, ok
+from trading_os.execution.intent import ExecutionIntent, OrderIntentType
+from trading_os.market.live_public_data import BinancePublicMarketDataClient
 from trading_os.runtime.shutdown_engine import ShutdownState
 
 router = APIRouter(prefix="/control", tags=["control"])
@@ -122,6 +124,103 @@ def run_live_market_paper_demo(
             "public_data_only": True,
         },
         "Live-market paper demo completed safely.",
+    )
+
+
+@router.post("/manual-paper-demo/open")
+def manual_paper_demo_open(
+    symbol: str = "BTCUSDT",
+    trade_notional_usdt: float = 25.0,
+) -> dict[str, object]:
+    """Open a clearly labeled manual paper demo position.
+
+    This endpoint is for APK walkthrough/testing only. It never places a real
+    Binance order and does not bypass live trading safety rules.
+    """
+
+    backend = get_backend()
+    if backend.config.enable_live_trading:
+        return fail(
+            "LIVE_TRADING_BLOCKED", errors=["Manual paper demo cannot enable live trading."]
+        )
+    if backend.kill_switch.active:
+        return fail("KILL_SWITCH_ACTIVE", errors=["Emergency stop is active."])
+    if not backend.shutdown_engine.accepts_new_trades:
+        return fail("SHUTDOWN_REQUESTED", errors=["New paper demo trades are blocked."])
+
+    safe_notional = min(max(float(trade_notional_usdt), 10.0), 100.0)
+    try:
+        bundle = BinancePublicMarketDataClient().fetch_bundle(
+            symbol=symbol,
+            timeframe="5m",
+            candle_limit=20,
+            order_book_limit=10,
+            trade_limit=10,
+        )
+    except Exception as exc:
+        return ok(
+            {
+                "status": "SKIP",
+                "symbol": symbol.upper(),
+                "reason": "Public market data unavailable; manual paper demo skipped safely.",
+                "error": exc.__class__.__name__,
+                "live_trading_enabled": False,
+                "public_data_only": True,
+            },
+            "Manual paper demo skipped safely.",
+            warnings=["No real order was sent."],
+        )
+
+    price = float(bundle.snapshot.price)
+    quantity = round(safe_notional / price, 8)
+    stop_loss = round(price * 0.99, 8)
+    take_profit = round(price * 1.015, 8)
+    intent = ExecutionIntent(
+        symbol=bundle.symbol,
+        side="BUY",
+        quantity=quantity,
+        stop_loss=stop_loss,
+        take_profit=take_profit,
+        reason="MANUAL PAPER DEMO: user-requested paper-only walkthrough trade.",
+        evidence_ids=["manual-paper-demo", bundle.snapshot.source],
+        risk_approval_id="manual-paper-demo-risk-capped",
+        intent_type=OrderIntentType.MARKET_BUY,
+        live_enabled=False,
+    )
+    fill = backend.paper_simulator.open_trade(intent, fill_price=price)
+    backend.audit_logger.log(
+        "manual_paper_demo_open",
+        {
+            "symbol": fill.symbol,
+            "position_id": fill.position_id,
+            "quantity": fill.quantity,
+            "fill_price": fill.fill_price,
+            "stop_loss": stop_loss,
+            "take_profit": take_profit,
+            "notional_usdt": safe_notional,
+            "reason": intent.reason,
+            "live_trading_enabled": False,
+            "public_data_only": True,
+        },
+    )
+    return ok(
+        {
+            "status": "PAPER_OPEN",
+            "symbol": fill.symbol,
+            "position_id": fill.position_id,
+            "side": fill.side,
+            "quantity": fill.quantity,
+            "fill_price": fill.fill_price,
+            "fee": fill.fee,
+            "stop_loss": stop_loss,
+            "take_profit": take_profit,
+            "reason": intent.reason,
+            "live_trading_enabled": False,
+            "public_data_only": True,
+            "manual_demo": True,
+        },
+        "Manual paper demo position opened.",
+        warnings=["Paper mode only. This is not an AI trade and no real Binance order was sent."],
     )
 
 

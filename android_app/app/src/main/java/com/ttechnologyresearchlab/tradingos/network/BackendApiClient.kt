@@ -70,6 +70,7 @@ class BackendApiClient(
     suspend fun pauseNewTrades() = post("/control/pause-new-trades")
     suspend fun resumePaperTrades() = post("/control/resume-paper-trades")
     suspend fun runLiveMarketPaperDemo() = post("/control/run-live-market-paper-demo")
+    suspend fun openManualPaperDemo() = post("/control/manual-paper-demo/open?symbol=BTCUSDT&trade_notional_usdt=25")
     suspend fun startPaperSession() = post("/control/paper-session/start")
     suspend fun stopPaperSession() = post("/control/paper-session/stop")
     suspend fun getPaperSessionStatus() = get("/control/paper-session/status")

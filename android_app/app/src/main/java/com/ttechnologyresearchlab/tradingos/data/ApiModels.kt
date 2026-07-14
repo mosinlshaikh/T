@@ -367,6 +367,7 @@ data class TradingOsUiState(
     val candleStudies: List<CandleStudyUi> = emptyList(),
     val paperScanSummary: PaperScanSummaryUi = PaperScanSummaryUi(),
     val paperScanHistory: List<PaperScanHistoryRowUi> = emptyList(),
+    val watchlistCandidates: List<PaperScanHistoryRowUi> = emptyList(),
     val paperDemoReadiness: PaperDemoReadinessUi = PaperDemoReadinessUi(),
     val performanceWheel: PerformanceWheelUi = PerformanceWheelUi(),
     val tradeQuality: TradeQualityUi = TradeQualityUi(),

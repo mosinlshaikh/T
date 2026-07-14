@@ -38,6 +38,7 @@ class TradingOsRepository(
                 val candleStudies = apiClient.getCandleStudy().toCandleStudies()
                 val paperScanSummary = apiClient.getPaperScanSummary().toPaperScanSummary()
                 val paperScanHistory = apiClient.getPaperScanHistory().toPaperScanHistory()
+                val watchlistCandidates = apiClient.getWatchlistCandidates().toWatchlistCandidates()
                 val paperDemoReadiness = apiClient.getPaperDemoReadiness().toPaperDemoReadiness()
                 val performanceWheel = apiClient.getPerformanceWheel().toPerformanceWheel()
                 val tradeQuality = apiClient.getTradeQuality().toTradeQuality()
@@ -77,6 +78,7 @@ class TradingOsRepository(
                     candleStudies = candleStudies,
                     paperScanSummary = paperScanSummary,
                     paperScanHistory = paperScanHistory,
+                    watchlistCandidates = watchlistCandidates,
                     paperDemoReadiness = paperDemoReadiness,
                     performanceWheel = performanceWheel,
                     tradeQuality = tradeQuality,
@@ -522,7 +524,18 @@ class TradingOsRepository(
         if (!ok) return PreviewData.state.paperScanHistory
         val section = body.arraySection("rows")
         if (section.isBlank()) return emptyList()
-        return section.objectChunks().map { chunk ->
+        return section.paperScanRows().takeLast(20)
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toWatchlistCandidates(): List<PaperScanHistoryRowUi> {
+        if (!ok) return PreviewData.state.watchlistCandidates
+        val section = body.arraySection("candidates")
+        if (section.isBlank()) return emptyList()
+        return section.paperScanRows().take(10)
+    }
+
+    private fun String.paperScanRows(): List<PaperScanHistoryRowUi> {
+        return objectChunks().map { chunk ->
             PaperScanHistoryRowUi(
                 timestamp = chunk.jsonString("timestamp") ?: "unknown",
                 symbol = chunk.jsonString("symbol") ?: "UNKNOWN",
@@ -535,7 +548,7 @@ class TradingOsRepository(
                 strategyBreakdown = chunk.strategyBreakdownRows(),
                 source = chunk.jsonString("source") ?: "paper_scan"
             )
-        }.takeLast(20)
+        }
     }
 
     private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPaperDemoReadiness(): PaperDemoReadinessUi {

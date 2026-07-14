@@ -69,6 +69,7 @@ class BackendApiClient(
     suspend fun getCandleStudy() = get("/monitor/candle-study?symbol=BTCUSDT&timeframes=5m,10m,1h,4h,8h,24h,1M&limit=80")
     suspend fun getPaperScanSummary() = get("/monitor/paper-scan-summary")
     suspend fun getPaperScanHistory() = get("/monitor/paper-scan-history?limit=20")
+    suspend fun getWatchlistCandidates() = get("/monitor/watchlist-candidates?limit=10")
     suspend fun getPaperDemoReadiness() = get("/monitor/paper-demo-readiness")
     suspend fun getPerformanceWheel() = get("/monitor/performance-wheel")
     suspend fun getTradeQuality() = get("/monitor/trade-quality")

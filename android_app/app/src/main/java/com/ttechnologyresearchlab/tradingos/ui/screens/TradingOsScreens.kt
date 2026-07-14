@@ -363,6 +363,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         TimelineCard("Decision Timeline", state.decisionTimeline.takeLast(5))
         EvidenceDrillDownCard(state)
         PaperSessionCard(state)
+        WatchlistCandidatesCard(state)
         PaperScanHistoryCard(state)
         if (connected) {
             EmergencyStopButton(emergencyStop)
@@ -524,6 +525,7 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
         PaperReadinessCard(state)
         LatestPaperScanCard(state)
         PaperSessionCard(state)
+        WatchlistCandidatesCard(state)
         PaperScanHistoryCard(state)
     }
 }
@@ -1353,6 +1355,31 @@ private fun PaperScanHistoryCard(state: TradingOsUiState) {
             }
         }
         Text("History is paper/audit only. No real Binance order is sent from this app.")
+    }
+}
+
+@Composable
+private fun WatchlistCandidatesCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("Best Watchlist Candidates", color = TradingGold, fontWeight = FontWeight.Bold)
+        if (state.watchlistCandidates.isEmpty()) {
+            Text("No watchlist candidates loaded yet. Run a paper scan batch.")
+        } else {
+            state.watchlistCandidates.take(10).forEach { row ->
+                GlassCard {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatusChip(row.symbol, TradingGold)
+                        StatusChip(row.action, timelineColor(row.action))
+                        StatusChip("Confidence ${row.confidence}", ElectricBlue)
+                    }
+                    Text(row.whyNotTraded, color = MutedText)
+                    if (row.strategyBreakdown.isNotEmpty()) {
+                        row.strategyBreakdown.take(4).forEach { Text("- $it", color = MutedText) }
+                    }
+                }
+            }
+        }
+        Text("Candidates are watch-only. HOLD/SKIP does not open a paper or real trade.")
     }
 }
 

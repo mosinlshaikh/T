@@ -253,6 +253,32 @@ def paper_scan_history(limit: int = 20) -> dict[str, object]:
     return ok(redact_sensitive(payload), "Paper scan history loaded.")
 
 
+@router.get("/watchlist-candidates")
+def watchlist_candidates(limit: int = 10) -> dict[str, object]:
+    history = paper_scan_history(limit=100)["data"]
+    rows = list(history.get("rows", []))
+    ranked = sorted(
+        rows,
+        key=lambda item: (
+            1 if str(item.get("action", "")).upper() in {"BUY", "SELL"} else 0,
+            float(item.get("confidence", 0.0) or 0.0),
+        ),
+        reverse=True,
+    )
+    safe_limit = min(max(int(limit), 1), 20)
+    candidates = ranked[:safe_limit]
+    payload = {
+        "candidates": candidates,
+        "count": len(candidates),
+        "source_rows": len(rows),
+        "ranking_rule": "BUY/SELL candidates first, then confidence. HOLD/SKIP remain watch-only.",
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "profit_guarantee": False,
+    }
+    return ok(redact_sensitive(payload), "Watchlist candidates loaded.")
+
+
 def _evidence_item(event: dict[str, Any]) -> dict[str, object]:
     payload = _payload(event)
     event_type = str(event.get("event_type", "unknown"))

@@ -4,6 +4,7 @@ from trading_os.api.routes.monitor import (
     performance_wheel,
     shadow_mode,
     trade_quality,
+    watchlist_candidates,
 )
 
 
@@ -48,3 +49,12 @@ def test_paper_scan_history_is_safe() -> None:
     assert response["data"]["public_data_only"] is True
     assert response["data"]["requested_limit"] == 20
     assert isinstance(response["data"]["rows"], list)
+
+
+def test_watchlist_candidates_are_paper_safe() -> None:
+    response = watchlist_candidates(limit=10)
+    assert response["success"] is True
+    assert response["data"]["live_trading_enabled"] is False
+    assert response["data"]["public_data_only"] is True
+    assert response["data"]["profit_guarantee"] is False
+    assert isinstance(response["data"]["candidates"], list)

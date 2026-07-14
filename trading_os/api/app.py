@@ -5,6 +5,7 @@ from trading_os.api.responses import fail
 from trading_os.api.routes import (
     audit,
     control,
+    derivatives,
     decisions,
     learning,
     licensing,
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="T AI Binance Trading OS Backend API", version="0.10.0-phase10-ready")
     app.include_router(status.router)
     app.include_router(control.router)
+    app.include_router(derivatives.router)
     app.include_router(portfolio.router)
     app.include_router(trades.router)
     app.include_router(decisions.router)

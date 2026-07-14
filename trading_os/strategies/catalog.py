@@ -121,14 +121,42 @@ BINANCE_SPOT_STRATEGY_CATALOG: tuple[StrategyCatalogItem, ...] = (
             "risk_result",
         ],
     ),
+    StrategyCatalogItem(
+        "DERIVATIVES_RISK_READINESS_FILTER",
+        "F&O Research",
+        "Paper-only futures/options readiness check; blocks leverage execution while showing risk impact.",
+        ["spot_evidence", "volatility", "risk_limits", "paper_statement"],
+        status="RESEARCH_ONLY_LIVE_BLOCKED",
+        safety_rules=[
+            "No futures/options live execution",
+            "No leverage execution",
+            "No margin permissions",
+            "No profit guarantee",
+            "Paper-only risk estimate",
+        ],
+    ),
+    StrategyCatalogItem(
+        "OPTIONS_EVENT_RISK_WATCH",
+        "F&O Research",
+        "Placeholder for options/event risk education using evidence only; no options order support.",
+        ["news_source", "volatility_context", "event_risk", "timestamp"],
+        status="RESEARCH_ONLY_LIVE_BLOCKED",
+        safety_rules=[
+            "No options execution",
+            "Missing data returns SKIP",
+            "No implied-volatility claim without source",
+            "No profit guarantee",
+        ],
+    ),
 )
 
 
 def strategy_catalog_payload() -> dict[str, object]:
     return {
         "mode": "paper_advisory_only",
-        "exchange_scope": "Binance Spot public-market and paper-trading architecture",
+        "exchange_scope": "Binance Spot public-market and paper-trading architecture; F&O research is paper-only/live-blocked",
         "live_execution_available": False,
+        "derivatives_live_execution_available": False,
         "withdrawals_supported": False,
         "external_ai_key_required": False,
         "strategy_count": len(BINANCE_SPOT_STRATEGY_CATALOG),

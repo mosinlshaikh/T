@@ -6,7 +6,9 @@ from typing import Any
 from trading_os.api.dependencies import get_backend, latest_audit_events, latest_decisions
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import ok, redact_sensitive
+from trading_os.intelligence.candle_study import CandleStudy, CandleStudyEngine
 from trading_os.market.candle_engine import Candle
+from trading_os.market.live_public_data import BinancePublicMarketDataClient
 from trading_os.market.timeframes import normalize_timeframe
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
@@ -300,6 +302,22 @@ def _safe_float(value: float) -> float:
     return round(float(value), 8)
 
 
+def _study_payload(study: CandleStudy) -> dict[str, object]:
+    return {
+        "symbol": study.symbol,
+        "timeframe": study.timeframe.value,
+        "candle_count": study.candle_count,
+        "latest_close": study.latest_close,
+        "price_change_pct": study.price_change_pct,
+        "trend": study.trend,
+        "move_reason": study.move_reason,
+        "evidence": study.evidence,
+        "learning_notes": study.learning_notes,
+        "confidence_score": study.confidence_score,
+        "missing_data": study.missing_data,
+    }
+
+
 def _candle_from_payload(payload: dict[str, Any]) -> Candle | None:
     try:
         return Candle(
@@ -401,3 +419,87 @@ def candle_detail(
         "decision_rule": "Candle evidence is advisory; risk and zero-hallucination gates still decide.",
     }
     return ok(redact_sensitive(payload), "Candle detail loaded.")
+
+
+@router.get("/candle-study")
+def candle_study(
+    symbol: str = "BTCUSDT",
+    timeframes: str = "5m,10m,1h,4h,8h,24h,1M",
+    limit: int = 80,
+) -> dict[str, object]:
+    backend = get_backend()
+    safe_limit = min(max(int(limit), 20), 200)
+    requested = [item.strip() for item in timeframes.split(",") if item.strip()]
+    if not requested:
+        requested = ["5m", "10m", "1h", "4h", "8h", "24h", "1M"]
+    client = BinancePublicMarketDataClient()
+    study_engine = CandleStudyEngine()
+    studies: list[dict[str, object]] = []
+    errors: list[dict[str, str]] = []
+
+    for item in requested[:10]:
+        try:
+            tf = normalize_timeframe(item)
+            bundle = client.fetch_bundle(
+                symbol=symbol,
+                timeframe=tf,
+                candle_limit=safe_limit,
+                order_book_limit=5,
+                trade_limit=5,
+            )
+            backend.candle_engine.collect(bundle.candles)
+            backend.repository.save_market_intelligence_snapshot(
+                {
+                    "type": "candle_archive",
+                    "symbol": bundle.symbol,
+                    "timeframe": bundle.timeframe.value,
+                    "source": "binance_public_klines",
+                    "public_data_only": True,
+                    "live_trading_enabled": False,
+                    "timestamp": bundle.evidence[0].timestamp,
+                    "candles": [
+                        {
+                            "symbol": candle.symbol,
+                            "timeframe": candle.timeframe.value,
+                            "open": candle.open,
+                            "high": candle.high,
+                            "low": candle.low,
+                            "close": candle.close,
+                            "volume": candle.volume,
+                            "start_time_ms": candle.start_time_ms,
+                            "end_time_ms": candle.end_time_ms,
+                        }
+                        for candle in bundle.candles
+                    ],
+                }
+            )
+            study = study_engine.study(bundle.symbol, bundle.timeframe, bundle.candles)
+            studies.append(_study_payload(study))
+            backend.audit_logger.log(
+                "candle_study",
+                {
+                    **_study_payload(study),
+                    "public_data_only": True,
+                    "live_trading_enabled": False,
+                },
+            )
+        except Exception as exc:
+            errors.append(
+                {
+                    "timeframe": item,
+                    "error": exc.__class__.__name__,
+                    "reason": "Candle study skipped safely for this timeframe.",
+                }
+            )
+
+    payload = {
+        "symbol": symbol.upper(),
+        "studies": studies,
+        "errors": errors,
+        "self_learning_mode": "advisory_evidence_based",
+        "learning_rule": "No Data = No Trade; candle learning cannot auto-change strategy or enable live trading.",
+        "supported_timeframes": ["5m", "10m", "1h", "4h", "8h", "24h", "1M"],
+        "live_trading_enabled": False,
+        "public_data_only": True,
+    }
+    return ok(redact_sensitive(payload), "Multi-timeframe candle study loaded.")

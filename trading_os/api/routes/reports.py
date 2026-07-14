@@ -7,6 +7,7 @@ from trading_os.api.dependencies import get_backend
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import ok
 from trading_os.reports.generator import ReportGenerator
+from trading_os.reports.statement import StatementEngine
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -29,6 +30,33 @@ def _generator() -> ReportGenerator:
 @router.get("/daily")
 def daily_report() -> dict[str, object]:
     return ok(_generator().daily_report(), "Daily paper report loaded.")
+
+
+@router.get("/statement")
+def statement_report(hours: int = 24) -> dict[str, object]:
+    backend = get_backend()
+    return ok(
+        StatementEngine(backend.repository).build(hours=hours),
+        "Paper profit/loss statement loaded.",
+    )
+
+
+@router.get("/statement-daily")
+def daily_statement_report() -> dict[str, object]:
+    backend = get_backend()
+    return ok(
+        StatementEngine(backend.repository).build(hours=24),
+        "24-hour paper profit/loss statement loaded.",
+    )
+
+
+@router.get("/statement-7d")
+def seven_day_statement_report() -> dict[str, object]:
+    backend = get_backend()
+    return ok(
+        StatementEngine(backend.repository).build(hours=168),
+        "7-day paper profit/loss statement loaded.",
+    )
 
 
 @router.get("/weekly")

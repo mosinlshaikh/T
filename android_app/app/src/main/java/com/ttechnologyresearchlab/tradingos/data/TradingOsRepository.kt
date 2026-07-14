@@ -20,12 +20,19 @@ class TradingOsRepository(
                 val monitorState = monitorResult.toMonitorState()
                 val readinessResult = apiClient.getRealWorldReadiness()
                 val safetyScore = readinessResult.toSafetyScore()
+                val statement = apiClient.getStatementReport().toStatement(
+                    apiClient.getSevenDayStatementReport()
+                )
+                val derivatives = apiClient.getDerivativesReadiness().toDerivatives(
+                    apiClient.getDerivativesRiskEstimate()
+                )
                 val strategyCatalog = apiClient.getStrategyCatalog().toStrategyCatalog()
                 val paperSession = apiClient.getPaperSessionStatus().toPaperSession()
                 val dashboardCharts = apiClient.getDashboardCharts().toDashboardCharts()
                 val timelines = apiClient.getDashboardTimelines().toDashboardTimelines()
                 val marketEvidenceFeed = apiClient.getMarketEvidenceFeed().toMarketEvidenceFeed()
                 val candleDetail = apiClient.getCandleDetail().toCandleDetail()
+                val candleStudies = apiClient.getCandleStudy().toCandleStudies()
                 val paperScanSummary = apiClient.getPaperScanSummary().toPaperScanSummary()
                 val paperDemoReadiness = apiClient.getPaperDemoReadiness().toPaperDemoReadiness()
                 PreviewData.state.copy(
@@ -41,6 +48,8 @@ class TradingOsRepository(
                     auditEvents = monitorState.auditEvents,
                     portfolio = monitorState.portfolio ?: PreviewData.state.portfolio,
                     safetyScore = safetyScore,
+                    statement = statement,
+                    derivatives = derivatives,
                     strategyCatalog = strategyCatalog.ifEmpty { PreviewData.state.strategyCatalog },
                     paperSession = paperSession,
                     dashboardCharts = dashboardCharts,
@@ -49,6 +58,7 @@ class TradingOsRepository(
                     auditTimeline = timelines.auditTimeline,
                     marketEvidenceFeed = marketEvidenceFeed,
                     candleDetail = candleDetail,
+                    candleStudies = candleStudies,
                     paperScanSummary = paperScanSummary,
                     paperDemoReadiness = paperDemoReadiness,
                     botStatus = PreviewData.state.botStatus.copy(
@@ -293,6 +303,62 @@ class TradingOsRepository(
         }
     }
 
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toStatement(
+        sevenDayResult: com.ttechnologyresearchlab.tradingos.network.ApiClientResult
+    ): StatementUi {
+        if (!ok) return PreviewData.state.statement
+        val safetyChecks = body.arraySection("safety_checks").objectChunks().map { chunk ->
+            "${chunk.jsonString("name") ?: "Safety check"}: ${chunk.jsonBoolean("passed") ?: false}"
+        }
+        val tradeRows = body.arraySection("trade_rows").objectChunks().map { chunk ->
+            val symbol = chunk.jsonString("symbol") ?: "UNKNOWN"
+            val status = chunk.jsonString("status") ?: "PAPER"
+            val pnl = chunk.jsonNumber("realized_pnl") ?: "0.00"
+            "$symbol $status PnL=$pnl"
+        }
+        return StatementUi(
+            statementId = body.jsonString("statement_id") ?: "paper-statement",
+            windowHours = body.jsonNumber("window_hours") ?: "18",
+            realizedPnl = body.jsonNumber("realized_pnl") ?: "0.00",
+            unrealizedPnl = body.jsonNumber("unrealized_pnl") ?: "0.00",
+            netPnl = body.jsonNumber("net_pnl") ?: "0.00",
+            grossProfit = body.jsonNumber("gross_profit") ?: "0.00",
+            grossLoss = body.jsonNumber("gross_loss") ?: "0.00",
+            winRatePct = body.jsonNumber("win_rate_pct") ?: "0.00",
+            openPositions = body.jsonNumber("open_positions") ?: "0",
+            closedPositions = body.jsonNumber("closed_positions") ?: "0",
+            journalEntries = body.jsonNumber("journal_entries") ?: "0",
+            safetyChecks = safetyChecks,
+            tradeRows = tradeRows.takeLast(12),
+            notes = body.jsonArrayItems("notes"),
+            sevenDayNetPnl = sevenDayResult.body.jsonNumber("net_pnl") ?: "0.00",
+            sevenDayRealizedPnl = sevenDayResult.body.jsonNumber("realized_pnl") ?: "0.00",
+            sevenDayClosedPositions = sevenDayResult.body.jsonNumber("closed_positions") ?: "0",
+            sevenDayWinRatePct = sevenDayResult.body.jsonNumber("win_rate_pct") ?: "0.00"
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toDerivatives(
+        riskEstimate: com.ttechnologyresearchlab.tradingos.network.ApiClientResult
+    ): DerivativesUi {
+        val readinessBody = if (ok) body else ""
+        val riskBody = if (riskEstimate.ok) riskEstimate.body else ""
+        return DerivativesUi(
+            mode = readinessBody.jsonString("mode") ?: "RESEARCH_ONLY",
+            futuresExecutionAvailable = readinessBody.jsonBoolean("futures_execution_available") ?: false,
+            optionsExecutionAvailable = readinessBody.jsonBoolean("options_execution_available") ?: false,
+            leverageExecutionAvailable = readinessBody.jsonBoolean("leverage_execution_available") ?: false,
+            notionalUsdt = riskBody.jsonNumber("notional_usdt") ?: "100",
+            leverage = riskBody.jsonNumber("leverage") ?: "2",
+            marginEstimateUsdt = riskBody.jsonNumber("margin_estimate_usdt") ?: "50",
+            estimatedLossUsdt = riskBody.jsonNumber("estimated_loss_usdt") ?: "1",
+            liquidationWarning = riskBody.jsonString("liquidation_warning") ?: "Paper-only risk estimate.",
+            blockedReasons = readinessBody.jsonArrayItems("blocked_reasons"),
+            allowedFeatures = readinessBody.jsonArrayItems("allowed_features"),
+            safetyNotes = riskBody.jsonArrayItems("safety_notes")
+        )
+    }
+
     private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPaperSession(): PaperSessionUi {
         if (!ok) return PreviewData.state.paperSession
         val best = body.section("best_candidate")
@@ -375,6 +441,22 @@ class TradingOsRepository(
             decisionRule = body.jsonString("decision_rule") ?: "Missing candle data = SKIP",
             sparklineCloses = closeValues
         )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toCandleStudies(): List<CandleStudyUi> {
+        if (!ok) return PreviewData.state.candleStudies
+        val section = body.arraySection("studies")
+        if (section.isBlank()) return PreviewData.state.candleStudies
+        return section.objectChunks().map { chunk ->
+            CandleStudyUi(
+                timeframe = chunk.jsonString("timeframe") ?: "unknown",
+                trend = chunk.jsonString("trend") ?: "unknown",
+                confidence = chunk.jsonNumber("confidence_score") ?: "0.00",
+                moveReason = chunk.jsonString("move_reason") ?: "Candle study unavailable.",
+                learningNotes = chunk.jsonArrayItems("learning_notes"),
+                missingData = chunk.jsonArrayItems("missing_data")
+            )
+        }.ifEmpty { PreviewData.state.candleStudies }
     }
 
     private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPaperScanSummary(): PaperScanSummaryUi {

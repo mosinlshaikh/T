@@ -71,6 +71,12 @@ class RealWorldReadinessGate:
                 "Withdraw permissions are unsupported.",
             ),
             ReadinessCheck(
+                "derivatives_live_execution_blocked",
+                True,
+                "blocked",
+                "Futures/options live execution is unavailable; F&O is research/paper-only.",
+            ),
+            ReadinessCheck(
                 "api_readiness",
                 api.ready,
                 api.status.value,
@@ -113,6 +119,7 @@ class RealWorldReadinessGate:
                 "live_trading_disabled",
                 "manual_live_unlock_disabled",
                 "withdrawals_blocked",
+                "derivatives_live_execution_blocked",
                 "kill_switch_clear",
                 "risk_policy_configured",
                 "local_ai_learning",

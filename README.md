@@ -687,6 +687,24 @@ python -m pytest -q
 
 ---
 
+## Candle Study And Learning
+
+The backend supports public-data candle study for `5m`, synthetic `10m`, `1h`, `4h`, `8h`, `24h`/`1d`, and `1M`.
+
+`10m` is built from verified `5m` candles because Binance Spot has no native 10-minute interval. The candle study explains observed movement with evidence such as price change, volume ratio, support/resistance, wick pressure, breakout/breakdown, and candle body strength.
+
+Learning output is advisory only. It cannot enable live trading, cannot modify strategy automatically, and cannot guarantee profit. Missing data still means `SKIP`; conflicting evidence still means `HOLD` or `SKIP`.
+
+---
+
+## F&O Research Guard
+
+F&O / derivatives support is limited to a paper-only research and risk lab. The app can display futures/options readiness blockers and capped leverage risk estimates, but live futures, options, margin, and leverage execution remain unavailable.
+
+This does not guarantee profit and does not place real derivatives orders.
+
+---
+
 ## Security
 
 Security issues should be handled responsibly.

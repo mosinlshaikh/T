@@ -277,3 +277,26 @@ Phase 10 is documented in:
 [docs/PHASE_10_FINAL_REVIEW.md](PHASE_10_FINAL_REVIEW.md)
 
 It validates backend imports, tests, API routes, persistence, paper flow, smart shutdown, security boundaries, Binance safety rules, Android source structure, and API contract consistency. It does not build an APK/AAB/EXE and does not enable live trading.
+
+## Multi-Timeframe Candle Study
+
+The backend includes an evidence-only candle study route:
+
+- `GET /monitor/candle-study?symbol=BTCUSDT&timeframes=5m,10m,1h,4h,8h,24h,1M&limit=80`
+- `5m`, `1h`, `4h`, `8h`, `24h`/`1d`, and `1M` use Binance public klines.
+- `10m` is synthetic because Binance Spot does not provide a native 10-minute kline interval; the backend aggregates pairs of verified `5m` candles.
+- Output explains why the latest candle moved up, down, or sideways using only observed candle evidence: price change, volume ratio, support/resistance range, wick pressure, breakout/breakdown, and candle body strength.
+- Learning notes are advisory only. They do not auto-change strategy rules, enable live trading, or guarantee profit.
+
+Safety rule remains unchanged: missing candle data returns missing-data output, and trading decisions must remain `SKIP` or `HOLD` when proof is insufficient or signals conflict.
+
+## F&O / Derivatives Research Guard
+
+The backend now includes paper-only derivatives research endpoints:
+
+- `GET /derivatives/readiness`
+- `GET /derivatives/risk-estimate?symbol=BTCUSDT&instrument=FUTURES&notional_usdt=100&leverage=2&adverse_move_pct=1`
+
+These endpoints do not enable futures, options, leverage, margin, or live derivatives order placement. They only show readiness blockers and capped risk estimates so the Android app can explain why derivatives remain blocked in this build.
+
+F&O is high risk. This project does not claim higher profit from derivatives. The current implementation is for education, paper review, and future architecture planning only.

@@ -82,6 +82,42 @@ data class ReportSummary(
     val detail: String
 )
 
+data class StatementUi(
+    val statementId: String = "unknown",
+    val windowHours: String = "24",
+    val realizedPnl: String = "0.00",
+    val unrealizedPnl: String = "0.00",
+    val netPnl: String = "0.00",
+    val grossProfit: String = "0.00",
+    val grossLoss: String = "0.00",
+    val winRatePct: String = "0.00",
+    val openPositions: String = "0",
+    val closedPositions: String = "0",
+    val journalEntries: String = "0",
+    val safetyChecks: List<String> = emptyList(),
+    val tradeRows: List<String> = emptyList(),
+    val notes: List<String> = emptyList(),
+    val sevenDayNetPnl: String = "0.00",
+    val sevenDayRealizedPnl: String = "0.00",
+    val sevenDayClosedPositions: String = "0",
+    val sevenDayWinRatePct: String = "0.00"
+)
+
+data class DerivativesUi(
+    val mode: String = "RESEARCH_ONLY",
+    val futuresExecutionAvailable: Boolean = false,
+    val optionsExecutionAvailable: Boolean = false,
+    val leverageExecutionAvailable: Boolean = false,
+    val notionalUsdt: String = "100",
+    val leverage: String = "2",
+    val marginEstimateUsdt: String = "50",
+    val estimatedLossUsdt: String = "1",
+    val liquidationWarning: String = "Paper-only risk estimate.",
+    val blockedReasons: List<String> = emptyList(),
+    val allowedFeatures: List<String> = emptyList(),
+    val safetyNotes: List<String> = emptyList()
+)
+
 data class AuditEventRow(
     val timestamp: String,
     val type: String,
@@ -183,6 +219,15 @@ data class CandleDetailUi(
     val sparklineCloses: List<String> = emptyList()
 )
 
+data class CandleStudyUi(
+    val timeframe: String = "unknown",
+    val trend: String = "unknown",
+    val confidence: String = "0.00",
+    val moveReason: String = "Candle study unavailable.",
+    val learningNotes: List<String> = emptyList(),
+    val missingData: List<String> = emptyList()
+)
+
 data class PaperScanSummaryUi(
     val symbol: String = "unknown",
     val timeframe: String = "unknown",
@@ -222,6 +267,8 @@ data class TradingOsUiState(
     val closedTrades: List<TradeRow> = emptyList(),
     val journal: List<TradeRow> = emptyList(),
     val reports: List<ReportSummary> = emptyList(),
+    val statement: StatementUi = StatementUi(),
+    val derivatives: DerivativesUi = DerivativesUi(),
     val auditEvents: List<AuditEventRow> = emptyList(),
     val settings: AppSettingsUi = AppSettingsUi(),
     val licenseStatus: LicenseStatusUi = LicenseStatusUi(),
@@ -233,6 +280,7 @@ data class TradingOsUiState(
     val auditTimeline: List<TimelineEventUi> = emptyList(),
     val marketEvidenceFeed: List<MarketEvidenceUi> = emptyList(),
     val candleDetail: CandleDetailUi = CandleDetailUi(),
+    val candleStudies: List<CandleStudyUi> = emptyList(),
     val paperScanSummary: PaperScanSummaryUi = PaperScanSummaryUi(),
     val paperDemoReadiness: PaperDemoReadinessUi = PaperDemoReadinessUi(),
     val shutdownState: String = "RUNNING"

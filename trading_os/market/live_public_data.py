@@ -13,7 +13,7 @@ from trading_os.intelligence.whale_intelligence_v1 import WhaleTrade
 from trading_os.market.candle_engine import Candle
 from trading_os.market.market_data_engine import RestMarketSnapshot
 from trading_os.market.order_book_engine import OrderBookLevel, OrderBookSnapshot
-from trading_os.market.timeframes import Timeframe, normalize_timeframe
+from trading_os.market.timeframes import Timeframe, binance_interval_for, normalize_timeframe
 from trading_os.pipeline.decision_to_trade import PipelineInput
 
 BINANCE_PUBLIC_BASE_URL = "https://api.binance.com"
@@ -62,6 +62,10 @@ class BinancePublicMarketDataClient:
     ) -> LiveMarketBundle:
         symbol = symbol.upper()
         tf = normalize_timeframe(timeframe)
+        fetch_tf = binance_interval_for(tf)
+        fetch_limit = (
+            max(candle_limit, 5) * 2 if tf == Timeframe.TEN_MINUTES else max(candle_limit, 5)
+        )
         warnings: list[str] = []
 
         ticker = self._get_json("/api/v3/ticker/24hr", {"symbol": symbol})
@@ -73,13 +77,18 @@ class BinancePublicMarketDataClient:
             source="binance_public_ticker_24hr",
         )
 
-        candles = [
-            self._candle_from_kline(symbol, tf, item)
+        fetched_candles = [
+            self._candle_from_kline(symbol, fetch_tf, item)
             for item in self._get_json(
                 "/api/v3/klines",
-                {"symbol": symbol, "interval": tf.value, "limit": max(candle_limit, 5)},
+                {"symbol": symbol, "interval": fetch_tf.value, "limit": fetch_limit},
             )
         ]
+        candles = (
+            self._aggregate_5m_to_10m(fetched_candles, symbol)[-candle_limit:]
+            if tf == Timeframe.TEN_MINUTES
+            else fetched_candles[-candle_limit:]
+        )
 
         depth = self._get_json(
             "/api/v3/depth",
@@ -244,6 +253,28 @@ class BinancePublicMarketDataClient:
             start_time_ms=int(item[0]),
             end_time_ms=int(item[6]),
         )
+
+    @staticmethod
+    def _aggregate_5m_to_10m(candles: list[Candle], symbol: str) -> list[Candle]:
+        aggregated: list[Candle] = []
+        pairs = len(candles) // 2
+        for index in range(pairs):
+            first = candles[index * 2]
+            second = candles[index * 2 + 1]
+            aggregated.append(
+                Candle(
+                    symbol=symbol,
+                    timeframe=Timeframe.TEN_MINUTES,
+                    open=first.open,
+                    high=max(first.high, second.high),
+                    low=min(first.low, second.low),
+                    close=second.close,
+                    volume=first.volume + second.volume,
+                    start_time_ms=first.start_time_ms,
+                    end_time_ms=second.end_time_ms,
+                )
+            )
+        return aggregated
 
     @staticmethod
     def _whale_trade_from_agg(symbol: str, item: dict[str, Any]) -> WhaleTrade:

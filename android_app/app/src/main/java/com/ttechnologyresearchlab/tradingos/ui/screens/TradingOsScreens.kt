@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import com.ttechnologyresearchlab.tradingos.R
 import com.ttechnologyresearchlab.tradingos.data.BackendConnectionState
 import com.ttechnologyresearchlab.tradingos.data.CandleDetailUi
+import com.ttechnologyresearchlab.tradingos.data.CandleStudyUi
 import com.ttechnologyresearchlab.tradingos.data.MarketEvidenceUi
 import com.ttechnologyresearchlab.tradingos.data.TimelineEventUi
 import com.ttechnologyresearchlab.tradingos.data.TradingOsUiState
@@ -71,13 +72,19 @@ import com.ttechnologyresearchlab.tradingos.ui.components.GlassCard
 import com.ttechnologyresearchlab.tradingos.ui.components.GoldButton
 import com.ttechnologyresearchlab.tradingos.ui.components.KeyValue
 import com.ttechnologyresearchlab.tradingos.ui.components.MetricCard
+import com.ttechnologyresearchlab.tradingos.ui.components.PremiumHero
 import com.ttechnologyresearchlab.tradingos.ui.components.QuietButton
 import com.ttechnologyresearchlab.tradingos.ui.components.ScreenShell
+import com.ttechnologyresearchlab.tradingos.ui.components.SignalBar
+import com.ttechnologyresearchlab.tradingos.ui.components.StatusChip
 import com.ttechnologyresearchlab.tradingos.ui.navigation.AppRoute
 import com.ttechnologyresearchlab.tradingos.ui.theme.DangerRed
+import com.ttechnologyresearchlab.tradingos.ui.theme.ElectricBlue
+import com.ttechnologyresearchlab.tradingos.ui.theme.MutedText
 import com.ttechnologyresearchlab.tradingos.ui.theme.SafeGreen
 import com.ttechnologyresearchlab.tradingos.ui.theme.PanelBlack
 import com.ttechnologyresearchlab.tradingos.ui.theme.TradingGold
+import com.ttechnologyresearchlab.tradingos.ui.theme.WarningAmber
 import com.ttechnologyresearchlab.tradingos.viewmodel.TradingOsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,15 +98,18 @@ fun TradingOsApp(viewModel: TradingOsViewModel) {
         AppRoute.Dashboard,
         AppRoute.Market,
         AppRoute.BinanceEcosystem,
+        AppRoute.Derivatives,
         AppRoute.BotBrain,
         AppRoute.Control,
         AppRoute.Portfolio,
         AppRoute.Decisions,
         AppRoute.Journal,
+        AppRoute.Statement,
         AppRoute.Reports,
         AppRoute.SafetyLock,
         AppRoute.License,
         AppRoute.Settings,
+        AppRoute.AppLock,
         AppRoute.Audit,
         AppRoute.ReleaseReadiness
     )
@@ -193,15 +203,22 @@ fun TradingOsApp(viewModel: TradingOsViewModel) {
             when (route) {
                 AppRoute.Onboarding -> OnboardingScreen(state, viewModel::completeOnboarding) { route = AppRoute.SetupWizard }
                 AppRoute.Splash -> SplashScreen(state, viewModel::refresh)
-                AppRoute.SetupWizard -> ApiSetupWizardScreen(state, viewModel::refresh) { route = AppRoute.Dashboard }
+                AppRoute.SetupWizard -> ApiSetupWizardScreen(
+                    state,
+                    viewModel::refresh,
+                    { route = AppRoute.SafetyLock },
+                    { route = AppRoute.Dashboard }
+                )
                 AppRoute.Dashboard -> DashboardScreen(state, viewModel::emergencyStop)
                 AppRoute.Market -> MarketIntelligenceScreen(state)
                 AppRoute.BinanceEcosystem -> BinanceEcosystemScreen(state)
+                AppRoute.Derivatives -> DerivativesResearchScreen(state)
                 AppRoute.BotBrain -> BotBrainScreen(state)
                 AppRoute.Control -> TradeControlScreen(state, viewModel)
                 AppRoute.Portfolio -> PortfolioScreen(state)
                 AppRoute.Decisions -> DecisionsScreen(state)
                 AppRoute.Journal -> TradeJournalScreen(state)
+                AppRoute.Statement -> StatementScreen(state)
                 AppRoute.Reports -> ReportsScreen(state)
                 AppRoute.SafetyLock -> SafetyLockScreen(state)
                 AppRoute.License -> LicenseActivationScreen(state, viewModel::validateLicense)
@@ -221,11 +238,13 @@ private fun iconFor(route: AppRoute): ImageVector = when (route) {
     AppRoute.Dashboard -> Icons.Outlined.Dashboard
     AppRoute.Market -> Icons.Outlined.Timeline
     AppRoute.BinanceEcosystem -> Icons.Outlined.Assessment
+    AppRoute.Derivatives -> Icons.Outlined.Assessment
     AppRoute.BotBrain -> Icons.Outlined.Psychology
     AppRoute.Control -> Icons.Outlined.Memory
     AppRoute.Portfolio -> Icons.Outlined.PieChart
     AppRoute.Decisions -> Icons.Outlined.Psychology
     AppRoute.Journal -> Icons.Outlined.History
+    AppRoute.Statement -> Icons.Outlined.Assessment
     AppRoute.Reports -> Icons.Outlined.Assessment
     AppRoute.SafetyLock -> Icons.Outlined.HealthAndSafety
     AppRoute.License -> Icons.Outlined.VpnKey
@@ -238,6 +257,12 @@ private fun iconFor(route: AppRoute): ImageVector = when (route) {
 @Composable
 fun SplashScreen(state: TradingOsUiState, reconnect: () -> Unit) = ScrollScreen {
     ScreenShell("T AI Trading OS", "Premium paper-mode command center.") {
+        PremiumHero(
+            title = "TTRL AI Trading OS",
+            subtitle = "Backend-controlled paper trading command center with evidence-first market intelligence.",
+            primary = "PAPER ACTIVE",
+            secondary = "LIVE BLOCKED"
+        )
         BackendStatusBanner(state, reconnect)
         MetricCard("AI Trading OS", "BOOT READY", L.text("paper_mode", state.language))
         MetricCard("Safety", state.safetyScore.level, "Score ${state.safetyScore.score}/100")
@@ -246,7 +271,12 @@ fun SplashScreen(state: TradingOsUiState, reconnect: () -> Unit) = ScrollScreen 
 }
 
 @Composable
-fun ApiSetupWizardScreen(state: TradingOsUiState, refresh: () -> Unit, continueDashboard: () -> Unit) =
+fun ApiSetupWizardScreen(
+    state: TradingOsUiState,
+    refresh: () -> Unit,
+    openSafetyChecklist: () -> Unit,
+    continueDashboard: () -> Unit
+) =
     ScrollScreen {
         ScreenShell(L.text("setup_wizard", state.language), "No API key entry in APK. Vault setup remains backend-side.") {
             BackendStatusBanner(state, refresh)
@@ -265,7 +295,7 @@ fun ApiSetupWizardScreen(state: TradingOsUiState, refresh: () -> Unit, continueD
                 )
             )
             GoldButton("Check Backend Connection", refresh)
-            QuietButton("Open Safety Checklist") {}
+            QuietButton("Open Safety Checklist", openSafetyChecklist)
             QuietButton("Continue to Dashboard", continueDashboard)
         }
     }
@@ -273,6 +303,18 @@ fun ApiSetupWizardScreen(state: TradingOsUiState, refresh: () -> Unit, continueD
 @Composable
 fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = ScrollScreen {
     ScreenShell("Dashboard", "Dashboard/control-first mobile command center.") {
+        PremiumHero(
+            title = "${state.latestDecision.action} | ${state.latestDecision.confidence}",
+            subtitle = state.latestDecision.reason,
+            primary = state.botStatus.botState,
+            secondary = "Safety ${state.safetyScore.score}/100",
+            accent = when (state.latestDecision.action.uppercase()) {
+                "BUY" -> SafeGreen
+                "SELL" -> DangerRed
+                "HOLD" -> WarningAmber
+                else -> TradingGold
+            }
+        )
         BackendStatusBanner(state) {}
         val connected = state.backendConnectionState == BackendConnectionState.CONNECTED
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -285,13 +327,18 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         PaperReadinessCard(state)
         LatestPaperScanCard(state)
         GlassCard {
-            KeyValue("Latest decision", state.latestDecision.action, TradingGold)
-            KeyValue("Confidence", state.latestDecision.confidence)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusChip(state.latestDecision.action, timelineColor(state.latestDecision.action))
+                StatusChip("Confidence ${state.latestDecision.confidence}", ElectricBlue)
+            }
             Text(state.latestDecision.reason)
+            SignalBar("Zero hallucination", state.latestDecision.zeroHallucinationVerified.toString(), SafeGreen)
+            SignalBar("Risk gate", state.latestDecision.riskStatus, TradingGold)
         }
         CurrentTradeWatchCard(state)
         DashboardChartsCard(state)
         CandleDetailCard(state.candleDetail)
+        CandleStudyCard(state.candleStudies)
         MarketEvidenceFeedCard(state.marketEvidenceFeed.takeLast(5))
         TimelineCard("Decision Timeline", state.decisionTimeline.takeLast(5))
         EvidenceDrillDownCard(state)
@@ -307,8 +354,16 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
 @Composable
 fun MarketIntelligenceScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Market Intelligence", "Evidence-first signals. No unsupported market claims.") {
+        PremiumHero(
+            title = "Market Intelligence Cockpit",
+            subtitle = "Candles, order book, whale, news, structure and risk are shown only when evidence exists.",
+            primary = "NO DATA = NO TRADE",
+            secondary = "CONFLICT = HOLD/SKIP",
+            accent = ElectricBlue
+        )
         IntelligenceCard(state)
         CandleDetailCard(state.candleDetail)
+        CandleStudyCard(state.candleStudies)
         MarketEvidenceFeedCard(state.marketEvidenceFeed)
         ListCard("Missing data", state.marketIntelligence.missingData)
         ListCard("Conflicts", state.marketIntelligence.conflicts.ifEmpty { listOf("none") })
@@ -348,13 +403,58 @@ fun BinanceEcosystemScreen(state: TradingOsUiState) = ScrollScreen {
 }
 
 @Composable
+fun DerivativesResearchScreen(state: TradingOsUiState) = ScrollScreen {
+    ScreenShell("F&O Research", "Futures/options are research-only. No leverage execution in this build.") {
+        PremiumHero(
+            title = "F&O Risk Lab",
+            subtitle = "Paper-only derivatives readiness. Designed to show risk before any future audited phase.",
+            primary = state.derivatives.mode,
+            secondary = "LIVE BLOCKED",
+            accent = DangerRed
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) {
+                MetricCard("Futures execution", state.derivatives.futuresExecutionAvailable.toString())
+            }
+            Column(Modifier.weight(1f)) {
+                MetricCard("Options execution", state.derivatives.optionsExecutionAvailable.toString())
+            }
+        }
+        GlassCard {
+            Text("Demo Risk Estimate", color = TradingGold, fontWeight = FontWeight.Bold)
+            KeyValue("Notional", state.derivatives.notionalUsdt)
+            KeyValue("Leverage", "${state.derivatives.leverage}x", DangerRed)
+            KeyValue("Margin estimate", state.derivatives.marginEstimateUsdt)
+            KeyValue("Estimated loss on adverse move", state.derivatives.estimatedLossUsdt, DangerRed)
+            Text(state.derivatives.liquidationWarning, color = DangerRed)
+        }
+        ListCard("Allowed F&O features", state.derivatives.allowedFeatures.ifEmpty { listOf("Research only") })
+        ListCard("Blocked reasons", state.derivatives.blockedReasons.ifEmpty { listOf("Live derivatives execution blocked") })
+        ListCard("Safety notes", state.derivatives.safetyNotes.ifEmpty { listOf("No futures/options real order is sent") })
+        GlassCard {
+            Text("Decision", color = TradingGold, fontWeight = FontWeight.Bold)
+            Text("F&O ko app me education/risk lab ke roop me add kiya gaya hai. Real leverage/margin execution yahan se possible nahi hai.")
+            Text("Profit badhane ke liye pehle 18-hour statement, paper win-rate, drawdown, news risk, whale evidence, and candle study stable hona zaroori hai.")
+        }
+    }
+}
+
+@Composable
 fun BotBrainScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell(L.text("bot_brain", state.language), "Plain-language decision explanation. No profit guarantees.") {
+        PremiumHero(
+            title = "Bot Brain Explains Every Move",
+            subtitle = state.latestDecision.reason,
+            primary = state.latestDecision.action,
+            secondary = "Verified ${state.latestDecision.zeroHallucinationVerified}",
+            accent = timelineColor(state.latestDecision.action)
+        )
         if (state.isPreviewData) MetricCard(L.text("development_preview", state.language), "NOT REAL DATA")
         MetricCard("Latest AI Decision", state.latestDecision.action)
         MetricCard("Confidence", state.latestDecision.confidence)
         IntelligenceCard(state)
         CandleDetailCard(state.candleDetail)
+        CandleStudyCard(state.candleStudies)
         MarketEvidenceFeedCard(state.marketEvidenceFeed.takeLast(8))
         EvidenceDrillDownCard(state)
         GlassCard {
@@ -521,8 +621,47 @@ fun TradeJournalScreen(state: TradingOsUiState) = ScrollScreen {
 }
 
 @Composable
+fun StatementScreen(state: TradingOsUiState) = ScrollScreen {
+    ScreenShell("Daily Statement", "24-hour and rolling 7-day paper profit/loss statement.") {
+        PremiumHero(
+            title = "24h Net PnL ${state.statement.netPnl}",
+            subtitle = "Daily window: ${state.statement.windowHours} hours | Statement ${state.statement.statementId}",
+            primary = "DAILY PAPER STATEMENT",
+            secondary = "7D PnL ${state.statement.sevenDayNetPnl}",
+            accent = if (state.statement.netPnl.startsWith("-")) DangerRed else SafeGreen
+        )
+        GlassCard {
+            Text("Rolling 7-Day Statement", color = TradingGold, fontWeight = FontWeight.Bold)
+            KeyValue("7D Net PnL", state.statement.sevenDayNetPnl, if (state.statement.sevenDayNetPnl.startsWith("-")) DangerRed else SafeGreen)
+            KeyValue("7D Realized PnL", state.statement.sevenDayRealizedPnl)
+            KeyValue("7D Closed positions", state.statement.sevenDayClosedPositions)
+            KeyValue("7D Win rate", "${state.statement.sevenDayWinRatePct}%")
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) { MetricCard("Profit", state.statement.grossProfit, "Gross positive PnL") }
+            Column(Modifier.weight(1f)) { MetricCard("Loss", state.statement.grossLoss, "Gross negative PnL") }
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) { MetricCard("Realized", state.statement.realizedPnl) }
+            Column(Modifier.weight(1f)) { MetricCard("Unrealized", state.statement.unrealizedPnl) }
+        }
+        GlassCard {
+            Text("Trading Summary", color = TradingGold, fontWeight = FontWeight.Bold)
+            KeyValue("Open positions", state.statement.openPositions)
+            KeyValue("Closed positions", state.statement.closedPositions)
+            KeyValue("Journal entries", state.statement.journalEntries)
+            KeyValue("Win rate", "${state.statement.winRatePct}%")
+        }
+        ListCard("Safety checks", state.statement.safetyChecks.ifEmpty { listOf("Statement safety checks unavailable") })
+        ListCard("Statement trades", state.statement.tradeRows.ifEmpty { listOf("No paper trades in this statement window") })
+        ListCard("Notes", state.statement.notes)
+    }
+}
+
+@Composable
 fun ReportsScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Reports", "Analytics use persisted paper records only.") {
+        StatementScreenInline(state)
         DashboardChartsCard(state)
         TimelineCard("Decision Timeline", state.decisionTimeline)
         TimelineCard("Paper Trade Timeline", state.tradeTimeline)
@@ -533,6 +672,18 @@ fun ReportsScreen(state: TradingOsUiState) = ScrollScreen {
                 Text(report.detail)
             }
         }
+    }
+}
+
+@Composable
+private fun StatementScreenInline(state: TradingOsUiState) {
+    GlassCard {
+        Text("Daily / 7-Day Statement", color = TradingGold, fontWeight = FontWeight.Bold)
+        KeyValue("24h Net PnL", state.statement.netPnl, if (state.statement.netPnl.startsWith("-")) DangerRed else SafeGreen)
+        KeyValue("24h Realized", state.statement.realizedPnl)
+        KeyValue("7D Net PnL", state.statement.sevenDayNetPnl, if (state.statement.sevenDayNetPnl.startsWith("-")) DangerRed else SafeGreen)
+        KeyValue("Closed positions", state.statement.closedPositions)
+        Text("Open the Statement screen for full paper profit/loss detail.")
     }
 }
 
@@ -671,7 +822,11 @@ private fun BackendStatusBanner(state: TradingOsUiState, reconnect: () -> Unit) 
         BackendConnectionState.UNKNOWN -> "UNKNOWN" to Color.White
     }
     GlassCard {
-        KeyValue("Backend", label, color)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip(label, color)
+            StatusChip("PAPER", SafeGreen)
+            StatusChip("NO WITHDRAW", TradingGold)
+        }
         KeyValue("Last bot state", state.lastKnownBotState)
         KeyValue("Last heartbeat", state.lastHeartbeat)
         if (state.backendConnectionState != BackendConnectionState.CONNECTED) {
@@ -684,11 +839,12 @@ private fun BackendStatusBanner(state: TradingOsUiState, reconnect: () -> Unit) 
 @Composable
 private fun IntelligenceCard(state: TradingOsUiState) {
     GlassCard {
-        KeyValue("Candle", state.marketIntelligence.candleSignal)
-        KeyValue("Whale", state.marketIntelligence.whaleSignal)
-        KeyValue("Order book", state.marketIntelligence.orderBookSignal)
-        KeyValue("News risk", state.marketIntelligence.newsRiskSignal)
-        KeyValue("Structure", state.marketIntelligence.marketStructureSignal)
+        Text("Signal Matrix", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        SignalBar("Candle", state.marketIntelligence.candleSignal, timelineColor(state.marketIntelligence.candleSignal))
+        SignalBar("Order book", state.marketIntelligence.orderBookSignal, ElectricBlue)
+        SignalBar("Whale", state.marketIntelligence.whaleSignal, WarningAmber)
+        SignalBar("News risk", state.marketIntelligence.newsRiskSignal, timelineColor(state.marketIntelligence.newsRiskSignal))
+        SignalBar("Structure", state.marketIntelligence.marketStructureSignal, SafeGreen)
         KeyValue("Combined confidence", state.marketIntelligence.combinedConfidence, TradingGold)
     }
 }
@@ -697,16 +853,22 @@ private fun IntelligenceCard(state: TradingOsUiState) {
 private fun CurrentTradeWatchCard(state: TradingOsUiState) {
     val activeTrade = state.openTrades.firstOrNull()
     GlassCard {
-        Text("Current Trade Watch", color = TradingGold, fontWeight = FontWeight.Bold)
-        Text("Yahan bot kya trade le raha hai aur kyun, wo clear dikhega.")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip("TRADE WATCH", TradingGold)
+            StatusChip(if (activeTrade == null) "NO OPEN PAPER" else activeTrade.status, if (activeTrade == null) WarningAmber else SafeGreen)
+        }
+        Text("Bot kya soch raha hai, kya trade open hai, aur kyun hold/skip kar raha hai.", color = Color.White, fontWeight = FontWeight.SemiBold)
         if (activeTrade == null) {
             KeyValue("Trade intent", state.latestDecision.action, TradingGold)
             KeyValue("Status", "No open paper trade")
             KeyValue("Rule", "No Data = No Trade")
             Text("Agar backend evidence missing bhejta hai to decision SKIP rahega. Live trade app se execute nahi hota.")
         } else {
-            KeyValue("Symbol", activeTrade.symbol, TradingGold)
-            KeyValue("Side", activeTrade.side)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusChip(activeTrade.symbol, TradingGold)
+                StatusChip(activeTrade.side, timelineColor(activeTrade.side))
+                StatusChip("PnL ${activeTrade.pnl}", SafeGreen)
+            }
             KeyValue("Status", activeTrade.status)
             KeyValue("PnL", activeTrade.pnl)
             Text("Paper position backend ke risk/exit rules se manage hoti hai.")
@@ -727,10 +889,10 @@ private fun CurrentTradeWatchCard(state: TradingOsUiState) {
 @Composable
 private fun PaperReadinessCard(state: TradingOsUiState) {
     GlassCard {
-        Text("Paper Demo Readiness", color = TradingGold, fontWeight = FontWeight.Bold)
-        KeyValue("Backend + APK monitoring", "${state.paperDemoReadiness.monitoringPercent}%", SafeGreen)
-        KeyValue("Paper demo", "${state.paperDemoReadiness.demoPercent}%", SafeGreen)
-        KeyValue("Ready", state.paperDemoReadiness.readyForPaperDemo.toString())
+        Text("Paper Demo Readiness", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        SignalBar("Backend + APK monitoring", "${state.paperDemoReadiness.monitoringPercent}%", SafeGreen)
+        SignalBar("Paper demo", "${state.paperDemoReadiness.demoPercent}%", SafeGreen)
+        StatusChip(if (state.paperDemoReadiness.readyForPaperDemo) "READY" else "NOT READY", if (state.paperDemoReadiness.readyForPaperDemo) SafeGreen else WarningAmber)
         Text("Target for this phase is paper-only 100%. Real-money trading remains blocked.")
     }
 }
@@ -739,11 +901,13 @@ private fun PaperReadinessCard(state: TradingOsUiState) {
 private fun LatestPaperScanCard(state: TradingOsUiState) {
     val scan = state.paperScanSummary
     GlassCard {
-        Text("Latest Paper Scan", color = TradingGold, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip("LATEST SCAN", TradingGold)
+            StatusChip(scan.action, timelineColor(scan.action))
+        }
         KeyValue("Symbol / TF", "${scan.symbol} ${scan.timeframe}", TradingGold)
-        KeyValue("Action", scan.action, timelineColor(scan.action))
         KeyValue("Status", scan.status)
-        KeyValue("Confidence", scan.confidence)
+        SignalBar("Confidence", scan.confidence, timelineColor(scan.action))
         KeyValue("Trade allowed", scan.tradeAllowed.toString())
         KeyValue("Run count", scan.runCount.toString())
         Text(scan.reason)
@@ -755,7 +919,11 @@ private fun LatestPaperScanCard(state: TradingOsUiState) {
 @Composable
 private fun EvidenceDrillDownCard(state: TradingOsUiState) {
     GlassCard {
-        Text("Trade / Candidate Drill-Down", color = TradingGold, fontWeight = FontWeight.Bold)
+        Text("Trade / Candidate Drill-Down", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip(state.paperSession.bestCandidate, TradingGold)
+            StatusChip(state.paperSession.bestAction, timelineColor(state.paperSession.bestAction))
+        }
         KeyValue("Candidate", state.paperSession.bestCandidate, TradingGold)
         KeyValue("Candidate action", state.paperSession.bestAction)
         KeyValue("Candidate confidence", state.paperSession.bestConfidence)
@@ -787,7 +955,7 @@ private fun EvidenceDrillDownCard(state: TradingOsUiState) {
 @Composable
 private fun DashboardChartsCard(state: TradingOsUiState) {
     GlassCard {
-        Text("Paper Charts", color = TradingGold, fontWeight = FontWeight.Bold)
+        Text("Paper Analytics Board", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Text("Decision mix", color = TradingGold)
         ChartBar("BUY", state.dashboardCharts.buyCount, TradingGold)
         ChartBar("SELL", state.dashboardCharts.sellCount, DangerRed)
@@ -865,7 +1033,10 @@ private fun MarketEvidenceFeedCard(items: List<MarketEvidenceUi>) {
 @Composable
 private fun CandleDetailCard(candle: CandleDetailUi) {
     GlassCard {
-        Text("Candle Detail", color = TradingGold, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip("CANDLE DETAIL", TradingGold)
+            StatusChip(candle.timeframe, ElectricBlue)
+        }
         KeyValue("Symbol / TF", "${candle.symbol} ${candle.timeframe}", TradingGold)
         KeyValue("Trend", candle.trend, timelineColor(candle.trend))
         KeyValue("Latest close", candle.latestClose)
@@ -883,6 +1054,47 @@ private fun CandleDetailCard(candle: CandleDetailUi) {
         }
         Text(candle.decisionRule)
         Text("Read-only paper evidence. Phone does not execute Binance orders.")
+    }
+}
+
+@Composable
+private fun CandleStudyCard(studies: List<CandleStudyUi>) {
+    GlassCard {
+        Text("Deep Candle Study", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            listOf("5m", "10m", "1h").forEach { StatusChip(it, ElectricBlue) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            listOf("4h", "8h", "24h", "1M").forEach { StatusChip(it, TradingGold) }
+        }
+        Text("Har timeframe par system batata hai candle upar/niche kyun gayi. Evidence-based learning only.")
+        if (studies.isEmpty()) {
+            Text("Candle study unavailable. Run paper scan or reconnect backend.", color = DangerRed)
+        } else {
+            studies.take(7).forEach { study ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF111B2A), RoundedCornerShape(8.dp))
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatusChip(study.timeframe, ElectricBlue)
+                        StatusChip(study.trend, timelineColor(study.trend))
+                    }
+                    SignalBar("Confidence", study.confidence, timelineColor(study.trend))
+                    Text(study.moveReason, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    study.learningNotes.take(2).forEach { note ->
+                        Text("Learning: $note", color = MutedText)
+                    }
+                    if (study.missingData.isNotEmpty()) {
+                        Text("Missing: ${study.missingData.joinToString()}", color = DangerRed)
+                    }
+                }
+            }
+        }
+        Text("No Data = No Trade. Learning advisory hai, live trading enable nahi karta.")
     }
 }
 

@@ -14,6 +14,11 @@ def test_normalize_watchlist_deduplicates_and_limits() -> None:
     ]
 
 
+def test_normalize_watchlist_supports_twenty_symbol_safe_demo_batch() -> None:
+    symbols = [f"COIN{index}USDT" for index in range(25)]
+    assert len(normalize_watchlist(symbols, 20)) == 20
+
+
 def test_confidence_band() -> None:
     assert confidence_band(0.8) == "HIGH"
     assert confidence_band(0.5) == "MEDIUM"

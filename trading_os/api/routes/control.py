@@ -506,6 +506,7 @@ def paper_auto_trader_scan(
 def paper_auto_trader_scan_all(
     timeframe: str = "5m",
     trade_notional_usdt: float = 50.0,
+    max_symbols: int = 5,
 ) -> dict[str, object]:
     backend = get_backend()
     if backend.config.enable_live_trading:
@@ -519,6 +520,7 @@ def paper_auto_trader_scan_all(
         timeframe=timeframe,
         trade_notional_usdt=trade_notional_usdt,
         all_usdt_symbols=True,
+        max_symbols_override=max_symbols,
     )
     return ok(
         payload,

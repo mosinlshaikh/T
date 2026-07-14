@@ -150,6 +150,7 @@ class PaperAutoTrader:
         timeframe: str = "5m",
         trade_notional_usdt: float = 50.0,
         all_usdt_symbols: bool = False,
+        max_symbols_override: int | None = None,
     ) -> dict[str, Any]:
         watchlist = load_watchlist_config()
         configured_symbols = watchlist.get("symbols", list(self.default_symbols))
@@ -157,6 +158,8 @@ class PaperAutoTrader:
             watchlist.get("max_symbols_per_scan", DEFAULT_MAX_SYMBOLS_PER_SCAN)
             or DEFAULT_MAX_SYMBOLS_PER_SCAN
         )
+        if max_symbols_override is not None:
+            max_symbols = min(max(int(max_symbols_override), 1), 20)
         client = BinancePublicMarketDataClient()
         universe_symbols: list[str] = []
         if all_usdt_symbols or str(configured_symbols).upper() == "ALL_USDT":

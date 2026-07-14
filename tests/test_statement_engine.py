@@ -34,6 +34,22 @@ class FakeRepository:
         ]
         self.journal = []
         self.open_positions = [{"position_id": "open"}]
+        self.audit_events = [
+            {
+                "event_type": "paper_auto_trader_tick",
+                "created_at": now.isoformat(),
+                "payload": {
+                    "run_id": "scan-1",
+                    "symbol": "BTCUSDT",
+                    "timeframe": "5m",
+                    "action": "HOLD",
+                    "status": "HOLD",
+                    "confidence": 0.55,
+                    "reason": "Conflicting signals; holding by policy.",
+                    "paper_fill_id": "",
+                },
+            }
+        ]
 
     def list_closed_positions(self):
         return self.closed
@@ -43,6 +59,9 @@ class FakeRepository:
 
     def list_open_positions(self):
         return self.open_positions
+
+    def list_audit_events(self, limit=100):
+        return self.audit_events[-limit:]
 
 
 def test_statement_engine_uses_selected_window_and_pnl() -> None:
@@ -56,6 +75,9 @@ def test_statement_engine_uses_selected_window_and_pnl() -> None:
     assert statement["winning_trades"] == 1
     assert statement["losing_trades"] == 1
     assert statement["win_rate_pct"] == 50.0
+    assert statement["paper_scan_count"] == 1
+    assert statement["paper_scan_rows"][0]["symbol"] == "BTCUSDT"
+    assert statement["paper_scan_rows"][0]["trade_allowed"] is False
     assert all(item["passed"] for item in statement["safety_checks"])
 
 

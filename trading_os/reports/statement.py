@@ -56,8 +56,10 @@ class StatementSummary:
     winning_trades: int = 0
     losing_trades: int = 0
     win_rate_pct: float = 0.0
+    paper_scan_count: int = 0
     safety_checks: list[dict[str, Any]] = field(default_factory=list)
     trade_rows: list[dict[str, Any]] = field(default_factory=list)
+    paper_scan_rows: list[dict[str, Any]] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 
 
@@ -72,6 +74,7 @@ class StatementEngine:
         closed = self._filter_window(self.repository.list_closed_positions(), start, end)
         journal = self._filter_window(self.repository.list_trade_journal(1000), start, end)
         open_positions = self.repository.list_open_positions()
+        paper_scans = self._paper_scan_rows(start, end)
 
         closed_pnls = [float(item.get("realized_pnl", 0.0) or 0.0) for item in closed]
         journal_pnls = [float(item.get("realized_pnl", 0.0) or 0.0) for item in journal]
@@ -103,13 +106,16 @@ class StatementEngine:
             winning_trades=len(wins),
             losing_trades=len(losses),
             win_rate_pct=win_rate,
+            paper_scan_count=len(paper_scans),
             safety_checks=self._safety_checks(),
             trade_rows=trade_rows[-100:],
+            paper_scan_rows=paper_scans[-100:],
             notes=[
                 "Statement uses persisted paper trading data only.",
                 "No real Binance order execution is included.",
                 "No profit guarantee. PnL can be negative.",
                 "Recommended daily review window is 24 hours; weekly review window is 7 days.",
+                "Paper scan rows show skipped/held decisions even when no paper position opened.",
             ],
         )
         return summary.__dict__
@@ -149,6 +155,55 @@ class StatementEngine:
                 }
             )
         return rows
+
+    def _paper_scan_rows(self, start: datetime, end: datetime) -> list[dict[str, Any]]:
+        list_audit_events = getattr(self.repository, "list_audit_events", None)
+        if list_audit_events is None:
+            return []
+        rows: list[dict[str, Any]] = []
+        for event in list_audit_events(limit=2000):
+            if event.get("event_type") not in {
+                "paper_auto_trader_tick",
+                "paper_auto_trader_scan",
+                "paper_session_scan",
+            }:
+                continue
+            payload = event.get("payload", event)
+            if not isinstance(payload, dict):
+                continue
+            timestamp = event_time({"created_at": event.get("created_at"), **payload})
+            if timestamp is None or not start <= timestamp <= end:
+                continue
+            if event.get("event_type") == "paper_auto_trader_scan":
+                for item in payload.get("results", []):
+                    if isinstance(item, dict):
+                        rows.append(self._paper_scan_row(item, event.get("created_at", "")))
+            elif event.get("event_type") == "paper_session_scan":
+                candidate = payload.get("best_candidate")
+                if isinstance(candidate, dict):
+                    rows.append(self._paper_scan_row(candidate, event.get("created_at", "")))
+            else:
+                rows.append(self._paper_scan_row(payload, event.get("created_at", "")))
+        return rows
+
+    @staticmethod
+    def _paper_scan_row(item: dict[str, Any], fallback_timestamp: Any) -> dict[str, Any]:
+        return {
+            "run_id": str(item.get("run_id", "")),
+            "timestamp": str(item.get("timestamp") or item.get("created_at") or fallback_timestamp),
+            "symbol": str(item.get("symbol", "UNKNOWN")).upper(),
+            "timeframe": str(item.get("timeframe", "")),
+            "action": str(item.get("action") or item.get("status") or "SKIP").upper(),
+            "status": str(item.get("status") or item.get("action") or "SKIP").upper(),
+            "confidence": round(float(item.get("confidence", 0.0) or 0.0), 4),
+            "trade_allowed": bool(item.get("paper_fill_id")),
+            "paper_fill_id": str(item.get("paper_fill_id", "")),
+            "why_not_traded": str(
+                item.get("why_not_traded")
+                or item.get("reason")
+                or "No paper trade was opened by policy."
+            ),
+        }
 
     @staticmethod
     def _estimate_fees(journal: list[dict[str, Any]]) -> float:

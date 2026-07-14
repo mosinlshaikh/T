@@ -674,6 +674,7 @@ fun StatementScreen(state: TradingOsUiState) = ScrollScreen {
         }
         ListCard("Safety checks", state.statement.safetyChecks.ifEmpty { listOf("Statement safety checks unavailable") })
         ListCard("Statement trades", state.statement.tradeRows.ifEmpty { listOf("No paper trades in this statement window") })
+        ListCard("Paper scan decisions", state.statement.paperScanRows.ifEmpty { listOf("No paper scans in this statement window yet") })
         ListCard("Notes", state.statement.notes)
     }
 }
@@ -923,8 +924,17 @@ private fun TradeQualityCard(state: TradingOsUiState) {
             StatusChip(state.tradeQuality.level, timelineColor(state.tradeQuality.level))
             StatusChip(state.tradeQuality.recommendedAction, timelineColor(state.tradeQuality.recommendedAction))
             StatusChip(if (state.tradeQuality.tradeAllowed) "PAPER WATCH" else "NO TRADE", if (state.tradeQuality.tradeAllowed) SafeGreen else WarningAmber)
+            StatusChip(
+                if (state.tradeQuality.evidenceSymbolAligned) "FRESH EVIDENCE" else "STALE EVIDENCE",
+                if (state.tradeQuality.evidenceSymbolAligned) SafeGreen else DangerRed
+            )
         }
+        KeyValue("Latest scan symbol", state.tradeQuality.latestSymbol)
+        KeyValue("Evidence time", state.tradeQuality.latestTimestamp)
         Text(state.tradeQuality.reason)
+        if (state.tradeQuality.warnings.isNotEmpty()) {
+            state.tradeQuality.warnings.take(3).forEach { Text("Warning: $it", color = DangerRed) }
+        }
         if (state.tradeQuality.missingData.isNotEmpty()) {
             Text("Missing: ${state.tradeQuality.missingData.take(5).joinToString()}", color = WarningAmber)
         }

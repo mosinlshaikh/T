@@ -345,6 +345,13 @@ class TradingOsRepository(
             val pnl = chunk.jsonNumber("realized_pnl") ?: "0.00"
             "$symbol $status PnL=$pnl"
         }
+        val paperScanRows = body.arraySection("paper_scan_rows").objectChunks().map { chunk ->
+            val symbol = chunk.jsonString("symbol") ?: "UNKNOWN"
+            val action = chunk.jsonString("action") ?: "SKIP"
+            val confidence = chunk.jsonNumber("confidence") ?: "0.00"
+            val why = chunk.jsonString("why_not_traded") ?: "No paper trade was opened by policy."
+            "$symbol $action confidence=$confidence | $why"
+        }
         return StatementUi(
             statementId = body.jsonString("statement_id") ?: "paper-statement",
             windowHours = body.jsonNumber("window_hours") ?: "18",
@@ -359,6 +366,7 @@ class TradingOsRepository(
             journalEntries = body.jsonNumber("journal_entries") ?: "0",
             safetyChecks = safetyChecks,
             tradeRows = tradeRows.takeLast(12),
+            paperScanRows = paperScanRows.takeLast(12),
             notes = body.jsonArrayItems("notes"),
             sevenDayNetPnl = sevenDayResult.body.jsonNumber("net_pnl") ?: "0.00",
             sevenDayRealizedPnl = sevenDayResult.body.jsonNumber("realized_pnl") ?: "0.00",
@@ -538,6 +546,10 @@ class TradingOsRepository(
             recommendedAction = body.jsonString("recommended_action") ?: "SKIP",
             tradeAllowed = body.jsonBoolean("trade_allowed") ?: false,
             reason = body.jsonString("reason") ?: "Trade quality unavailable.",
+            latestSymbol = body.jsonString("latest_symbol") ?: "unknown",
+            latestTimestamp = body.jsonString("latest_timestamp") ?: "unknown",
+            evidenceSymbolAligned = body.jsonBoolean("evidence_symbol_aligned") ?: false,
+            warnings = body.jsonArrayItems("warnings"),
             missingData = body.jsonArrayItems("missing_data"),
             conflicts = body.jsonArrayItems("conflicts")
         )

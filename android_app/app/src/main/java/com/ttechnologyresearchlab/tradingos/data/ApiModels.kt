@@ -96,6 +96,7 @@ data class StatementUi(
     val journalEntries: String = "0",
     val safetyChecks: List<String> = emptyList(),
     val tradeRows: List<String> = emptyList(),
+    val paperScanRows: List<String> = emptyList(),
     val notes: List<String> = emptyList(),
     val sevenDayNetPnl: String = "0.00",
     val sevenDayRealizedPnl: String = "0.00",
@@ -266,6 +267,10 @@ data class TradeQualityUi(
     val recommendedAction: String = "SKIP",
     val tradeAllowed: Boolean = false,
     val reason: String = "Trade quality unavailable.",
+    val latestSymbol: String = "unknown",
+    val latestTimestamp: String = "unknown",
+    val evidenceSymbolAligned: Boolean = false,
+    val warnings: List<String> = emptyList(),
     val missingData: List<String> = emptyList(),
     val conflicts: List<String> = emptyList()
 )

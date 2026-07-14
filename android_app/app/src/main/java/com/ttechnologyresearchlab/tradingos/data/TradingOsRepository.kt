@@ -37,6 +37,7 @@ class TradingOsRepository(
                 val candleDetail = apiClient.getCandleDetail().toCandleDetail()
                 val candleStudies = apiClient.getCandleStudy().toCandleStudies()
                 val paperScanSummary = apiClient.getPaperScanSummary().toPaperScanSummary()
+                val paperScanHistory = apiClient.getPaperScanHistory().toPaperScanHistory()
                 val paperDemoReadiness = apiClient.getPaperDemoReadiness().toPaperDemoReadiness()
                 val performanceWheel = apiClient.getPerformanceWheel().toPerformanceWheel()
                 val tradeQuality = apiClient.getTradeQuality().toTradeQuality()
@@ -75,6 +76,7 @@ class TradingOsRepository(
                     candleDetail = candleDetail,
                     candleStudies = candleStudies,
                     paperScanSummary = paperScanSummary,
+                    paperScanHistory = paperScanHistory,
                     paperDemoReadiness = paperDemoReadiness,
                     performanceWheel = performanceWheel,
                     tradeQuality = tradeQuality,
@@ -514,6 +516,25 @@ class TradingOsRepository(
             runCount = body.jsonNumber("run_count")?.toIntOrNull() ?: 0,
             tradeAllowed = body.jsonBoolean("trade_allowed") ?: false
         )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPaperScanHistory(): List<PaperScanHistoryRowUi> {
+        if (!ok) return PreviewData.state.paperScanHistory
+        val section = body.arraySection("rows")
+        if (section.isBlank()) return emptyList()
+        return section.objectChunks().map { chunk ->
+            PaperScanHistoryRowUi(
+                timestamp = chunk.jsonString("timestamp") ?: "unknown",
+                symbol = chunk.jsonString("symbol") ?: "UNKNOWN",
+                timeframe = chunk.jsonString("timeframe") ?: "",
+                action = chunk.jsonString("action") ?: "SKIP",
+                status = chunk.jsonString("status") ?: "SKIP",
+                confidence = chunk.jsonNumber("confidence") ?: "0.00",
+                tradeAllowed = chunk.jsonBoolean("trade_allowed") ?: false,
+                whyNotTraded = chunk.jsonString("why_not_traded") ?: "No paper trade was opened by policy.",
+                source = chunk.jsonString("source") ?: "paper_scan"
+            )
+        }.takeLast(20)
     }
 
     private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toPaperDemoReadiness(): PaperDemoReadinessUi {

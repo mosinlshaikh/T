@@ -246,6 +246,18 @@ data class PaperScanSummaryUi(
     val tradeAllowed: Boolean = false
 )
 
+data class PaperScanHistoryRowUi(
+    val timestamp: String = "unknown",
+    val symbol: String = "UNKNOWN",
+    val timeframe: String = "",
+    val action: String = "SKIP",
+    val status: String = "SKIP",
+    val confidence: String = "0.00",
+    val tradeAllowed: Boolean = false,
+    val whyNotTraded: String = "No paper trade was opened by policy.",
+    val source: String = "paper_scan"
+)
+
 data class PaperDemoReadinessUi(
     val monitoringPercent: Int = 0,
     val demoPercent: Int = 0,
@@ -353,6 +365,7 @@ data class TradingOsUiState(
     val candleDetail: CandleDetailUi = CandleDetailUi(),
     val candleStudies: List<CandleStudyUi> = emptyList(),
     val paperScanSummary: PaperScanSummaryUi = PaperScanSummaryUi(),
+    val paperScanHistory: List<PaperScanHistoryRowUi> = emptyList(),
     val paperDemoReadiness: PaperDemoReadinessUi = PaperDemoReadinessUi(),
     val performanceWheel: PerformanceWheelUi = PerformanceWheelUi(),
     val tradeQuality: TradeQualityUi = TradeQualityUi(),

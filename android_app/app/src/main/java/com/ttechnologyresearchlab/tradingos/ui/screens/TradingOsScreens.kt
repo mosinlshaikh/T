@@ -363,6 +363,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         TimelineCard("Decision Timeline", state.decisionTimeline.takeLast(5))
         EvidenceDrillDownCard(state)
         PaperSessionCard(state)
+        PaperScanHistoryCard(state)
         if (connected) {
             EmergencyStopButton(emergencyStop)
         } else {
@@ -523,6 +524,7 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
         PaperReadinessCard(state)
         LatestPaperScanCard(state)
         PaperSessionCard(state)
+        PaperScanHistoryCard(state)
     }
 }
 
@@ -1320,6 +1322,34 @@ private fun PaperSessionCard(state: TradingOsUiState) {
         KeyValue("Confidence", state.paperSession.bestConfidence)
         Text(state.paperSession.lastReason)
         Text("Public data only: ${state.paperSession.publicDataOnly}. Paper mode only. Phone does not place Binance orders.")
+    }
+}
+
+@Composable
+private fun PaperScanHistoryCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("Paper Session History", color = TradingGold, fontWeight = FontWeight.Bold)
+        if (state.paperScanHistory.isEmpty()) {
+            Text("No paper scans loaded yet. Start paper session or tap refresh.")
+        } else {
+            state.paperScanHistory.takeLast(20).reversed().forEach { row ->
+                GlassCard {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatusChip(row.symbol, TradingGold)
+                        StatusChip(row.action, timelineColor(row.action))
+                        StatusChip(
+                            if (row.tradeAllowed) "PAPER TRADE" else "NO TRADE",
+                            if (row.tradeAllowed) SafeGreen else WarningAmber
+                        )
+                    }
+                    KeyValue("Confidence", row.confidence)
+                    KeyValue("Timeframe", row.timeframe.ifBlank { "unknown" })
+                    KeyValue("Time", row.timestamp)
+                    Text(row.whyNotTraded, color = MutedText)
+                }
+            }
+        }
+        Text("History is paper/audit only. No real Binance order is sent from this app.")
     }
 }
 

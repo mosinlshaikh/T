@@ -169,6 +169,64 @@ def paper_scan_summary() -> dict[str, object]:
     return ok(redact_sensitive(payload), "Paper scan summary loaded.")
 
 
+def _paper_scan_history_row(item: dict[str, Any], source: str, timestamp: str = "") -> dict[str, object]:
+    return {
+        "run_id": str(item.get("run_id", "")),
+        "timestamp": str(item.get("timestamp") or item.get("created_at") or timestamp),
+        "symbol": str(item.get("symbol", "UNKNOWN")).upper(),
+        "timeframe": str(item.get("timeframe", "")),
+        "action": str(item.get("action") or item.get("status") or "SKIP").upper(),
+        "status": str(item.get("status") or item.get("action") or "SKIP").upper(),
+        "confidence": round(float(item.get("confidence", 0.0) or 0.0), 4),
+        "confidence_band": str(item.get("confidence_band", "")),
+        "trade_allowed": bool(item.get("paper_fill_id")),
+        "paper_fill_id": str(item.get("paper_fill_id", "")),
+        "why_not_traded": str(
+            item.get("why_not_traded")
+            or item.get("reason")
+            or "No paper trade was opened by policy."
+        ),
+        "source": source,
+        "live_trading_enabled": False,
+        "public_data_only": True,
+    }
+
+
+@router.get("/paper-scan-history")
+def paper_scan_history(limit: int = 20) -> dict[str, object]:
+    safe_limit = min(max(int(limit), 1), 100)
+    rows: list[dict[str, object]] = []
+    for event in latest_audit_events(limit=max(safe_limit * 8, 200)):
+        event_type = str(event.get("event_type", ""))
+        if event_type not in {
+            "paper_auto_trader_tick",
+            "paper_auto_trader_scan",
+            "paper_session_scan",
+        }:
+            continue
+        payload = _payload(event)
+        timestamp = str(event.get("created_at", ""))
+        if event_type == "paper_auto_trader_scan":
+            for item in payload.get("results", []):
+                if isinstance(item, dict):
+                    rows.append(_paper_scan_history_row(item, event_type, timestamp))
+        elif event_type == "paper_session_scan":
+            candidate = payload.get("best_candidate")
+            if isinstance(candidate, dict):
+                rows.append(_paper_scan_history_row(candidate, event_type, timestamp))
+        else:
+            rows.append(_paper_scan_history_row(payload, event_type, timestamp))
+    payload = {
+        "rows": rows[-safe_limit:],
+        "count": len(rows[-safe_limit:]),
+        "requested_limit": safe_limit,
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "rule": "Paper scan history is audit-derived and never places real Binance orders.",
+    }
+    return ok(redact_sensitive(payload), "Paper scan history loaded.")
+
+
 def _evidence_item(event: dict[str, Any]) -> dict[str, object]:
     payload = _payload(event)
     event_type = str(event.get("event_type", "unknown"))

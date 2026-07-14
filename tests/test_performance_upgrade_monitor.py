@@ -1,5 +1,6 @@
 from trading_os.api.routes.monitor import (
     no_trade_zone,
+    paper_scan_history,
     performance_wheel,
     shadow_mode,
     trade_quality,
@@ -38,3 +39,12 @@ def test_shadow_mode_never_enables_live_execution() -> None:
     assert response["data"]["mode"] == "PAPER_SHADOW_ONLY"
     assert response["data"]["live_trading_enabled"] is False
     assert response["data"]["public_data_only"] is True
+
+
+def test_paper_scan_history_is_safe() -> None:
+    response = paper_scan_history(limit=20)
+    assert response["success"] is True
+    assert response["data"]["live_trading_enabled"] is False
+    assert response["data"]["public_data_only"] is True
+    assert response["data"]["requested_limit"] == 20
+    assert isinstance(response["data"]["rows"], list)

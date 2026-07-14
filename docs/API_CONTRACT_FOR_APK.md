@@ -118,6 +118,9 @@ It must return `ready_for_real_money=false` and
 - `POST /control/paper-session/stop`
 - `GET /control/paper-session/status`
 - `POST /control/manual-paper-demo/open`
+- `POST /control/manual-paper-demo/close-market`
+- `POST /control/manual-paper-demo/simulate-stop-loss`
+- `POST /control/manual-paper-demo/simulate-take-profit`
 
 There is no live mode endpoint.
 
@@ -128,6 +131,10 @@ trading.
 `/control/manual-paper-demo/open` opens a capped paper-only walkthrough position
 using public ticker data. It is clearly labeled `MANUAL PAPER DEMO`; it is not
 an AI decision and never sends a real Binance order.
+
+The manual paper demo close, stop-loss, and take-profit endpoints complete the
+paper lifecycle for APK testing. They only affect paper simulator state and do
+not call private Binance APIs.
 
 ## Monitor Endpoints
 

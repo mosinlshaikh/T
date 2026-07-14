@@ -224,6 +224,115 @@ def manual_paper_demo_open(
     )
 
 
+def _latest_memory_position_id() -> str | None:
+    backend = get_backend()
+    if not backend.portfolio.open_positions:
+        return None
+    return next(reversed(backend.portfolio.open_positions))
+
+
+def _manual_exit_intent(
+    position_id: str, intent_type: OrderIntentType, reason: str
+) -> ExecutionIntent:
+    backend = get_backend()
+    position = backend.portfolio.open_positions[position_id]
+    return ExecutionIntent(
+        symbol=position.symbol,
+        side="SELL",
+        quantity=position.quantity,
+        stop_loss=position.stop_loss,
+        take_profit=position.take_profit,
+        reason=reason,
+        evidence_ids=["manual-paper-demo-exit"],
+        risk_approval_id="manual-paper-demo-exit-risk-capped",
+        intent_type=intent_type,
+        live_enabled=False,
+    )
+
+
+def _paper_exit_payload(fill: object, reason: str, exit_type: str) -> dict[str, object]:
+    return {
+        "status": "PAPER_CLOSED",
+        "exit_type": exit_type,
+        "symbol": fill.symbol,
+        "position_id": fill.position_id,
+        "side": fill.side,
+        "quantity": fill.quantity,
+        "fill_price": fill.fill_price,
+        "fee": fill.fee,
+        "reason": reason,
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "manual_demo": True,
+    }
+
+
+@router.post("/manual-paper-demo/close-market")
+def manual_paper_demo_close_market() -> dict[str, object]:
+    backend = get_backend()
+    position_id = _latest_memory_position_id()
+    if position_id is None:
+        return fail("NO_OPEN_PAPER_POSITION", errors=["No active in-memory paper position exists."])
+    position = backend.portfolio.open_positions[position_id]
+    try:
+        bundle = BinancePublicMarketDataClient().fetch_bundle(
+            symbol=position.symbol,
+            timeframe="5m",
+            candle_limit=5,
+            order_book_limit=5,
+            trade_limit=5,
+        )
+        price = float(bundle.snapshot.price)
+    except Exception:
+        price = position.entry_price
+    reason = "MANUAL PAPER DEMO: user-requested paper-only market close."
+    intent = _manual_exit_intent(position_id, OrderIntentType.MARKET_SELL, reason)
+    fill = backend.paper_simulator.close_trade(position_id, intent, price)
+    payload = _paper_exit_payload(fill, reason, "MARKET_CLOSE")
+    backend.audit_logger.log("manual_paper_demo_close", payload)
+    return ok(
+        payload,
+        "Manual paper demo position closed.",
+        warnings=["Paper mode only. No real Binance order was sent."],
+    )
+
+
+@router.post("/manual-paper-demo/simulate-stop-loss")
+def manual_paper_demo_simulate_stop_loss() -> dict[str, object]:
+    backend = get_backend()
+    position_id = _latest_memory_position_id()
+    if position_id is None:
+        return fail("NO_OPEN_PAPER_POSITION", errors=["No active in-memory paper position exists."])
+    reason = "MANUAL PAPER DEMO: stop-loss simulation."
+    intent = _manual_exit_intent(position_id, OrderIntentType.STOP_LOSS, reason)
+    fill = backend.paper_simulator.simulate_stop_loss_hit(position_id, intent)
+    payload = _paper_exit_payload(fill, reason, "STOP_LOSS")
+    backend.audit_logger.log("manual_paper_demo_stop_loss", payload)
+    return ok(
+        payload,
+        "Manual paper stop-loss simulation completed.",
+        warnings=["Paper mode only. No real Binance order was sent."],
+    )
+
+
+@router.post("/manual-paper-demo/simulate-take-profit")
+def manual_paper_demo_simulate_take_profit() -> dict[str, object]:
+    backend = get_backend()
+    position_id = _latest_memory_position_id()
+    if position_id is None:
+        return fail("NO_OPEN_PAPER_POSITION", errors=["No active in-memory paper position exists."])
+    reason = "MANUAL PAPER DEMO: take-profit simulation."
+    intent = _manual_exit_intent(position_id, OrderIntentType.TAKE_PROFIT, reason)
+    fill = backend.paper_simulator.simulate_take_profit_hit(position_id, intent)
+    payload = _paper_exit_payload(fill, reason, "TAKE_PROFIT")
+    backend.audit_logger.log("manual_paper_demo_take_profit", payload)
+    return ok(
+        payload,
+        "Manual paper take-profit simulation completed.",
+        warnings=["Paper mode only. No real Binance order was sent."],
+    )
+
+
 @router.post("/paper-auto-trader/tick")
 def paper_auto_trader_tick(
     symbol: str = "BTCUSDT",

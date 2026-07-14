@@ -78,6 +78,9 @@ class TradingOsRepository(
     suspend fun resumePaperTrades() = runCatching { apiClient.resumePaperTrades() }
     suspend fun runLiveMarketPaperDemo() = runCatching { apiClient.runLiveMarketPaperDemo() }
     suspend fun openManualPaperDemo() = runCatching { apiClient.openManualPaperDemo() }
+    suspend fun closeManualPaperDemo() = runCatching { apiClient.closeManualPaperDemo() }
+    suspend fun simulateManualStopLoss() = runCatching { apiClient.simulateManualStopLoss() }
+    suspend fun simulateManualTakeProfit() = runCatching { apiClient.simulateManualTakeProfit() }
     suspend fun startPaperSession() = runCatching { apiClient.startPaperSession() }
     suspend fun stopPaperSession() = runCatching { apiClient.stopPaperSession() }
     suspend fun refreshLearningSummary() = runCatching { apiClient.getLocalAiLearning() }

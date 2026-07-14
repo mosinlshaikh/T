@@ -380,6 +380,9 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
             QuietButton("Resume Paper Trades", viewModel::resumePaperTrades)
             GoldButton("Run Live-Market Paper Demo", viewModel::runLiveMarketPaperDemo)
             GoldButton("Open Manual Paper Demo", viewModel::openManualPaperDemo)
+            QuietButton("Close Manual Paper Demo", viewModel::closeManualPaperDemo)
+            QuietButton("Simulate Stop-Loss", viewModel::simulateManualStopLoss)
+            QuietButton("Simulate Take-Profit", viewModel::simulateManualTakeProfit)
             GoldButton("Start 24x7 Paper Session", viewModel::startPaperSession)
             QuietButton("Stop Paper Session", viewModel::stopPaperSession)
         } else {
@@ -395,6 +398,7 @@ fun TradeControlScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) =
             Text("Graceful stop blocks new trades immediately, keeps active paper trades managed, saves logs, then stops after safe state.")
             Text("Live-market paper demo reads public market data only and never places Binance orders.")
             Text("Manual paper demo opens a capped paper-only position for walkthrough visibility. It is not an AI trade.")
+            Text("Close/SL/TP buttons are paper-only lifecycle simulations.")
         }
         PaperReadinessCard(state)
         LatestPaperScanCard(state)

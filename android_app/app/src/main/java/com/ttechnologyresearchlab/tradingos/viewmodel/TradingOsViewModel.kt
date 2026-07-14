@@ -63,6 +63,9 @@ class TradingOsViewModel : ViewModel() {
     fun resumePaperTrades() = viewModelScope.launch { repository.resumePaperTrades(); refresh() }
     fun runLiveMarketPaperDemo() = viewModelScope.launch { repository.runLiveMarketPaperDemo(); refresh() }
     fun openManualPaperDemo() = viewModelScope.launch { repository.openManualPaperDemo(); refresh() }
+    fun closeManualPaperDemo() = viewModelScope.launch { repository.closeManualPaperDemo(); refresh() }
+    fun simulateManualStopLoss() = viewModelScope.launch { repository.simulateManualStopLoss(); refresh() }
+    fun simulateManualTakeProfit() = viewModelScope.launch { repository.simulateManualTakeProfit(); refresh() }
     fun startPaperSession() = viewModelScope.launch { repository.startPaperSession(); refresh() }
     fun stopPaperSession() = viewModelScope.launch { repository.stopPaperSession(); refresh() }
     fun validateLicense(licenseKey: String) = viewModelScope.launch {

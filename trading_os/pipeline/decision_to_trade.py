@@ -140,7 +140,17 @@ class DecisionToTradePipeline:
             signals.append(combined.to_signal_assessment())
         for signal in signals:
             self.audit.log_strategy_signal(
-                {"symbol": pipeline_input.symbol.upper(), "signal": signal.name}
+                {
+                    "symbol": pipeline_input.symbol.upper(),
+                    "signal": signal.name,
+                    "source": signal.source,
+                    "direction": signal.direction.value,
+                    "confidence": signal.confidence,
+                    "evidence_count": len(signal.evidence),
+                    "evidence_sources": [item.source for item in signal.evidence],
+                    "live_trading_enabled": False,
+                    "public_data_only": True,
+                }
             )
 
         risk_decision = self.risk_engine.evaluate(

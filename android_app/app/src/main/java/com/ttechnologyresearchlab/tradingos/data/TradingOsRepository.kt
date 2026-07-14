@@ -532,6 +532,7 @@ class TradingOsRepository(
                 confidence = chunk.jsonNumber("confidence") ?: "0.00",
                 tradeAllowed = chunk.jsonBoolean("trade_allowed") ?: false,
                 whyNotTraded = chunk.jsonString("why_not_traded") ?: "No paper trade was opened by policy.",
+                strategyBreakdown = chunk.strategyBreakdownRows(),
                 source = chunk.jsonString("source") ?: "paper_scan"
             )
         }.takeLast(20)
@@ -725,5 +726,16 @@ class TradingOsRepository(
             }
         }
         return chunks
+    }
+
+    private fun String.strategyBreakdownRows(): List<String> {
+        val section = arraySection("strategy_breakdown")
+        if (section.isBlank()) return emptyList()
+        return section.objectChunks().map { chunk ->
+            val strategy = chunk.jsonString("strategy") ?: "strategy"
+            val direction = chunk.jsonString("direction") ?: "unknown"
+            val confidence = chunk.jsonNumber("confidence") ?: chunk.jsonString("confidence") ?: "unknown"
+            "$strategy: $direction confidence=$confidence"
+        }.takeLast(8)
     }
 }

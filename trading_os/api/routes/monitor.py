@@ -21,6 +21,7 @@ INTELLIGENCE_TYPES = {
     "news_risk_analysis",
     "market_structure_analysis",
     "combined_signal_result",
+    "strategy_signal",
     "missing_data",
     "conflict_reason",
 }
@@ -32,6 +33,7 @@ INTELLIGENCE_LABELS = {
     "news_risk_analysis": "News Risk",
     "market_structure_analysis": "Market Structure",
     "combined_signal_result": "Combined Signal",
+    "strategy_signal": "Strategy",
     "missing_data": "Missing Data",
     "conflict_reason": "Conflict",
 }
@@ -169,11 +171,34 @@ def paper_scan_summary() -> dict[str, object]:
     return ok(redact_sensitive(payload), "Paper scan summary loaded.")
 
 
+def _latest_strategy_breakdown(symbol: str, limit: int = 500) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    wanted_symbol = symbol.upper()
+    for event in latest_audit_events(limit=limit):
+        if event.get("event_type") != "strategy_signal":
+            continue
+        payload = _payload(event)
+        if str(payload.get("symbol", "")).upper() != wanted_symbol:
+            continue
+        rows.append(
+            {
+                "strategy": str(payload.get("source") or payload.get("signal") or "strategy"),
+                "signal": str(payload.get("signal", "")),
+                "direction": str(payload.get("direction", "unknown")).upper(),
+                "confidence": payload.get("confidence", "unknown"),
+                "evidence_count": payload.get("evidence_count", 0),
+                "timestamp": event.get("created_at", ""),
+            }
+        )
+    return rows[-8:]
+
+
 def _paper_scan_history_row(item: dict[str, Any], source: str, timestamp: str = "") -> dict[str, object]:
+    symbol = str(item.get("symbol", "UNKNOWN")).upper()
     return {
         "run_id": str(item.get("run_id", "")),
         "timestamp": str(item.get("timestamp") or item.get("created_at") or timestamp),
-        "symbol": str(item.get("symbol", "UNKNOWN")).upper(),
+        "symbol": symbol,
         "timeframe": str(item.get("timeframe", "")),
         "action": str(item.get("action") or item.get("status") or "SKIP").upper(),
         "status": str(item.get("status") or item.get("action") or "SKIP").upper(),
@@ -186,6 +211,7 @@ def _paper_scan_history_row(item: dict[str, Any], source: str, timestamp: str = 
             or item.get("reason")
             or "No paper trade was opened by policy."
         ),
+        "strategy_breakdown": _latest_strategy_breakdown(symbol),
         "source": source,
         "live_trading_enabled": False,
         "public_data_only": True,

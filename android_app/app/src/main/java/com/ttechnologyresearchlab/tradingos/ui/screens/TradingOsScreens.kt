@@ -1346,6 +1346,9 @@ private fun PaperScanHistoryCard(state: TradingOsUiState) {
                     KeyValue("Timeframe", row.timeframe.ifBlank { "unknown" })
                     KeyValue("Time", row.timestamp)
                     Text(row.whyNotTraded, color = MutedText)
+                    if (row.strategyBreakdown.isNotEmpty()) {
+                        row.strategyBreakdown.take(5).forEach { Text("- $it", color = MutedText) }
+                    }
                 }
             }
         }

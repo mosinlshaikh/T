@@ -20,7 +20,8 @@ def _runtime_payload() -> dict[str, object]:
         ).status.value,
         "vault_status": backend.api_vault.health_report(),
         "supervisor_health": backend.runtime_supervisor.healthy,
-        "last_heartbeat": backend.runtime_supervisor.heartbeat_count,
+        "last_heartbeat": backend.runtime_supervisor.last_heartbeat_at or "NOT_STARTED",
+        "last_heartbeat_count": backend.runtime_supervisor.heartbeat_count,
         "failure_state": backend.runtime_supervisor.failure_state.value,
         "last_error": backend.runtime_supervisor.last_error,
     }

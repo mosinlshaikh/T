@@ -66,6 +66,7 @@ class RuntimeSupervisor:
     failure_state: FailureState = FailureState.NONE
     healthy: bool = False
     heartbeat_count: int = 0
+    last_heartbeat_at: str = ""
     backoff: RetryBackoff = field(default_factory=RetryBackoff)
     last_error: str = ""
 
@@ -202,6 +203,7 @@ class RuntimeSupervisor:
             failure_state=self.failure_state,
             message=message,
         )
+        self.last_heartbeat_at = heartbeat.timestamp
         self.audit.log_runtime_heartbeat(
             {
                 "state": heartbeat.state.value,
@@ -209,6 +211,7 @@ class RuntimeSupervisor:
                 "failure_state": heartbeat.failure_state.value,
                 "message": heartbeat.message,
                 "count": self.heartbeat_count,
+                "timestamp": heartbeat.timestamp,
             }
         )
         return heartbeat

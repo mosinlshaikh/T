@@ -163,6 +163,8 @@ class TradingOSBackend:
             "shutdown_state": self.shutdown_engine.state.value,
             "supervisor_state": self.runtime_supervisor.state.value,
             "supervisor_healthy": self.runtime_supervisor.healthy,
+            "last_heartbeat": self.runtime_supervisor.last_heartbeat_at or "NOT_STARTED",
+            "last_heartbeat_count": self.runtime_supervisor.heartbeat_count,
             "failure_state": self.runtime_supervisor.failure_state.value,
             "config_status": config_health,
             "vault_status": vault_health,

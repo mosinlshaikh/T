@@ -62,6 +62,14 @@ def _latest_audit_payload(event_type: str, limit: int = 200) -> dict[str, Any] |
     return None
 
 
+def _latest_paper_scan_payload() -> dict[str, Any]:
+    backend = get_backend()
+    auto_status = backend.paper_auto_trader.status()
+    latest_tick = _latest_audit_payload("paper_auto_trader_tick")
+    latest = latest_tick or auto_status.get("last_result") or {}
+    return latest if isinstance(latest, dict) else {}
+
+
 @router.get("/paper-live")
 def paper_live_monitor() -> dict[str, object]:
     backend = get_backend()
@@ -130,12 +138,11 @@ def paper_live_monitor() -> dict[str, object]:
 def paper_scan_summary() -> dict[str, object]:
     backend = get_backend()
     auto_status = backend.paper_auto_trader.status()
-    latest_tick = _latest_audit_payload("paper_auto_trader_tick")
     latest_scan = _latest_audit_payload("paper_auto_trader_scan")
     latest_pipeline = _latest_audit_payload("decision_to_trade_pipeline_result")
     latest_skip = _latest_audit_payload("skipped_trade")
     latest_fill = _latest_audit_payload("paper_order_fill")
-    latest = latest_tick or auto_status.get("last_result") or {}
+    latest = _latest_paper_scan_payload()
     payload = {
         "latest_symbol": latest.get("symbol", "unknown"),
         "latest_timeframe": latest.get("timeframe", "unknown"),
@@ -449,9 +456,27 @@ def trade_quality() -> dict[str, object]:
     studies = _latest_studies_by_timeframe()
     conflicts = _trend_conflicts(studies)
     latest_decision = _latest_decision_payload() or {}
+    latest_scan = _latest_paper_scan_payload()
+    latest_symbol = str(latest_scan.get("symbol") or latest_decision.get("symbol") or "unknown")
+    latest_timestamp = str(
+        latest_scan.get("timestamp")
+        or latest_scan.get("created_at")
+        or latest_decision.get("timestamp")
+        or ""
+    )
     evidence = latest_decision.get("evidence", [])
     if not isinstance(evidence, list):
         evidence = [str(evidence)]
+    decision_symbol = str(latest_decision.get("symbol") or "")
+    evidence_symbol_aligned = bool(
+        latest_symbol == "unknown" or not decision_symbol or decision_symbol == latest_symbol
+    )
+    stale_warnings: list[str] = []
+    if not evidence_symbol_aligned:
+        stale_warnings.append(
+            f"Latest scan is {latest_symbol}, but latest decision evidence is for {decision_symbol}."
+        )
+        evidence = []
     candle_scores = [
         float(study.get("confidence_score", 0.0) or 0.0)
         for study in studies.values()
@@ -466,8 +491,13 @@ def trade_quality() -> dict[str, object]:
         missing_data.append("multi_timeframe_candles")
     if not evidence:
         missing_data.append("decision_evidence")
+    if not evidence_symbol_aligned:
+        missing_data.append("fresh_decision_evidence_for_latest_scan")
     action = str(
-        latest_decision.get("action") or latest_decision.get("final_decision") or "SKIP"
+        latest_scan.get("action")
+        or latest_decision.get("action")
+        or latest_decision.get("final_decision")
+        or "SKIP"
     ).upper()
     payload = {
         "score": score,
@@ -479,6 +509,10 @@ def trade_quality() -> dict[str, object]:
         "evidence": evidence[:8],
         "missing_data": missing_data,
         "conflicts": conflicts,
+        "warnings": stale_warnings,
+        "latest_symbol": latest_symbol,
+        "latest_timestamp": latest_timestamp,
+        "evidence_symbol_aligned": evidence_symbol_aligned,
         "reason": "Trade quality uses evidence count, candle confidence, and conflict penalties.",
         "live_trading_enabled": False,
         "public_data_only": True,

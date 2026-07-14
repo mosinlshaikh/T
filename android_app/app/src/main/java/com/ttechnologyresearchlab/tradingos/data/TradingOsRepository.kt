@@ -12,6 +12,9 @@ class TradingOsRepository(
                 val shutdownState = health.body.jsonString("shutdown_state") ?: "RUNNING"
                 val supervisorState = health.body.jsonString("supervisor_state") ?: "UNKNOWN"
                 val liveTradingEnabled = health.body.jsonBoolean("live_trading_enabled") ?: false
+                val heartbeat = health.body.jsonString("last_heartbeat")
+                    ?: health.body.jsonNumber("last_heartbeat_count")?.let { "Heartbeat count $it" }
+                    ?: "No heartbeat yet"
                 val latestDecisionResult = apiClient.getLatestDecision()
                 val latestDecision = latestDecisionResult.toDecisionSummary()
                 val openPositionsResult = apiClient.getOpenPositions()
@@ -45,6 +48,7 @@ class TradingOsRepository(
                     isPreviewData = false,
                     connectionStatus = "Backend reachable",
                     backendConnectionState = BackendConnectionState.CONNECTED,
+                    lastHeartbeat = heartbeat,
                     offlineSync = OfflineSyncUi(
                         status = "SYNCED",
                         lastSuccessfulSync = health.body.jsonString("timestamp") ?: "latest",

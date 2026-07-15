@@ -74,6 +74,7 @@ class BackendApiClient(
     suspend fun getPerformanceWheel() = get("/monitor/performance-wheel")
     suspend fun getTradeQuality() = get("/monitor/trade-quality")
     suspend fun getNoTradeZone() = get("/monitor/no-trade-zone")
+    suspend fun getStrategyBlockers() = get("/monitor/strategy-blockers?limit=100")
     suspend fun getShadowMode() = get("/monitor/shadow-mode")
     suspend fun getSymbolUniverse() = get("/monitor/symbol-universe?max_preview=80")
     suspend fun getDailyTarget() = get("/monitor/daily-target?target_pnl_pct=10")

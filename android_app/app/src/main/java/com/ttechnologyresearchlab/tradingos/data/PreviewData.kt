@@ -139,6 +139,13 @@ object PreviewData {
             recommendedAction = "SKIP",
             reasons = listOf("DEVELOPMENT PREVIEW DATA")
         ),
+        strategyBlockers = StrategyBlockersUi(
+            windowRows = 0,
+            noTradeCount = 0,
+            lowConfidenceCount = 0,
+            topBlockers = listOf("DEVELOPMENT PREVIEW DATA"),
+            recommendations = listOf("Connect backend to load real paper strategy blockers.")
+        ),
         shadowMode = ShadowModeUi(
             enabled = true,
             mode = "PAPER_SHADOW_ONLY",

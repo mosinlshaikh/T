@@ -43,6 +43,7 @@ class TradingOsRepository(
                 val performanceWheel = apiClient.getPerformanceWheel().toPerformanceWheel()
                 val tradeQuality = apiClient.getTradeQuality().toTradeQuality()
                 val noTradeZone = apiClient.getNoTradeZone().toNoTradeZone()
+                val strategyBlockers = apiClient.getStrategyBlockers().toStrategyBlockers()
                 val shadowMode = apiClient.getShadowMode().toShadowMode()
                 val coinUniverse = apiClient.getSymbolUniverse().toCoinUniverse()
                 val dailyTarget = apiClient.getDailyTarget().toDailyTarget()
@@ -83,6 +84,7 @@ class TradingOsRepository(
                     performanceWheel = performanceWheel,
                     tradeQuality = tradeQuality,
                     noTradeZone = noTradeZone,
+                    strategyBlockers = strategyBlockers,
                     shadowMode = shadowMode,
                     coinUniverse = coinUniverse,
                     dailyTarget = dailyTarget,
@@ -602,6 +604,39 @@ class TradingOsRepository(
             zone = body.jsonString("zone") ?: "NO_TRADE",
             recommendedAction = body.jsonString("recommended_action") ?: "SKIP",
             reasons = body.jsonArrayItems("reasons")
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toStrategyBlockers(): StrategyBlockersUi {
+        if (!ok) return PreviewData.state.strategyBlockers
+        val actions = body.section("action_counts")
+        val buy = actions.jsonNumber("BUY") ?: "0"
+        val sell = actions.jsonNumber("SELL") ?: "0"
+        val hold = actions.jsonNumber("HOLD") ?: "0"
+        val skip = actions.jsonNumber("SKIP") ?: "0"
+        val topBlockers = body.arraySection("top_blockers").objectChunks().map { chunk ->
+            "${chunk.jsonString("blocker") ?: "blocker"} = ${chunk.jsonNumber("count") ?: "0"}"
+        }.take(8)
+        val topSymbols = body.arraySection("top_symbols").objectChunks().map { chunk ->
+            "${chunk.jsonString("symbol") ?: "UNKNOWN"} = ${chunk.jsonNumber("count") ?: "0"}"
+        }.take(10)
+        val examples = body.arraySection("examples").objectChunks().map { chunk ->
+            val symbol = chunk.jsonString("symbol") ?: "UNKNOWN"
+            val action = chunk.jsonString("action") ?: "SKIP"
+            val confidence = chunk.jsonNumber("confidence") ?: "0.00"
+            val why = chunk.jsonString("why_not_traded") ?: "No trade opened."
+            "$symbol $action confidence=$confidence - $why"
+        }.take(8)
+        return StrategyBlockersUi(
+            windowRows = body.jsonNumber("window_rows")?.toIntOrNull() ?: 0,
+            noTradeCount = body.jsonNumber("no_trade_count")?.toIntOrNull() ?: 0,
+            lowConfidenceCount = body.jsonNumber("low_confidence_count")?.toIntOrNull() ?: 0,
+            actionCounts = "BUY $buy / SELL $sell / HOLD $hold / SKIP $skip",
+            topBlockers = topBlockers,
+            topSymbols = topSymbols,
+            examples = examples,
+            recommendations = body.jsonArrayItems("recommendations"),
+            tuningPolicy = body.jsonString("tuning_policy") ?: "Advisory only. Live trading remains disabled."
         )
     }
 

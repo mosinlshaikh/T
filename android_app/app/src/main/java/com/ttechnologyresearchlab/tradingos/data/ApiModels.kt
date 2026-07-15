@@ -300,6 +300,18 @@ data class NoTradeZoneUi(
     val reasons: List<String> = listOf("backend_connection")
 )
 
+data class StrategyBlockersUi(
+    val windowRows: Int = 0,
+    val noTradeCount: Int = 0,
+    val lowConfidenceCount: Int = 0,
+    val actionCounts: String = "BUY 0 / SELL 0 / HOLD 0 / SKIP 0",
+    val topBlockers: List<String> = emptyList(),
+    val topSymbols: List<String> = emptyList(),
+    val examples: List<String> = emptyList(),
+    val recommendations: List<String> = emptyList(),
+    val tuningPolicy: String = "Advisory only. Live trading remains disabled."
+)
+
 data class ShadowModeUi(
     val enabled: Boolean = true,
     val mode: String = "PAPER_SHADOW_ONLY",
@@ -373,6 +385,7 @@ data class TradingOsUiState(
     val performanceWheel: PerformanceWheelUi = PerformanceWheelUi(),
     val tradeQuality: TradeQualityUi = TradeQualityUi(),
     val noTradeZone: NoTradeZoneUi = NoTradeZoneUi(),
+    val strategyBlockers: StrategyBlockersUi = StrategyBlockersUi(),
     val shadowMode: ShadowModeUi = ShadowModeUi(),
     val coinUniverse: CoinUniverseUi = CoinUniverseUi(),
     val dailyTarget: DailyTargetUi = DailyTargetUi(),

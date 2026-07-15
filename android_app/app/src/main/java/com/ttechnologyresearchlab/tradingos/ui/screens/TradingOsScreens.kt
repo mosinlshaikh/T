@@ -334,6 +334,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
         DailyTargetCard(state)
         TradeQualityCard(state)
         NoTradeZoneCard(state)
+        StrategyBlockersCard(state)
         ShadowModeCard(state)
         val connected = state.backendConnectionState == BackendConnectionState.CONNECTED
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -688,6 +689,7 @@ fun ReportsScreen(state: TradingOsUiState) = ScrollScreen {
     ScreenShell("Reports", "Analytics use persisted paper records only.") {
         StatementScreenInline(state)
         DashboardChartsCard(state)
+        StrategyBlockersCard(state)
         TimelineCard("Decision Timeline", state.decisionTimeline)
         TimelineCard("Paper Trade Timeline", state.tradeTimeline)
         state.reports.forEach { report ->
@@ -963,6 +965,38 @@ private fun NoTradeZoneCard(state: TradingOsUiState) {
             state.noTradeZone.reasons.take(6).forEach { Text("- $it") }
         }
         Text("Sideways, low-confidence, ya conflicting market me bot paper trade avoid karega.")
+    }
+}
+
+@Composable
+private fun StrategyBlockersCard(state: TradingOsUiState) {
+    val blockers = state.strategyBlockers
+    GlassCard {
+        Text("Why No Trade", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) {
+                MetricCard("Rows", blockers.windowRows.toString(), "Recent scans")
+            }
+            Column(Modifier.weight(1f)) {
+                MetricCard("No Trade", blockers.noTradeCount.toString(), "HOLD/SKIP")
+            }
+        }
+        KeyValue("Actions", blockers.actionCounts)
+        KeyValue("Low Confidence", blockers.lowConfidenceCount.toString())
+        if (blockers.topBlockers.isNotEmpty()) {
+            Text("Top blockers", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+            blockers.topBlockers.take(6).forEach { Text("- $it", color = MutedText) }
+        }
+        if (blockers.examples.isNotEmpty()) {
+            Text("Recent examples", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+            blockers.examples.take(4).forEach { Text("- $it", color = MutedText) }
+        }
+        if (blockers.recommendations.isNotEmpty()) {
+            Text("Recommendations", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+            blockers.recommendations.take(4).forEach { Text("- $it", color = MutedText) }
+        }
+        Text(blockers.tuningPolicy, color = MutedText)
+        Text("Paper mode only. No guaranteed profit. Live trading disabled.", color = MutedText)
     }
 }
 

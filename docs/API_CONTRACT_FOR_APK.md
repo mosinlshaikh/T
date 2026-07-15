@@ -144,6 +144,7 @@ not call private Binance APIs.
 - `GET /monitor/paper-scan-summary`
 - `GET /monitor/paper-scan-history`
 - `GET /monitor/strategy-blockers`
+- `GET /monitor/market-radar`
 - `GET /monitor/paper-demo-readiness`
 
 `/monitor/paper-live` is the main APK dashboard feed for public market data,
@@ -169,6 +170,10 @@ pipeline gates continued, held, skipped, or rejected a paper trade candidate.
 `/monitor/strategy-blockers` summarizes recent HOLD/SKIP reasons, pipeline
 blockers, low-confidence counts, and symbol frequency. It is advisory only and
 does not auto-change strategy thresholds.
+
+`/monitor/market-radar` performs a public-data, all-USDT 24h ticker pre-filter.
+It ranks candidates by volume, absolute movement, volatility, and trade
+activity, then returns a deep-scan shortlist. It does not place orders.
 
 `/monitor/paper-demo-readiness` returns computed readiness percentages for the
 paper backend/APK monitoring contract and paper demo contract. It must always

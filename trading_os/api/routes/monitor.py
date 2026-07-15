@@ -849,6 +849,64 @@ def symbol_universe(max_preview: int = 80) -> dict[str, object]:
     return ok(redact_sensitive(payload), "Binance Spot USDT symbol universe loaded.")
 
 
+def _radar_score(row: dict[str, Any]) -> float:
+    quote_volume = float(row.get("quote_volume", 0.0) or 0.0)
+    move = abs(float(row.get("price_change_pct", 0.0) or 0.0))
+    volatility = float(row.get("volatility_pct", 0.0) or 0.0)
+    trade_count = float(row.get("trade_count", 0.0) or 0.0)
+    volume_score = min(quote_volume / 50_000_000, 1.0) * 40
+    move_score = min(move / 12, 1.0) * 25
+    volatility_score = min(volatility / 18, 1.0) * 20
+    activity_score = min(trade_count / 200_000, 1.0) * 15
+    return round(volume_score + move_score + volatility_score + activity_score, 4)
+
+
+@router.get("/market-radar")
+def market_radar(limit: int = 30) -> dict[str, object]:
+    safe_limit = min(max(int(limit), 5), 80)
+    client = BinancePublicMarketDataClient()
+    try:
+        rows = client.fetch_all_usdt_24h_tickers()
+        error = ""
+    except Exception as exc:
+        rows = []
+        error = f"{exc.__class__.__name__}: public market radar unavailable"
+    candidates: list[dict[str, object]] = []
+    for row in rows:
+        quote_volume = float(row.get("quote_volume", 0.0) or 0.0)
+        trade_count = int(row.get("trade_count", 0) or 0)
+        if quote_volume < 2_000_000 or trade_count < 250:
+            continue
+        score = _radar_score(row)
+        candidates.append(
+            {
+                **row,
+                "radar_score": score,
+                "reason": (
+                    f"volume={round(quote_volume, 2)}; "
+                    f"move={row.get('price_change_pct')}%; "
+                    f"volatility={row.get('volatility_pct')}%"
+                ),
+                "deep_scan_recommended": score >= 45,
+            }
+        )
+    ranked = sorted(candidates, key=lambda item: float(item["radar_score"]), reverse=True)
+    payload = {
+        "mode": "FULL_MARKET_PUBLIC_PREFILTER",
+        "source": "binance_public_24hr_all_tickers",
+        "symbols_seen": len(rows),
+        "candidates": ranked[:safe_limit],
+        "deep_scan_symbols": [str(item["symbol"]) for item in ranked[: min(safe_limit, 40)]],
+        "ranking_rule": "volume + absolute 24h movement + volatility + trade activity",
+        "error": error,
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "profit_guarantee": False,
+        "rule": "Radar shortlists candidates only; decision pipeline still requires evidence, risk, and zero-hallucination checks.",
+    }
+    return ok(redact_sensitive(payload), "Full-market radar loaded.")
+
+
 @router.get("/daily-target")
 def daily_target(target_pnl_pct: float = 10.0) -> dict[str, object]:
     backend = get_backend()

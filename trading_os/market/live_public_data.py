@@ -254,6 +254,44 @@ class BinancePublicMarketDataClient:
         self._symbol_cache = (time(), symbols)
         return symbols
 
+    def fetch_all_usdt_24h_tickers(self) -> list[dict[str, Any]]:
+        """Return 24h ticker rows for active-looking USDT symbols.
+
+        This is a lightweight public pre-filter source. It does not fetch deep
+        candles/order books and does not require Binance credentials.
+        """
+
+        payload = self._get_json("/api/v3/ticker/24hr", {})
+        rows: list[dict[str, Any]] = []
+        for item in payload if isinstance(payload, list) else []:
+            symbol = str(item.get("symbol", "")).upper()
+            if not symbol.endswith("USDT"):
+                continue
+            try:
+                last_price = float(item.get("lastPrice", 0.0) or 0.0)
+                quote_volume = float(item.get("quoteVolume", 0.0) or 0.0)
+                price_change_pct = float(item.get("priceChangePercent", 0.0) or 0.0)
+                high = float(item.get("highPrice", 0.0) or 0.0)
+                low = float(item.get("lowPrice", 0.0) or 0.0)
+                count = int(item.get("count", 0) or 0)
+            except (TypeError, ValueError):
+                continue
+            if last_price <= 0 or quote_volume <= 0:
+                continue
+            volatility_pct = ((high - low) / last_price * 100) if last_price else 0.0
+            rows.append(
+                {
+                    "symbol": symbol,
+                    "last_price": last_price,
+                    "quote_volume": quote_volume,
+                    "price_change_pct": price_change_pct,
+                    "volatility_pct": round(volatility_pct, 4),
+                    "trade_count": count,
+                    "source": "binance_public_24hr_all_tickers",
+                }
+            )
+        return rows
+
     def _get_json(self, path: str, params: dict[str, Any]) -> Any:
         errors: list[str] = []
         for base_url in (self.base_url, *self.fallback_base_urls):

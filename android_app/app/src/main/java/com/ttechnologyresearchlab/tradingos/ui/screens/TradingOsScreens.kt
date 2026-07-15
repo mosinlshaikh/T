@@ -331,6 +331,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
             segments = state.performanceWheel.segments
         )
         CoinUniverseCard(state)
+        MarketRadarCard(state)
         DailyTargetCard(state)
         TradeQualityCard(state)
         NoTradeZoneCard(state)
@@ -897,6 +898,34 @@ private fun CoinUniverseCard(state: TradingOsUiState) {
             Text(preview.joinToString("  |  "), color = MutedText)
         }
         Text("Saare active USDT Spot pairs backend ko pata rahenge; scanner rate-limit safe batches me rank karega.")
+    }
+}
+
+@Composable
+private fun MarketRadarCard(state: TradingOsUiState) {
+    GlassCard {
+        Text("Market Radar", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) {
+                MetricCard("USDT Seen", state.marketRadar.symbolsSeen.toString(), "Public 24h ticker")
+            }
+            Column(Modifier.weight(1f)) {
+                MetricCard("Deep Scan", state.marketRadar.deepScanSymbols.size.toString(), "Shortlist")
+            }
+        }
+        Text(state.marketRadar.rankingRule, color = MutedText)
+        if (state.marketRadar.error.isNotBlank()) {
+            Text(state.marketRadar.error, color = WarningAmber)
+        }
+        if (state.marketRadar.candidates.isNotEmpty()) {
+            Text("Top candidates", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+            state.marketRadar.candidates.take(8).forEach { Text("- $it", color = MutedText) }
+        }
+        if (state.marketRadar.deepScanSymbols.isNotEmpty()) {
+            Text("Deep scan symbols: ${state.marketRadar.deepScanSymbols.take(12).joinToString()}", color = MutedText)
+        }
+        Text(state.marketRadar.rule, color = MutedText)
+        Text("Radar shortlist hai; final trade decision risk + zero-hallucination ke baad hi hota hai.")
     }
 }
 

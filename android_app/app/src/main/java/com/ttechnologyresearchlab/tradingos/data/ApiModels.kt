@@ -328,6 +328,15 @@ data class CoinUniverseUi(
     val rule: String = "Coin universe unavailable."
 )
 
+data class MarketRadarUi(
+    val symbolsSeen: Int = 0,
+    val candidates: List<String> = emptyList(),
+    val deepScanSymbols: List<String> = emptyList(),
+    val rankingRule: String = "Radar unavailable.",
+    val error: String = "",
+    val rule: String = "Public-data radar only."
+)
+
 data class DailyTargetUi(
     val targetPnlPct: String = "10",
     val targetAmountUsdt: String = "0.00",
@@ -388,6 +397,7 @@ data class TradingOsUiState(
     val strategyBlockers: StrategyBlockersUi = StrategyBlockersUi(),
     val shadowMode: ShadowModeUi = ShadowModeUi(),
     val coinUniverse: CoinUniverseUi = CoinUniverseUi(),
+    val marketRadar: MarketRadarUi = MarketRadarUi(),
     val dailyTarget: DailyTargetUi = DailyTargetUi(),
     val offlineSync: OfflineSyncUi = OfflineSyncUi(),
     val shutdownState: String = "RUNNING"

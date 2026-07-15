@@ -46,6 +46,7 @@ class TradingOsRepository(
                 val strategyBlockers = apiClient.getStrategyBlockers().toStrategyBlockers()
                 val shadowMode = apiClient.getShadowMode().toShadowMode()
                 val coinUniverse = apiClient.getSymbolUniverse().toCoinUniverse()
+                val marketRadar = apiClient.getMarketRadar().toMarketRadar()
                 val dailyTarget = apiClient.getDailyTarget().toDailyTarget()
                 PreviewData.state.copy(
                     isPreviewData = false,
@@ -87,6 +88,7 @@ class TradingOsRepository(
                     strategyBlockers = strategyBlockers,
                     shadowMode = shadowMode,
                     coinUniverse = coinUniverse,
+                    marketRadar = marketRadar,
                     dailyTarget = dailyTarget,
                     botStatus = PreviewData.state.botStatus.copy(
                         botState = supervisorState,
@@ -659,6 +661,25 @@ class TradingOsRepository(
             scanBatchLimit = body.jsonNumber("scan_batch_limit")?.toIntOrNull() ?: 0,
             symbolsPreview = body.jsonArrayItems("symbols_preview"),
             rule = body.jsonString("rule") ?: "Know full active Spot USDT universe; scan in safe batches."
+        )
+    }
+
+    private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toMarketRadar(): MarketRadarUi {
+        if (!ok) return PreviewData.state.marketRadar
+        val candidates = body.arraySection("candidates").objectChunks().map { chunk ->
+            val symbol = chunk.jsonString("symbol") ?: "UNKNOWN"
+            val score = chunk.jsonNumber("radar_score") ?: "0"
+            val move = chunk.jsonNumber("price_change_pct") ?: "0"
+            val volume = chunk.jsonNumber("quote_volume") ?: "0"
+            "$symbol score=$score move=$move% volume=$volume"
+        }.take(12)
+        return MarketRadarUi(
+            symbolsSeen = body.jsonNumber("symbols_seen")?.toIntOrNull() ?: 0,
+            candidates = candidates,
+            deepScanSymbols = body.jsonArrayItems("deep_scan_symbols"),
+            rankingRule = body.jsonString("ranking_rule") ?: "volume + move + volatility + activity",
+            error = body.jsonString("error") ?: "",
+            rule = body.jsonString("rule") ?: "Public-data radar only."
         )
     }
 

@@ -158,6 +158,11 @@ object PreviewData {
             symbolsPreview = listOf("DEVELOPMENT PREVIEW DATA"),
             rule = "Backend loads complete active Binance Spot USDT universe when connected."
         ),
+        marketRadar = MarketRadarUi(
+            candidates = listOf("DEVELOPMENT PREVIEW DATA"),
+            deepScanSymbols = listOf("Connect backend for radar candidates."),
+            rankingRule = "Preview only."
+        ),
         dailyTarget = DailyTargetUi(
             targetPnlPct = "10",
             recommendedMode = "PAPER_DISCOVERY",

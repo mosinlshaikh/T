@@ -47,6 +47,31 @@ class FakeRepository:
                     "confidence": 0.55,
                     "reason": "Conflicting signals; holding by policy.",
                     "paper_fill_id": "",
+                    "pipeline_stages": [
+                        {
+                            "stage": "ai_decision",
+                            "outcome": "HOLD",
+                            "reason_code": "SIGNALS_CONFLICT",
+                        }
+                    ],
+                },
+            },
+            {
+                "event_type": "paper_auto_trader_scan",
+                "created_at": now.isoformat(),
+                "payload": {
+                    "results": [
+                        {
+                            "run_id": "scan-1",
+                            "symbol": "BTCUSDT",
+                            "timeframe": "5m",
+                            "action": "HOLD",
+                            "status": "HOLD",
+                            "confidence": 0.55,
+                            "reason": "Conflicting signals; holding by policy.",
+                            "paper_fill_id": "",
+                        }
+                    ]
                 },
             }
         ]
@@ -78,6 +103,9 @@ def test_statement_engine_uses_selected_window_and_pnl() -> None:
     assert statement["paper_scan_count"] == 1
     assert statement["paper_scan_rows"][0]["symbol"] == "BTCUSDT"
     assert statement["paper_scan_rows"][0]["trade_allowed"] is False
+    assert statement["paper_scan_rows"][0]["blockers"] == [
+        "ai_decision:HOLD:SIGNALS_CONFLICT"
+    ]
     assert all(item["passed"] for item in statement["safety_checks"])
 
 

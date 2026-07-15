@@ -30,6 +30,7 @@ class PaperAutoTraderResult:
     confidence: float
     reason: str
     paper_fill_id: str = ""
+    pipeline_stages: list[dict[str, Any]] = field(default_factory=list)
     timestamp: str = field(default_factory=utc_now)
 
 
@@ -93,6 +94,15 @@ class PaperAutoTrader:
                 action="SKIP",
                 confidence=0.0,
                 reason=data_quality.reason_code.value,
+                pipeline_stages=[
+                    {
+                        "stage": "market_data_quality_gate",
+                        "outcome": "SKIP",
+                        "reason_code": data_quality.reason_code.value,
+                        "missing_data": data_quality.missing_data,
+                        "conflicts": data_quality.conflicts,
+                    }
+                ],
             )
             self.last_result = auto_result
             self.last_error = data_quality.reason_code.value
@@ -171,6 +181,7 @@ class PaperAutoTrader:
             confidence=result.decision.confidence,
             reason=result.reason,
             paper_fill_id=result.paper_fill.fill_id if result.paper_fill else "",
+            pipeline_stages=result.stage_results,
         )
         self.last_result = auto_result
         self.last_error = ""

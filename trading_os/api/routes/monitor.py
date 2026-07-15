@@ -225,6 +225,9 @@ def _latest_pipeline_stages(symbol: str, limit: int = 500) -> list[dict[str, obj
 
 def _paper_scan_history_row(item: dict[str, Any], source: str, timestamp: str = "") -> dict[str, object]:
     symbol = str(item.get("symbol", "UNKNOWN")).upper()
+    pipeline_stages = item.get("pipeline_stages", [])
+    if not isinstance(pipeline_stages, list) or not pipeline_stages:
+        pipeline_stages = _latest_pipeline_stages(symbol)
     return {
         "run_id": str(item.get("run_id", "")),
         "timestamp": str(item.get("timestamp") or item.get("created_at") or timestamp),
@@ -242,11 +245,36 @@ def _paper_scan_history_row(item: dict[str, Any], source: str, timestamp: str = 
             or "No paper trade was opened by policy."
         ),
         "strategy_breakdown": _latest_strategy_breakdown(symbol),
-        "pipeline_stages": _latest_pipeline_stages(symbol),
+        "pipeline_stages": pipeline_stages,
         "source": source,
         "live_trading_enabled": False,
         "public_data_only": True,
     }
+
+
+def _dedupe_scan_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    deduped: dict[str, dict[str, object]] = {}
+    ordered_keys: list[str] = []
+    for row in rows:
+        run_id = str(row.get("run_id", ""))
+        key = run_id or "|".join(
+            [
+                str(row.get("timestamp", "")),
+                str(row.get("symbol", "")),
+                str(row.get("action", "")),
+                str(row.get("status", "")),
+            ]
+        )
+        if key not in deduped:
+            ordered_keys.append(key)
+            deduped[key] = row
+            continue
+        existing = deduped[key]
+        existing_stages = existing.get("pipeline_stages", [])
+        row_stages = row.get("pipeline_stages", [])
+        if isinstance(row_stages, list) and row_stages and not existing_stages:
+            deduped[key] = row
+    return [deduped[key] for key in ordered_keys]
 
 
 @router.get("/paper-scan-history")
@@ -273,9 +301,11 @@ def paper_scan_history(limit: int = 20) -> dict[str, object]:
                 rows.append(_paper_scan_history_row(candidate, event_type, timestamp))
         else:
             rows.append(_paper_scan_history_row(payload, event_type, timestamp))
+    unique_rows = _dedupe_scan_rows(rows)
     payload = {
-        "rows": rows[-safe_limit:],
-        "count": len(rows[-safe_limit:]),
+        "rows": unique_rows[-safe_limit:],
+        "count": len(unique_rows[-safe_limit:]),
+        "raw_count": len(rows),
         "requested_limit": safe_limit,
         "live_trading_enabled": False,
         "public_data_only": True,

@@ -184,10 +184,14 @@ class StatementEngine:
                     rows.append(self._paper_scan_row(candidate, event.get("created_at", "")))
             else:
                 rows.append(self._paper_scan_row(payload, event.get("created_at", "")))
-        return rows
+        return self._dedupe_scan_rows(rows)
 
     @staticmethod
     def _paper_scan_row(item: dict[str, Any], fallback_timestamp: Any) -> dict[str, Any]:
+        pipeline_stages = item.get("pipeline_stages", [])
+        if not isinstance(pipeline_stages, list):
+            pipeline_stages = []
+        blockers = StatementEngine._blockers_from_stages(pipeline_stages)
         return {
             "run_id": str(item.get("run_id", "")),
             "timestamp": str(item.get("timestamp") or item.get("created_at") or fallback_timestamp),
@@ -203,7 +207,44 @@ class StatementEngine:
                 or item.get("reason")
                 or "No paper trade was opened by policy."
             ),
+            "pipeline_stages": pipeline_stages,
+            "blockers": blockers,
         }
+
+    @staticmethod
+    def _dedupe_scan_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        deduped: dict[str, dict[str, Any]] = {}
+        ordered_keys: list[str] = []
+        for row in rows:
+            run_id = str(row.get("run_id", ""))
+            key = run_id or "|".join(
+                [
+                    str(row.get("timestamp", "")),
+                    str(row.get("symbol", "")),
+                    str(row.get("action", "")),
+                    str(row.get("status", "")),
+                ]
+            )
+            if key not in deduped:
+                ordered_keys.append(key)
+                deduped[key] = row
+                continue
+            existing = deduped[key]
+            if row.get("pipeline_stages") and not existing.get("pipeline_stages"):
+                deduped[key] = row
+        return [deduped[key] for key in ordered_keys]
+
+    @staticmethod
+    def _blockers_from_stages(stages: list[dict[str, Any]]) -> list[str]:
+        blockers: list[str] = []
+        for stage in stages:
+            outcome = str(stage.get("outcome", "")).upper()
+            if outcome not in {"HOLD", "SKIP", "REJECT"}:
+                continue
+            stage_name = str(stage.get("stage", "stage"))
+            reason = str(stage.get("reason_code", "UNKNOWN"))
+            blockers.append(f"{stage_name}:{outcome}:{reason}")
+        return blockers
 
     @staticmethod
     def _estimate_fees(journal: list[dict[str, Any]]) -> float:

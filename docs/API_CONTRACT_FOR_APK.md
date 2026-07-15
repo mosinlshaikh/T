@@ -143,6 +143,7 @@ not call private Binance APIs.
 - `GET /monitor/candle-detail?symbol=BTCUSDT&timeframe=5m&limit=40`
 - `GET /monitor/paper-scan-summary`
 - `GET /monitor/paper-scan-history`
+- `GET /monitor/strategy-blockers`
 - `GET /monitor/paper-demo-readiness`
 
 `/monitor/paper-live` is the main APK dashboard feed for public market data,
@@ -164,6 +165,10 @@ and safety flags.
 `/monitor/paper-scan-history` returns audit-derived paper scan rows. Rows include
 `strategy_breakdown` and `pipeline_stages` so the APK can show exactly which
 pipeline gates continued, held, skipped, or rejected a paper trade candidate.
+
+`/monitor/strategy-blockers` summarizes recent HOLD/SKIP reasons, pipeline
+blockers, low-confidence counts, and symbol frequency. It is advisory only and
+does not auto-change strategy thresholds.
 
 `/monitor/paper-demo-readiness` returns computed readiness percentages for the
 paper backend/APK monitoring contract and paper demo contract. It must always

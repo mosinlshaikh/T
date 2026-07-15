@@ -340,6 +340,88 @@ def watchlist_candidates(limit: int = 10) -> dict[str, object]:
     return ok(redact_sensitive(payload), "Watchlist candidates loaded.")
 
 
+@router.get("/strategy-blockers")
+def strategy_blockers(limit: int = 100) -> dict[str, object]:
+    safe_limit = min(max(int(limit), 5), 250)
+    history = paper_scan_history(limit=safe_limit)["data"]
+    rows = list(history.get("rows", []))
+    blocker_counts: dict[str, int] = {}
+    symbol_counts: dict[str, int] = {}
+    action_counts = {"BUY": 0, "SELL": 0, "HOLD": 0, "SKIP": 0}
+    low_confidence = 0
+    no_trade_count = 0
+    examples: list[dict[str, object]] = []
+
+    for row in rows:
+        action = str(row.get("action", "SKIP")).upper()
+        if action in action_counts:
+            action_counts[action] += 1
+        symbol = str(row.get("symbol", "UNKNOWN")).upper()
+        symbol_counts[symbol] = symbol_counts.get(symbol, 0) + 1
+        confidence = float(row.get("confidence", 0.0) or 0.0)
+        if confidence < 0.65:
+            low_confidence += 1
+        if not bool(row.get("trade_allowed")):
+            no_trade_count += 1
+        stages = row.get("pipeline_stages", [])
+        if not isinstance(stages, list):
+            stages = []
+        row_blockers: list[str] = []
+        for stage in stages:
+            if not isinstance(stage, dict):
+                continue
+            outcome = str(stage.get("outcome", "")).upper()
+            if outcome not in {"HOLD", "SKIP", "REJECT"}:
+                continue
+            reason_code = str(stage.get("reason_code", "UNKNOWN"))
+            stage_name = str(stage.get("stage", "stage"))
+            blocker = f"{stage_name}:{outcome}:{reason_code}"
+            row_blockers.append(blocker)
+            blocker_counts[blocker] = blocker_counts.get(blocker, 0) + 1
+        if row_blockers and len(examples) < 12:
+            examples.append(
+                {
+                    "symbol": symbol,
+                    "action": action,
+                    "confidence": confidence,
+                    "why_not_traded": row.get("why_not_traded", ""),
+                    "blockers": row_blockers,
+                }
+            )
+
+    sorted_blockers = sorted(blocker_counts.items(), key=lambda item: item[1], reverse=True)
+    sorted_symbols = sorted(symbol_counts.items(), key=lambda item: item[1], reverse=True)
+    recommendations: list[str] = []
+    if action_counts["HOLD"] + action_counts["SKIP"] == len(rows) and rows:
+        recommendations.append("All recent candidates were HOLD/SKIP; keep paper mode and inspect blockers.")
+    if low_confidence:
+        recommendations.append("Many candidates are below 0.65 confidence; collect more candles/order book/whale/news evidence before tuning thresholds.")
+    if any("SIGNALS_CONFLICT" in blocker for blocker in blocker_counts):
+        recommendations.append("Conflict blocker is active; add stronger multi-timeframe agreement before allowing paper entries.")
+    if not rows:
+        recommendations.append("No recent paper scan rows found; start the paper session scheduler.")
+
+    payload = {
+        "window_rows": len(rows),
+        "no_trade_count": no_trade_count,
+        "low_confidence_count": low_confidence,
+        "action_counts": action_counts,
+        "top_blockers": [
+            {"blocker": blocker, "count": count} for blocker, count in sorted_blockers[:12]
+        ],
+        "top_symbols": [
+            {"symbol": symbol, "count": count} for symbol, count in sorted_symbols[:20]
+        ],
+        "examples": examples,
+        "recommendations": recommendations,
+        "tuning_policy": "Advisory only. Thresholds are not auto-changed and live trading remains disabled.",
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "profit_guarantee": False,
+    }
+    return ok(redact_sensitive(payload), "Strategy blocker analysis loaded.")
+
+
 def _evidence_item(event: dict[str, Any]) -> dict[str, object]:
     payload = _payload(event)
     event_type = str(event.get("event_type", "unknown"))

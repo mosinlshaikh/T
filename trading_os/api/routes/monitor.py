@@ -854,10 +854,10 @@ def _radar_score(row: dict[str, Any]) -> float:
     move = abs(float(row.get("price_change_pct", 0.0) or 0.0))
     volatility = float(row.get("volatility_pct", 0.0) or 0.0)
     trade_count = float(row.get("trade_count", 0.0) or 0.0)
-    volume_score = min(quote_volume / 50_000_000, 1.0) * 40
+    volume_score = min(quote_volume / 25_000_000, 1.0) * 40
     move_score = min(move / 12, 1.0) * 25
     volatility_score = min(volatility / 18, 1.0) * 20
-    activity_score = min(trade_count / 200_000, 1.0) * 15
+    activity_score = min(trade_count / 75_000, 1.0) * 15
     return round(volume_score + move_score + volatility_score + activity_score, 4)
 
 
@@ -875,7 +875,7 @@ def market_radar(limit: int = 30) -> dict[str, object]:
     for row in rows:
         quote_volume = float(row.get("quote_volume", 0.0) or 0.0)
         trade_count = int(row.get("trade_count", 0) or 0)
-        if quote_volume < 2_000_000 or trade_count < 250:
+        if quote_volume < 50_000 or trade_count < 10:
             continue
         score = _radar_score(row)
         candidates.append(
@@ -887,7 +887,7 @@ def market_radar(limit: int = 30) -> dict[str, object]:
                     f"move={row.get('price_change_pct')}%; "
                     f"volatility={row.get('volatility_pct')}%"
                 ),
-                "deep_scan_recommended": score >= 45,
+                "deep_scan_recommended": score >= 12,
             }
         )
     ranked = sorted(candidates, key=lambda item: float(item["radar_score"]), reverse=True)

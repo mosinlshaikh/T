@@ -223,7 +223,9 @@ def _latest_pipeline_stages(symbol: str, limit: int = 500) -> list[dict[str, obj
     return []
 
 
-def _paper_scan_history_row(item: dict[str, Any], source: str, timestamp: str = "") -> dict[str, object]:
+def _paper_scan_history_row(
+    item: dict[str, Any], source: str, timestamp: str = ""
+) -> dict[str, object]:
     symbol = str(item.get("symbol", "UNKNOWN")).upper()
     pipeline_stages = item.get("pipeline_stages", [])
     if not isinstance(pipeline_stages, list) or not pipeline_stages:
@@ -393,13 +395,21 @@ def strategy_blockers(limit: int = 100) -> dict[str, object]:
     sorted_symbols = sorted(symbol_counts.items(), key=lambda item: item[1], reverse=True)
     recommendations: list[str] = []
     if action_counts["HOLD"] + action_counts["SKIP"] == len(rows) and rows:
-        recommendations.append("All recent candidates were HOLD/SKIP; keep paper mode and inspect blockers.")
+        recommendations.append(
+            "All recent candidates were HOLD/SKIP; keep paper mode and inspect blockers."
+        )
     if low_confidence:
-        recommendations.append("Many candidates are below 0.65 confidence; collect more candles/order book/whale/news evidence before tuning thresholds.")
+        recommendations.append(
+            "Many candidates are below 0.65 confidence; collect more candles/order book/whale/news evidence before tuning thresholds."
+        )
     if any("SIGNALS_CONFLICT" in blocker for blocker in blocker_counts):
-        recommendations.append("Conflict blocker is active; add stronger multi-timeframe agreement before allowing paper entries.")
+        recommendations.append(
+            "Conflict blocker is active; add stronger multi-timeframe agreement before allowing paper entries."
+        )
     if not rows:
-        recommendations.append("No recent paper scan rows found; start the paper session scheduler.")
+        recommendations.append(
+            "No recent paper scan rows found; start the paper session scheduler."
+        )
 
     payload = {
         "window_rows": len(rows),

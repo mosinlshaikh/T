@@ -73,7 +73,7 @@ class FakeRepository:
                         }
                     ]
                 },
-            }
+            },
         ]
 
     def list_closed_positions(self):
@@ -103,9 +103,7 @@ def test_statement_engine_uses_selected_window_and_pnl() -> None:
     assert statement["paper_scan_count"] == 1
     assert statement["paper_scan_rows"][0]["symbol"] == "BTCUSDT"
     assert statement["paper_scan_rows"][0]["trade_allowed"] is False
-    assert statement["paper_scan_rows"][0]["blockers"] == [
-        "ai_decision:HOLD:SIGNALS_CONFLICT"
-    ]
+    assert statement["paper_scan_rows"][0]["blockers"] == ["ai_decision:HOLD:SIGNALS_CONFLICT"]
     assert all(item["passed"] for item in statement["safety_checks"])
 
 

@@ -245,11 +245,15 @@ class DecisionToTradePipeline:
         )
         mark(
             "ai_decision",
-            PipelineStageOutcome.HOLD
-            if proposal.action == DecisionAction.HOLD
-            else PipelineStageOutcome.SKIP
-            if proposal.action == DecisionAction.SKIP
-            else PipelineStageOutcome.CONTINUE,
+            (
+                PipelineStageOutcome.HOLD
+                if proposal.action == DecisionAction.HOLD
+                else (
+                    PipelineStageOutcome.SKIP
+                    if proposal.action == DecisionAction.SKIP
+                    else PipelineStageOutcome.CONTINUE
+                )
+            ),
             proposal.reason.upper().replace(" ", "_").replace(";", ""),
             missing_data=proposal.missing_data,
             conflicts=proposal.conflict_signals,
@@ -257,7 +261,11 @@ class DecisionToTradePipeline:
         decision = self.verifier.verify(proposal)
         mark(
             "zero_hallucination",
-            PipelineStageOutcome.CONTINUE if decision.verified_decision else PipelineStageOutcome.REJECT,
+            (
+                PipelineStageOutcome.CONTINUE
+                if decision.verified_decision
+                else PipelineStageOutcome.REJECT
+            ),
             "VERIFIED" if decision.verified_decision else "ZERO_HALLUCINATION_REJECTED",
             missing_data=decision.missing_data,
             conflicts=decision.conflict_signals,

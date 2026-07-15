@@ -125,7 +125,7 @@ trading_os/
 | `PaperTradingSimulator` | Paper-only trade fills, exits, SL/TP events | Phase 3 |
 | `PortfolioStateManager` | Wallet, exposure, reserve, PnL, drawdown state | Phase 3 |
 | `StrategyRegistry` | Evidence-only strategy placeholders | Phase 3 |
-| `DecisionToTradePipeline` | Market-data-to-paper-trade pipeline | Phase 3 |
+| `DecisionToTradePipeline` | Market-data-to-paper-trade pipeline with stage audit results | Phase 3+ |
 | `CandleIntelligenceEngine` | Candle trend, breakout, reversal, wick, volume analysis | Phase 4 |
 | `OrderBookIntelligenceEngine` | Wall, imbalance, liquidity gap, spread risk analysis | Phase 4 |
 | `WhaleIntelligenceV1` | Large trade and volume spike evidence analysis | Phase 4 |

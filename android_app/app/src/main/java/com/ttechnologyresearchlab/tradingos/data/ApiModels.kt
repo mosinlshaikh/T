@@ -256,6 +256,7 @@ data class PaperScanHistoryRowUi(
     val tradeAllowed: Boolean = false,
     val whyNotTraded: String = "No paper trade was opened by policy.",
     val strategyBreakdown: List<String> = emptyList(),
+    val pipelineStages: List<String> = emptyList(),
     val source: String = "paper_scan"
 )
 

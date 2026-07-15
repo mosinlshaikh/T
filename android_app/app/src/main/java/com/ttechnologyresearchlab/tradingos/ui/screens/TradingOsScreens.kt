@@ -1349,7 +1349,12 @@ private fun PaperScanHistoryCard(state: TradingOsUiState) {
                     KeyValue("Time", row.timestamp)
                     Text(row.whyNotTraded, color = MutedText)
                     if (row.strategyBreakdown.isNotEmpty()) {
+                        Text("Strategy evidence", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
                         row.strategyBreakdown.take(5).forEach { Text("- $it", color = MutedText) }
+                    }
+                    if (row.pipelineStages.isNotEmpty()) {
+                        Text("Decision pipeline", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+                        row.pipelineStages.take(6).forEach { Text("- $it", color = MutedText) }
                     }
                 }
             }
@@ -1374,7 +1379,12 @@ private fun WatchlistCandidatesCard(state: TradingOsUiState) {
                     }
                     Text(row.whyNotTraded, color = MutedText)
                     if (row.strategyBreakdown.isNotEmpty()) {
+                        Text("Strategy evidence", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
                         row.strategyBreakdown.take(4).forEach { Text("- $it", color = MutedText) }
+                    }
+                    if (row.pipelineStages.isNotEmpty()) {
+                        Text("Decision pipeline", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+                        row.pipelineStages.take(5).forEach { Text("- $it", color = MutedText) }
                     }
                 }
             }

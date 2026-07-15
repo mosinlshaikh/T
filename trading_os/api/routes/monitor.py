@@ -193,6 +193,36 @@ def _latest_strategy_breakdown(symbol: str, limit: int = 500) -> list[dict[str, 
     return rows[-8:]
 
 
+def _latest_pipeline_stages(symbol: str, limit: int = 500) -> list[dict[str, object]]:
+    wanted_symbol = symbol.upper()
+    for event in reversed(latest_audit_events(limit=limit)):
+        if event.get("event_type") != "decision_to_trade_pipeline_result":
+            continue
+        payload = _payload(event)
+        if str(payload.get("symbol", "")).upper() != wanted_symbol:
+            continue
+        stages = payload.get("stage_results", [])
+        if not isinstance(stages, list):
+            return []
+        rows: list[dict[str, object]] = []
+        for stage in stages:
+            if not isinstance(stage, dict):
+                continue
+            rows.append(
+                {
+                    "stage": str(stage.get("stage", "stage")),
+                    "outcome": str(stage.get("outcome", "UNKNOWN")).upper(),
+                    "reason_code": str(stage.get("reason_code", "UNKNOWN")),
+                    "latency_ms": stage.get("latency_ms", 0.0),
+                    "missing_data": stage.get("missing_data", []),
+                    "conflicts": stage.get("conflicts", []),
+                    "timestamp": stage.get("timestamp", event.get("created_at", "")),
+                }
+            )
+        return rows[-12:]
+    return []
+
+
 def _paper_scan_history_row(item: dict[str, Any], source: str, timestamp: str = "") -> dict[str, object]:
     symbol = str(item.get("symbol", "UNKNOWN")).upper()
     return {
@@ -212,6 +242,7 @@ def _paper_scan_history_row(item: dict[str, Any], source: str, timestamp: str = 
             or "No paper trade was opened by policy."
         ),
         "strategy_breakdown": _latest_strategy_breakdown(symbol),
+        "pipeline_stages": _latest_pipeline_stages(symbol),
         "source": source,
         "live_trading_enabled": False,
         "public_data_only": True,

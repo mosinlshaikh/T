@@ -142,6 +142,7 @@ not call private Binance APIs.
 - `GET /monitor/market-evidence`
 - `GET /monitor/candle-detail?symbol=BTCUSDT&timeframe=5m&limit=40`
 - `GET /monitor/paper-scan-summary`
+- `GET /monitor/paper-scan-history`
 - `GET /monitor/paper-demo-readiness`
 
 `/monitor/paper-live` is the main APK dashboard feed for public market data,
@@ -159,6 +160,10 @@ the response keeps `missing_data=["candles"]` and the decision rule remains
 `/monitor/paper-scan-summary` returns the latest public-data paper scan result:
 symbol, action, confidence, why no trade was opened, paper fill ID when present,
 and safety flags.
+
+`/monitor/paper-scan-history` returns audit-derived paper scan rows. Rows include
+`strategy_breakdown` and `pipeline_stages` so the APK can show exactly which
+pipeline gates continued, held, skipped, or rejected a paper trade candidate.
 
 `/monitor/paper-demo-readiness` returns computed readiness percentages for the
 paper backend/APK monitoring contract and paper demo contract. It must always

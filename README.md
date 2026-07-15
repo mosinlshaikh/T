@@ -193,6 +193,7 @@ Still blocked until a separate explicit command:
 - Withdrawal, margin, futures, transfer, or private-key support.
 | UI/UX Design System         | [docs/UI_UX_DESIGN_SYSTEM.md](docs/UI_UX_DESIGN_SYSTEM.md)                 |
 | Backend Architecture        | [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md)                 |
+| Decision Pipeline Stages    | [docs/architecture/DECISION_PIPELINE_STAGES.md](docs/architecture/DECISION_PIPELINE_STAGES.md) |
 | Backend Deployment Readiness | [docs/BACKEND_DEPLOYMENT_READINESS.md](docs/BACKEND_DEPLOYMENT_READINESS.md) |
 | Railway Deployment           | [docs/RAILWAY_DEPLOYMENT.md](docs/RAILWAY_DEPLOYMENT.md)                     |
 | Binance Rule Engine         | [docs/BINANCE_RULE_ENGINE.md](docs/BINANCE_RULE_ENGINE.md)                   |

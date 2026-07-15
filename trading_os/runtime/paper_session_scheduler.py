@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import os
 from threading import Event, Lock, Thread
 from typing import Any
 from uuid import uuid4
@@ -9,6 +10,18 @@ from uuid import uuid4
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def env_symbols(name: str) -> list[str]:
+    value = os.getenv(name, "")
+    return [item.strip().upper() for item in value.split(",") if item.strip()]
 
 
 @dataclass
@@ -115,9 +128,8 @@ class PaperSessionScheduler:
 
     def auto_resume_if_configured(self) -> dict[str, Any]:
         repository = getattr(self.backend, "repository", None)
-        if repository is None:
-            return self.status()
-        settings = repository.get_settings(self.settings_key) or {}
+        settings = repository.get_settings(self.settings_key) if repository is not None else None
+        settings = settings or self._env_desired_state()
         if self.running or not settings.get("enabled"):
             return self.status()
         if self.backend.config.enable_live_trading or self.backend.kill_switch.active:
@@ -152,6 +164,23 @@ class PaperSessionScheduler:
             },
         )
         return status
+
+    def _env_desired_state(self) -> dict[str, Any]:
+        if not env_flag("T_PAPER_SESSION_ENABLED", default=False):
+            return {}
+        return {
+            "enabled": True,
+            "symbols": env_symbols("T_PAPER_SESSION_SYMBOLS")
+            or ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT"],
+            "timeframe": os.getenv("T_PAPER_SESSION_TIMEFRAME", "5m"),
+            "interval_seconds": int(os.getenv("T_PAPER_SESSION_INTERVAL_SECONDS", "300") or 300),
+            "trade_notional_usdt": float(
+                os.getenv("T_PAPER_SESSION_TRADE_NOTIONAL_USDT", "50") or 50.0
+            ),
+            "live_trading_enabled": False,
+            "public_data_only": True,
+            "source": "environment",
+        }
 
     def _loop(self) -> None:
         while not self._stop.is_set():

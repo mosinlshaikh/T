@@ -89,3 +89,22 @@ def test_paper_session_auto_resume_uses_persisted_safe_settings() -> None:
     assert status["live_trading_enabled"] is False
     assert repository.get_settings("paper_session")["enabled"] is True
     scheduler.stop()
+
+
+def test_paper_session_auto_resume_can_use_safe_env_fallback(monkeypatch) -> None:
+    monkeypatch.setenv("T_PAPER_SESSION_ENABLED", "true")
+    monkeypatch.setenv("T_PAPER_SESSION_SYMBOLS", "btcusdt,ethusdt")
+    monkeypatch.setenv("T_PAPER_SESSION_TIMEFRAME", "5m")
+    monkeypatch.setenv("T_PAPER_SESSION_INTERVAL_SECONDS", "999")
+    monkeypatch.setenv("T_PAPER_SESSION_TRADE_NOTIONAL_USDT", "25")
+    backend = fake_backend(repository=FakeRepository())
+    scheduler = PaperSessionScheduler(backend=backend, min_interval_seconds=999)
+
+    status = scheduler.auto_resume_if_configured()
+
+    assert status["running"] is True
+    assert status["auto_resume_enabled"] is True
+    assert status["symbols"] == ["BTCUSDT", "ETHUSDT"]
+    assert status["trade_notional_usdt"] == 25
+    assert status["live_trading_enabled"] is False
+    scheduler.stop()

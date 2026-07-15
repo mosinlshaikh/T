@@ -23,6 +23,19 @@ TTRL_ADMIN_TOKEN=<owner-admin-token-generated-in-railway>
 Do not add real Binance credentials for this paper deployment. Do not set live
 trading variables to true.
 
+Optional paper-session auto-resume variables:
+
+```env
+T_PAPER_SESSION_ENABLED=true
+T_PAPER_SESSION_SYMBOLS=BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT
+T_PAPER_SESSION_TIMEFRAME=5m
+T_PAPER_SESSION_INTERVAL_SECONDS=300
+T_PAPER_SESSION_TRADE_NOTIONAL_USDT=50
+```
+
+These variables start only the public-data paper scanner after a Railway restart.
+They do not enable live trading or private Binance order execution.
+
 ## Deployment Steps
 
 1. Push the repository to GitHub.

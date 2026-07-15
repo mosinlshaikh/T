@@ -90,7 +90,9 @@ class PaperSessionScheduler:
         return self.status()
 
     def status(self) -> dict[str, Any]:
-        desired = self.backend.repository.get_settings(self.settings_key) or {}
+        repository = getattr(self.backend, "repository", None)
+        desired = repository.get_settings(self.settings_key) if repository is not None else None
+        desired = desired or {}
         return {
             "running": self.running,
             "session_id": self.session_id,
@@ -112,7 +114,10 @@ class PaperSessionScheduler:
         }
 
     def auto_resume_if_configured(self) -> dict[str, Any]:
-        settings = self.backend.repository.get_settings(self.settings_key) or {}
+        repository = getattr(self.backend, "repository", None)
+        if repository is None:
+            return self.status()
+        settings = repository.get_settings(self.settings_key) or {}
         if self.running or not settings.get("enabled"):
             return self.status()
         if self.backend.config.enable_live_trading or self.backend.kill_switch.active:
@@ -188,7 +193,10 @@ class PaperSessionScheduler:
                 self.stopped_at = utc_now()
 
     def _save_desired_state(self, enabled: bool) -> None:
-        self.backend.repository.save_settings(
+        repository = getattr(self.backend, "repository", None)
+        if repository is None:
+            return
+        repository.save_settings(
             self.settings_key,
             {
                 "enabled": enabled,

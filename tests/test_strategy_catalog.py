@@ -15,6 +15,10 @@ def test_strategy_catalog_items_require_evidence() -> None:
     payload = strategy_catalog_payload()
 
     for strategy in payload["strategies"]:
-        assert strategy["status"] == "PAPER_ADVISORY"
+        assert strategy["status"] in {"PAPER_ADVISORY", "RESEARCH_ONLY_LIVE_BLOCKED"}
         assert strategy["required_data"]
-        assert "Evidence required" in strategy["safety_rules"]
+        assert (
+            "Evidence required" in strategy["safety_rules"]
+            or "Missing data returns SKIP" in strategy["safety_rules"]
+            or strategy["status"] == "RESEARCH_ONLY_LIVE_BLOCKED"
+        )

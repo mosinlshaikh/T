@@ -5,6 +5,7 @@ from trading_os.runtime.paper_auto_trader import (
     trade_allowed,
     why_not_traded,
 )
+from trading_os.market.radar import rank_market_radar_rows
 
 
 def test_normalize_watchlist_deduplicates_and_limits() -> None:
@@ -52,3 +53,27 @@ def test_why_not_traded_for_low_confidence_buy() -> None:
     assert why_not_traded("BUY", 0.5, "PAPER_OPEN", "") == (
         "Confidence below paper trade threshold."
     )
+
+
+def test_market_radar_ranks_public_candidates() -> None:
+    rows = [
+        {
+            "symbol": "SLOWUSDT",
+            "quote_volume": 60_000,
+            "price_change_pct": 0.2,
+            "volatility_pct": 0.3,
+            "trade_count": 20,
+        },
+        {
+            "symbol": "FASTUSDT",
+            "quote_volume": 5_000_000,
+            "price_change_pct": 8.5,
+            "volatility_pct": 12.0,
+            "trade_count": 80_000,
+        },
+    ]
+
+    ranked = rank_market_radar_rows(rows, limit=2)
+
+    assert ranked[0]["symbol"] == "FASTUSDT"
+    assert ranked[0]["deep_scan_recommended"] is True

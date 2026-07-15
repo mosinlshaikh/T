@@ -532,6 +532,36 @@ def paper_auto_trader_scan_all(
     )
 
 
+@router.post("/paper-auto-trader/scan-radar")
+def paper_auto_trader_scan_radar(
+    timeframe: str = "5m",
+    trade_notional_usdt: float = 50.0,
+    max_symbols: int = 20,
+) -> dict[str, object]:
+    backend = get_backend()
+    if backend.config.enable_live_trading:
+        return fail(
+            "LIVE_TRADING_BLOCKED", errors=["Radar paper scanner cannot enable live trading."]
+        )
+    if backend.kill_switch.active:
+        return fail("KILL_SWITCH_ACTIVE", errors=["Emergency stop is active."])
+    payload = backend.paper_auto_trader.scan_once(
+        symbols=None,
+        timeframe=timeframe,
+        trade_notional_usdt=trade_notional_usdt,
+        max_symbols_override=max_symbols,
+        use_market_radar=True,
+    )
+    return ok(
+        payload,
+        "Market radar paper scanner completed in a safe batch.",
+        warnings=[
+            "Paper mode only. No real Binance orders are placed.",
+            "Radar uses public 24h ticker data to choose deep-scan candidates.",
+        ],
+    )
+
+
 @router.post("/paper-auto-trader/start")
 def start_paper_auto_trader(
     symbols: str = "BTCUSDT",

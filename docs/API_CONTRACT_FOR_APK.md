@@ -114,6 +114,7 @@ It must return `ready_for_real_money=false` and
 - `POST /control/restart-runtime`
 - `POST /control/pause-new-trades`
 - `POST /control/resume-paper-trades`
+- `POST /control/paper-auto-trader/scan-radar`
 - `POST /control/paper-session/start`
 - `POST /control/paper-session/stop`
 - `GET /control/paper-session/status`
@@ -127,6 +128,10 @@ There is no live mode endpoint.
 Paper session endpoints run repeated public-market paper scans for learning and
 monitoring. They do not place real Binance orders and cannot enable live
 trading.
+
+`/control/paper-auto-trader/scan-radar` uses the public Market Radar shortlist
+as the input symbols for a deep paper scan. It remains paper-only and cannot
+send real Binance orders.
 
 `/control/manual-paper-demo/open` opens a capped paper-only walkthrough position
 using public ticker data. It is clearly labeled `MANUAL PAPER DEMO`; it is not

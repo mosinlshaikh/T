@@ -10,6 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 from trading_os.market.live_public_data import BinancePublicMarketDataClient
+from trading_os.market.radar import rank_market_radar_rows
 from trading_os.quality.market_data_gate import MarketDataQualityGate
 
 DEFAULT_WATCHLIST_PATH = "config/watchlist.json"
@@ -203,6 +204,7 @@ class PaperAutoTrader:
         trade_notional_usdt: float = 50.0,
         all_usdt_symbols: bool = False,
         max_symbols_override: int | None = None,
+        use_market_radar: bool = False,
     ) -> dict[str, Any]:
         watchlist = load_watchlist_config()
         configured_symbols = watchlist.get("symbols", list(self.default_symbols))
@@ -214,6 +216,20 @@ class PaperAutoTrader:
             max_symbols = min(max(int(max_symbols_override), 1), 20)
         client = BinancePublicMarketDataClient()
         universe_symbols: list[str] = []
+        radar_symbols: list[str] = []
+        if use_market_radar:
+            try:
+                radar_rows = rank_market_radar_rows(
+                    client.fetch_all_usdt_24h_tickers(), limit=max_symbols
+                )
+                radar_symbols = [str(item["symbol"]) for item in radar_rows]
+            except Exception as exc:
+                self.backend.audit_logger.log_skipped_trade(
+                    {
+                        "reason": "Market radar shortlist failed safely.",
+                        "error": exc.__class__.__name__,
+                    }
+                )
         if all_usdt_symbols or str(configured_symbols).upper() == "ALL_USDT":
             try:
                 universe_symbols = client.fetch_active_spot_usdt_symbols()
@@ -224,7 +240,11 @@ class PaperAutoTrader:
                         "error": exc.__class__.__name__,
                     }
                 )
-        selected = universe_symbols if universe_symbols else (symbols or configured_symbols)
+        selected = (
+            radar_symbols
+            if radar_symbols
+            else universe_symbols if universe_symbols else (symbols or configured_symbols)
+        )
         safe_symbols = normalize_watchlist(selected, max_symbols=max_symbols)
         results: list[dict[str, Any]] = []
         errors: list[dict[str, str]] = []
@@ -261,6 +281,7 @@ class PaperAutoTrader:
                 len(universe_symbols) if universe_symbols else len(safe_symbols)
             ),
             "symbol_universe_mode": "ALL_ACTIVE_USDT_SPOT" if universe_symbols else "WATCHLIST",
+            "selection_mode": "MARKET_RADAR" if radar_symbols else "STANDARD",
             "max_symbols_per_scan": max_symbols,
             "timeframe": timeframe,
             "results": ranked,

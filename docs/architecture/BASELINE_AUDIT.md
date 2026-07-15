@@ -77,6 +77,22 @@ Post-fix commands run:
 - Go market probe: passed with no test files.
 - `python -B -m mypy trading_os`: not run because `mypy` is not installed in the current Python environment.
 
+## Phase 1 Increment: Market Data Quality Gate
+
+Implemented after the baseline:
+
+- Added `trading_os.quality.market_data_gate`.
+- Added machine-readable reason codes for missing market data, stale market data, clock skew, insufficient candle/trade windows, unsynchronized order book, invalid best bid/ask, and unknown instrument.
+- Integrated the gate into `PaperAutoTrader.run_once` before market data is ingested or passed to the decision pipeline.
+- Invalid market data now returns `SKIP` with an auditable `reason_code`, `missing_data`, `conflicts`, and evidence payload.
+- Added invariant tests in `tests/test_market_data_quality_gate.py`.
+
+Post-increment checks:
+
+- `python -B -m pytest -q`: passed, 71 tests.
+- `python -B -m ruff check .`: passed.
+- Android Kotlin compile: passed.
+
 ## Safety Gaps
 
 - No complete strict data-quality gateway exists yet for all downstream decisions.

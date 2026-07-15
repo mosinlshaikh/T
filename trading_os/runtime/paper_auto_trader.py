@@ -10,6 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 from trading_os.market.live_public_data import BinancePublicMarketDataClient
+from trading_os.quality.market_data_gate import MarketDataQualityGate
 
 DEFAULT_WATCHLIST_PATH = "config/watchlist.json"
 DEFAULT_MAX_SYMBOLS_PER_SCAN = 40
@@ -68,6 +69,46 @@ class PaperAutoTrader:
         safe_notional = min(max(float(trade_notional_usdt), 10.0), 250.0)
         client = BinancePublicMarketDataClient()
         bundle = client.fetch_bundle(symbol=symbol, timeframe=timeframe)
+        data_quality = MarketDataQualityGate().validate_bundle(bundle)
+        if not data_quality.valid:
+            self.backend.audit_logger.log(
+                "market_data_quality_rejection",
+                {
+                    "symbol": symbol.upper(),
+                    "timeframe": str(timeframe),
+                    "reason_code": data_quality.reason_code.value,
+                    "missing_data": data_quality.missing_data,
+                    "conflicts": data_quality.conflicts,
+                    "evidence": data_quality.evidence,
+                    "decision": "SKIP",
+                    "live_trading_enabled": False,
+                    "public_data_only": True,
+                },
+            )
+            auto_result = PaperAutoTraderResult(
+                run_id=str(uuid4()),
+                symbol=symbol.upper(),
+                timeframe=str(timeframe),
+                status="SKIP",
+                action="SKIP",
+                confidence=0.0,
+                reason=data_quality.reason_code.value,
+            )
+            self.last_result = auto_result
+            self.last_error = data_quality.reason_code.value
+            self.run_count += 1
+            self.backend.audit_logger.log(
+                "paper_auto_trader_tick",
+                {
+                    **asdict(auto_result),
+                    "reason_code": data_quality.reason_code.value,
+                    "missing_data": data_quality.missing_data,
+                    "conflicts": data_quality.conflicts,
+                    "live_trading_enabled": False,
+                    "public_data_only": True,
+                },
+            )
+            return auto_result
 
         self.backend.market_data.ingest_rest_snapshot(bundle.snapshot)
         self.backend.candle_engine.collect(bundle.candles)

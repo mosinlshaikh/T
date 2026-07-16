@@ -39,6 +39,7 @@ What makes it worth reviewing:
 * Conflicting signals mean `HOLD` or `SKIP`
 * Android app shows current paper trade intent, evidence, audit, and safety status
 * Backend exposes a live paper monitor at `/monitor/paper-live`
+* Fast public-market cache at `/monitor/fast-market-state` shortlists full-market candidates before deeper paper checks
 * Go probe and Rust safety guard scaffolds support future high-performance operations
 
 ```mermaid
@@ -268,6 +269,7 @@ The project includes safe Go and Rust support scaffolds:
 - `go_services/market_probe/` checks the backend paper monitor endpoint.
 - `rust_services/safety_guard/` validates that paper mode and live-trading blocks remain active.
 - `trading_os/runtime/paper_auto_trader.py` provides a public-market, paper-only auto trader loop.
+- `trading_os/market/stream_state.py` provides an in-memory public ticker cache for faster paper scan prefilters.
 
 These components do not place real Binance orders, do not contain secrets, and do not enable withdrawals or live trading. See [docs/GO_RUST_EXTENSION_PLAN.md](docs/GO_RUST_EXTENSION_PLAN.md).
 

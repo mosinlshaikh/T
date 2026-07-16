@@ -1,4 +1,5 @@
 from trading_os.api.routes.monitor import (
+    fast_market_state,
     market_radar,
     no_trade_zone,
     paper_scan_history,
@@ -77,4 +78,14 @@ def test_market_radar_is_public_prefilter_only() -> None:
     assert response["data"]["live_trading_enabled"] is False
     assert response["data"]["public_data_only"] is True
     assert response["data"]["profit_guarantee"] is False
+    assert isinstance(response["data"]["deep_scan_symbols"], list)
+
+
+def test_fast_market_state_is_public_cache_only() -> None:
+    response = fast_market_state(limit=5)
+    assert response["success"] is True
+    assert response["data"]["live_trading_enabled"] is False
+    assert response["data"]["public_data_only"] is True
+    assert response["data"]["profit_guarantee"] is False
+    assert response["data"]["mode"] == "FAST_MARKET_STATE_PUBLIC_CACHE"
     assert isinstance(response["data"]["deep_scan_symbols"], list)

@@ -877,6 +877,44 @@ def market_radar(limit: int = 30) -> dict[str, object]:
     return ok(redact_sensitive(payload), "Full-market radar loaded.")
 
 
+@router.get("/fast-market-state")
+def fast_market_state(limit: int = 30) -> dict[str, object]:
+    backend = get_backend()
+    safe_limit = min(max(int(limit), 5), 80)
+    health = backend.market_stream_state.health()
+    seeded_from_rest = False
+    error = ""
+    if not health["stream_cache_ready"]:
+        client = BinancePublicMarketDataClient()
+        try:
+            rows = client.fetch_all_usdt_24h_tickers()
+            backend.market_stream_state.update_many(rows, source="binance_public_24hr_rest_seed")
+            seeded_from_rest = True
+        except Exception as exc:
+            error = f"{exc.__class__.__name__}: public market state seed unavailable"
+    ranked = backend.market_stream_state.ranked_radar(limit=safe_limit)
+    stream_status = backend.mini_ticker_stream.status()
+    payload = {
+        "mode": "FAST_MARKET_STATE_PUBLIC_CACHE",
+        "source": "in_memory_stream_cache",
+        "seeded_from_rest": seeded_from_rest,
+        "health": backend.market_stream_state.health(),
+        "stream_status": stream_status,
+        "candidates": ranked,
+        "deep_scan_symbols": [str(item["symbol"]) for item in ranked[: min(safe_limit, 40)]],
+        "error": error,
+        "latency_design": (
+            "Use cached public ticker state for fast prefilter; deep candle/order-book "
+            "checks still run only for shortlisted symbols."
+        ),
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "profit_guarantee": False,
+        "rule": "Fast state shortlists candidates only; evidence, risk, and zero-hallucination checks still decide SKIP/HOLD/BUY/SELL.",
+    }
+    return ok(redact_sensitive(payload), "Fast market state loaded.")
+
+
 @router.get("/daily-target")
 def daily_target(target_pnl_pct: float = 10.0) -> dict[str, object]:
     backend = get_backend()

@@ -22,7 +22,9 @@ from trading_os.intelligence.whale_intelligence import WhaleIntelligenceEngine
 from trading_os.intelligence.whale_intelligence_v1 import WhaleIntelligenceV1
 from trading_os.market.candle_engine import CandleEngine
 from trading_os.market.market_data_engine import MarketDataEngine, VolumeSpikeDetector
+from trading_os.market.mini_ticker_stream import BinanceMiniTickerStream
 from trading_os.market.order_book_engine import OrderBookEngine
+from trading_os.market.stream_state import MarketStreamState
 from trading_os.notifications.engine import NotificationEngine
 from trading_os.paper.simulator import PaperTradingSimulator
 from trading_os.pipeline.decision_to_trade import DecisionToTradePipeline
@@ -48,6 +50,8 @@ class TradingOSBackend:
     rest_api: RestApiConnector = field(init=False)
     websocket_market_data: WebSocketMarketDataConnector = field(init=False)
     market_data: MarketDataEngine = field(init=False)
+    market_stream_state: MarketStreamState = field(init=False)
+    mini_ticker_stream: BinanceMiniTickerStream = field(init=False)
     candle_engine: CandleEngine = field(init=False)
     order_book_engine: OrderBookEngine = field(init=False)
     volume_spike_detector: VolumeSpikeDetector = field(init=False)
@@ -106,6 +110,8 @@ class TradingOSBackend:
             live_trading_enabled=self.config.enable_live_trading,
         )
         self.market_data = MarketDataEngine()
+        self.market_stream_state = MarketStreamState()
+        self.mini_ticker_stream = BinanceMiniTickerStream(self.market_stream_state)
         self.candle_engine = CandleEngine()
         self.order_book_engine = OrderBookEngine()
         self.volume_spike_detector = VolumeSpikeDetector()

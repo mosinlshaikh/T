@@ -150,6 +150,7 @@ not call private Binance APIs.
 - `GET /monitor/paper-scan-history`
 - `GET /monitor/strategy-blockers`
 - `GET /monitor/market-radar`
+- `GET /monitor/fast-market-state`
 - `GET /monitor/paper-demo-readiness`
 
 `/monitor/paper-live` is the main APK dashboard feed for public market data,
@@ -179,6 +180,12 @@ does not auto-change strategy thresholds.
 `/monitor/market-radar` performs a public-data, all-USDT 24h ticker pre-filter.
 It ranks candidates by volume, absolute movement, volatility, and trade
 activity, then returns a deep-scan shortlist. It does not place orders.
+
+`/monitor/fast-market-state` returns the in-memory public ticker cache used for
+low-latency prefiltering. If the cache is empty, the backend may seed it from a
+public Binance 24h ticker REST snapshot. The route remains public-data-only and
+does not place orders. Deep candle, order book, news, whale, risk, and
+zero-hallucination checks still run before any paper trade intent.
 
 `/monitor/paper-demo-readiness` returns computed readiness percentages for the
 paper backend/APK monitoring contract and paper demo contract. It must always

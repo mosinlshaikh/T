@@ -57,6 +57,81 @@ class EvidenceRequiredStrategy:
 
 
 @dataclass
+class CandleStructureStrategy(EvidenceRequiredStrategy):
+    def evaluate(self, symbol: str, evidence: list[EvidenceItem]) -> SignalAssessment | None:
+        signal = super().evaluate(symbol, evidence)
+        if signal is None or signal.direction == DecisionAction.SKIP:
+            return signal
+        candle_evidence = [
+            item for item in signal.evidence if item.evidence_type == EvidenceType.CANDLE
+        ]
+        direction = self._direction(candle_evidence)
+        return SignalAssessment(
+            name=signal.name,
+            direction=direction,
+            confidence=signal.confidence,
+            source=signal.source,
+            evidence=signal.evidence,
+        )
+
+    @staticmethod
+    def _direction(evidence: list[EvidenceItem]) -> DecisionAction:
+        for item in evidence:
+            trend = str(item.payload.get("trend", "")).lower()
+            breakout = bool(item.payload.get("breakout", False))
+            volume_confirmed = bool(item.payload.get("volume_confirmed", False))
+            reversal = bool(item.payload.get("reversal", False))
+            wick_rejection = bool(item.payload.get("wick_rejection", False))
+            if reversal or wick_rejection:
+                return DecisionAction.HOLD
+            if trend == "uptrend" and (breakout or volume_confirmed or item.confidence >= 0.5):
+                return DecisionAction.BUY
+            if trend == "downtrend" and (breakout or volume_confirmed or item.confidence >= 0.5):
+                return DecisionAction.SELL
+        return DecisionAction.HOLD
+
+
+@dataclass
+class OrderBookLiquidityStrategy(EvidenceRequiredStrategy):
+    imbalance_signal_threshold: float = 0.18
+
+    def evaluate(self, symbol: str, evidence: list[EvidenceItem]) -> SignalAssessment | None:
+        signal = super().evaluate(symbol, evidence)
+        if signal is None or signal.direction == DecisionAction.SKIP:
+            return signal
+        order_book_evidence = [
+            item for item in signal.evidence if item.evidence_type == EvidenceType.ORDER_BOOK
+        ]
+        direction = self._direction(order_book_evidence)
+        return SignalAssessment(
+            name=signal.name,
+            direction=direction,
+            confidence=signal.confidence,
+            source=signal.source,
+            evidence=signal.evidence,
+        )
+
+    def _direction(self, evidence: list[EvidenceItem]) -> DecisionAction:
+        for item in evidence:
+            spread_risk = bool(item.payload.get("spread_risk", False))
+            fake_wall = bool(item.payload.get("fake_wall_suspicion", False))
+            buy_wall = bool(item.payload.get("buy_wall", False))
+            sell_wall = bool(item.payload.get("sell_wall", False))
+            imbalance = float(item.payload.get("bid_ask_imbalance", 0.0))
+            if spread_risk or fake_wall:
+                return DecisionAction.HOLD
+            if buy_wall and not sell_wall:
+                return DecisionAction.BUY
+            if sell_wall and not buy_wall:
+                return DecisionAction.SELL
+            if imbalance >= self.imbalance_signal_threshold:
+                return DecisionAction.BUY
+            if imbalance <= -self.imbalance_signal_threshold:
+                return DecisionAction.SELL
+        return DecisionAction.HOLD
+
+
+@dataclass
 class StrategyRegistry:
     strategies: dict[StrategyName, Strategy] = field(default_factory=dict)
 
@@ -71,7 +146,7 @@ class StrategyRegistry:
             )
         )
         registry.register(
-            EvidenceRequiredStrategy(
+            CandleStructureStrategy(
                 StrategyName.CANDLE_STRUCTURE_STRATEGY,
                 {EvidenceType.CANDLE},
                 DecisionAction.HOLD,
@@ -85,7 +160,7 @@ class StrategyRegistry:
             )
         )
         registry.register(
-            EvidenceRequiredStrategy(
+            OrderBookLiquidityStrategy(
                 StrategyName.ORDER_BOOK_LIQUIDITY_STRATEGY,
                 {EvidenceType.ORDER_BOOK},
                 DecisionAction.HOLD,

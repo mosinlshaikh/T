@@ -4,6 +4,7 @@ from trading_os.intelligence.order_book_intelligence import OrderBookIntelligenc
 from trading_os.market.candle_engine import Candle
 from trading_os.market.order_book_engine import OrderBookLevel, OrderBookSnapshot
 from trading_os.market.timeframes import Timeframe
+from trading_os.strategies.registry import StrategyName, StrategyRegistry
 
 
 def candle(close: float, index: int) -> Candle:
@@ -92,3 +93,35 @@ def test_order_book_spread_risk_blocks_imbalance_direction() -> None:
 
     assert signal.direction == DecisionAction.HOLD
     assert signal.risk_score > 0
+
+
+def test_default_strategy_registry_preserves_directional_market_evidence() -> None:
+    candle_signal = CandleIntelligenceEngine().analyze(
+        "BTCUSDT",
+        Timeframe.FIVE_MINUTES,
+        [candle(100, 1), candle(101, 2), candle(102, 3)],
+    )
+    order_book_signal = OrderBookIntelligenceEngine().analyze(
+        "BTCUSDT",
+        Timeframe.FIVE_MINUTES,
+        OrderBookSnapshot(
+            symbol="BTCUSDT",
+            bids=[
+                OrderBookLevel(price=100.0, quantity=18.0),
+                OrderBookLevel(price=99.9, quantity=16.0),
+            ],
+            asks=[
+                OrderBookLevel(price=100.01, quantity=6.0),
+                OrderBookLevel(price=100.02, quantity=5.0),
+            ],
+        ),
+    )
+
+    strategy_signals = StrategyRegistry.with_default_placeholders().evaluate_all(
+        "BTCUSDT",
+        candle_signal.evidence + order_book_signal.evidence,
+    )
+    directions = {signal.source: signal.direction for signal in strategy_signals}
+
+    assert directions[StrategyName.CANDLE_STRUCTURE_STRATEGY.value] == DecisionAction.BUY
+    assert directions[StrategyName.ORDER_BOOK_LIQUIDITY_STRATEGY.value] == DecisionAction.BUY

@@ -1,4 +1,4 @@
-from trading_os.ai.decision_types import DecisionAction
+from trading_os.ai.decision_types import DecisionAction, EvidenceItem, EvidenceType
 from trading_os.intelligence.candle_intelligence import CandleIntelligenceEngine
 from trading_os.intelligence.order_book_intelligence import OrderBookIntelligenceEngine
 from trading_os.market.candle_engine import Candle
@@ -125,3 +125,28 @@ def test_default_strategy_registry_preserves_directional_market_evidence() -> No
 
     assert directions[StrategyName.CANDLE_STRUCTURE_STRATEGY.value] == DecisionAction.BUY
     assert directions[StrategyName.ORDER_BOOK_LIQUIDITY_STRATEGY.value] == DecisionAction.BUY
+
+
+def test_candle_strategy_ignores_market_structure_candle_evidence_for_confidence() -> None:
+    candle_signal = CandleIntelligenceEngine().analyze(
+        "BTCUSDT",
+        Timeframe.FIVE_MINUTES,
+        [candle(100, 1), candle(101, 2), candle(102, 3)],
+    )
+    market_structure_candle_evidence = EvidenceItem(
+        evidence_type=EvidenceType.CANDLE,
+        source="market_structure",
+        summary="neutral market structure evidence",
+        confidence=0.45,
+        payload={"range_vs_trend": "range"},
+    )
+
+    strategy_signals = StrategyRegistry.with_default_placeholders().evaluate_all(
+        "BTCUSDT",
+        candle_signal.evidence + [market_structure_candle_evidence],
+    )
+    directions = {signal.source: signal.direction for signal in strategy_signals}
+    confidences = {signal.source: signal.confidence for signal in strategy_signals}
+
+    assert directions[StrategyName.CANDLE_STRUCTURE_STRATEGY.value] == DecisionAction.BUY
+    assert confidences[StrategyName.CANDLE_STRUCTURE_STRATEGY.value] >= 0.5

@@ -59,19 +59,31 @@ class EvidenceRequiredStrategy:
 @dataclass
 class CandleStructureStrategy(EvidenceRequiredStrategy):
     def evaluate(self, symbol: str, evidence: list[EvidenceItem]) -> SignalAssessment | None:
-        signal = super().evaluate(symbol, evidence)
-        if signal is None or signal.direction == DecisionAction.SKIP:
-            return signal
         candle_evidence = [
-            item for item in signal.evidence if item.evidence_type == EvidenceType.CANDLE
+            item
+            for item in evidence
+            if item.evidence_type == EvidenceType.CANDLE and item.source == "candle_intelligence"
         ]
+        if not candle_evidence:
+            return None
+        confidence = min(
+            sum(item.confidence for item in candle_evidence) / len(candle_evidence), 1.0
+        )
+        if confidence < self.minimum_confidence:
+            return SignalAssessment(
+                name=f"{self.name.value}:{symbol.upper()}",
+                direction=DecisionAction.SKIP,
+                confidence=round(confidence, 4),
+                source=self.name.value,
+                evidence=candle_evidence,
+            )
         direction = self._direction(candle_evidence)
         return SignalAssessment(
-            name=signal.name,
+            name=f"{self.name.value}:{symbol.upper()}",
             direction=direction,
-            confidence=signal.confidence,
-            source=signal.source,
-            evidence=signal.evidence,
+            confidence=round(confidence, 4),
+            source=self.name.value,
+            evidence=candle_evidence,
         )
 
     @staticmethod

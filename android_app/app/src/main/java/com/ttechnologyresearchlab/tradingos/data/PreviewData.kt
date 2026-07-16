@@ -159,9 +159,11 @@ object PreviewData {
             rule = "Backend loads complete active Binance Spot USDT universe when connected."
         ),
         marketRadar = MarketRadarUi(
+            mode = "DEVELOPMENT_PREVIEW",
             candidates = listOf("DEVELOPMENT PREVIEW DATA"),
             deepScanSymbols = listOf("Connect backend for radar candidates."),
-            rankingRule = "Preview only."
+            rankingRule = "Preview only.",
+            latencyDesign = "Fast market cache loads after backend connection."
         ),
         dailyTarget = DailyTargetUi(
             targetPnlPct = "10",

@@ -46,7 +46,12 @@ class TradingOsRepository(
                 val strategyBlockers = apiClient.getStrategyBlockers().toStrategyBlockers()
                 val shadowMode = apiClient.getShadowMode().toShadowMode()
                 val coinUniverse = apiClient.getSymbolUniverse().toCoinUniverse()
-                val marketRadar = apiClient.getMarketRadar().toMarketRadar()
+                val fastMarketState = apiClient.getFastMarketState().toMarketRadar()
+                val marketRadar = if (fastMarketState.cacheTickerCount > 0 || fastMarketState.candidates.isNotEmpty()) {
+                    fastMarketState
+                } else {
+                    apiClient.getMarketRadar().toMarketRadar()
+                }
                 val dailyTarget = apiClient.getDailyTarget().toDailyTarget()
                 PreviewData.state.copy(
                     isPreviewData = false,
@@ -673,11 +678,22 @@ class TradingOsRepository(
             val volume = chunk.jsonNumber("quote_volume") ?: "0"
             "$symbol score=$score move=$move% volume=$volume"
         }.take(12)
+        val cacheReady = body.jsonBoolean("stream_cache_ready") ?: false
+        val tickerCount = body.jsonNumber("ticker_count")?.toIntOrNull()
+            ?: body.jsonNumber("symbols_seen")?.toIntOrNull()
+            ?: 0
         return MarketRadarUi(
-            symbolsSeen = body.jsonNumber("symbols_seen")?.toIntOrNull() ?: 0,
+            mode = body.jsonString("mode") ?: "PUBLIC_MARKET_RADAR",
+            symbolsSeen = body.jsonNumber("symbols_seen")?.toIntOrNull() ?: tickerCount,
+            cacheReady = cacheReady,
+            cacheTickerCount = tickerCount,
+            cacheAgeSeconds = body.jsonNumber("last_update_age_seconds") ?: "unknown",
+            streamConnected = body.jsonBoolean("connected") ?: false,
+            seededFromRest = body.jsonBoolean("seeded_from_rest") ?: false,
             candidates = candidates,
             deepScanSymbols = body.jsonArrayItems("deep_scan_symbols"),
             rankingRule = body.jsonString("ranking_rule") ?: "volume + move + volatility + activity",
+            latencyDesign = body.jsonString("latency_design") ?: "",
             error = body.jsonString("error") ?: "",
             rule = body.jsonString("rule") ?: "Public-data radar only."
         )

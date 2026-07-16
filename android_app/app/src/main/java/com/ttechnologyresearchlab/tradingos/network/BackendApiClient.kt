@@ -78,6 +78,7 @@ class BackendApiClient(
     suspend fun getShadowMode() = get("/monitor/shadow-mode")
     suspend fun getSymbolUniverse() = get("/monitor/symbol-universe?max_preview=80")
     suspend fun getMarketRadar() = get("/monitor/market-radar?limit=30")
+    suspend fun getFastMarketState() = get("/monitor/fast-market-state?limit=30")
     suspend fun getDailyTarget() = get("/monitor/daily-target?target_pnl_pct=10")
     suspend fun startBot() = post("/control/start")
     suspend fun stopGraceful() = post("/control/stop-graceful")

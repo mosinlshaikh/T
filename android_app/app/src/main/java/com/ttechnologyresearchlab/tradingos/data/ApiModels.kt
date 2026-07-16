@@ -329,10 +329,17 @@ data class CoinUniverseUi(
 )
 
 data class MarketRadarUi(
+    val mode: String = "UNKNOWN",
     val symbolsSeen: Int = 0,
+    val cacheReady: Boolean = false,
+    val cacheTickerCount: Int = 0,
+    val cacheAgeSeconds: String = "unknown",
+    val streamConnected: Boolean = false,
+    val seededFromRest: Boolean = false,
     val candidates: List<String> = emptyList(),
     val deepScanSymbols: List<String> = emptyList(),
     val rankingRule: String = "Radar unavailable.",
+    val latencyDesign: String = "",
     val error: String = "",
     val rule: String = "Public-data radar only."
 )

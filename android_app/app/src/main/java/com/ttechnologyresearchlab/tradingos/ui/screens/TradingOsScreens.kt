@@ -912,16 +912,36 @@ private fun CoinUniverseCard(state: TradingOsUiState) {
 @Composable
 private fun MarketRadarCard(state: TradingOsUiState) {
     GlassCard {
-        Text("Market Radar", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text("Fast Market Radar", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip(state.marketRadar.mode, ElectricBlue)
+            StatusChip(
+                if (state.marketRadar.cacheReady) "CACHE READY" else "CACHE SEEDING",
+                if (state.marketRadar.cacheReady) SafeGreen else WarningAmber
+            )
+            StatusChip(
+                if (state.marketRadar.streamConnected) "STREAM LIVE" else "REST FALLBACK",
+                if (state.marketRadar.streamConnected) SafeGreen else TradingGold
+            )
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Column(Modifier.weight(1f)) {
-                MetricCard("USDT Seen", state.marketRadar.symbolsSeen.toString(), "Public 24h ticker")
+                MetricCard(
+                    "Tickers",
+                    (state.marketRadar.cacheTickerCount.takeIf { it > 0 } ?: state.marketRadar.symbolsSeen).toString(),
+                    "Public cache"
+                )
             }
             Column(Modifier.weight(1f)) {
                 MetricCard("Deep Scan", state.marketRadar.deepScanSymbols.size.toString(), "Shortlist")
             }
         }
+        KeyValue("Cache age", "${state.marketRadar.cacheAgeSeconds}s")
+        KeyValue("Seeded from REST", state.marketRadar.seededFromRest.toString())
         Text(state.marketRadar.rankingRule, color = MutedText)
+        if (state.marketRadar.latencyDesign.isNotBlank()) {
+            Text(state.marketRadar.latencyDesign, color = MutedText)
+        }
         if (state.marketRadar.error.isNotBlank()) {
             Text(state.marketRadar.error, color = WarningAmber)
         }

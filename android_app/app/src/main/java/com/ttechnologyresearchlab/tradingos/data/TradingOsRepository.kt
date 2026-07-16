@@ -281,19 +281,17 @@ class TradingOsRepository(
 
     private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toTradeRows(): List<TradeRow> {
         if (!ok || !body.contains("symbol", ignoreCase = true)) return emptyList()
-        val symbol = body.jsonString("symbol") ?: "BTCUSDT"
-        val side = body.jsonString("side") ?: "BUY"
-        val status = body.jsonString("status") ?: "PAPER_OPEN"
-        val pnl = body.jsonNumber("unrealized_pnl") ?: body.jsonNumber("realized_pnl") ?: "0.00"
-        return listOf(
+        val section = body.arraySection("data")
+        val chunks = if (section.isNotBlank()) section.objectChunks() else body.objectChunks()
+        return chunks.filter { it.contains("symbol", ignoreCase = true) }.takeLast(30).mapIndexed { index, chunk ->
             TradeRow(
-                id = body.jsonString("position_id") ?: "paper-position",
-                symbol = symbol,
-                side = side,
-                status = status,
-                pnl = pnl
+                id = chunk.jsonString("position_id") ?: chunk.jsonString("trade_id") ?: "paper-position-$index",
+                symbol = chunk.jsonString("symbol") ?: "UNKNOWN",
+                side = chunk.jsonString("side") ?: chunk.jsonString("action") ?: "PAPER",
+                status = chunk.jsonString("status") ?: chunk.jsonString("action") ?: "PAPER_OPEN",
+                pnl = chunk.jsonNumber("unrealized_pnl") ?: chunk.jsonNumber("realized_pnl") ?: "0.00"
             )
-        )
+        }
     }
 
     private fun com.ttechnologyresearchlab.tradingos.network.ApiClientResult.toSafetyScore(): SafetyScoreUi {
@@ -735,7 +733,7 @@ class TradingOsRepository(
     private fun String.tradeRowsFromSection(sectionName: String): List<TradeRow> {
         val section = arraySection(sectionName)
         if (section.isBlank() || !section.contains("symbol", ignoreCase = true)) return emptyList()
-        val chunks = section.split(Regex("""\},\s*\{""")).filter { it.contains("symbol", ignoreCase = true) }
+        val chunks = section.objectChunks().filter { it.contains("symbol", ignoreCase = true) }
         return chunks.takeLast(20).mapIndexed { index, chunk ->
             TradeRow(
                 id = chunk.jsonString("position_id") ?: chunk.jsonString("trade_id") ?: "$sectionName-$index",

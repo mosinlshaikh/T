@@ -33,13 +33,11 @@ class CombinedSignal:
 
 @dataclass
 class MultiFactorSignalCombiner:
-    required_signal_names: set[str] = field(
+    core_required_signal_names: set[str] = field(
         default_factory=lambda: {
             "candle_intelligence",
-            "news_risk_intelligence",
             "order_book_intelligence",
             "market_structure",
-            "whale_intelligence_v1",
         }
     )
     min_confidence: float = 0.65
@@ -103,9 +101,10 @@ class MultiFactorSignalCombiner:
 
     def _missing_required(self, signals: list[IntelligenceSignal]) -> list[str]:
         available = {signal.name for signal in signals if not signal.missing_data}
-        missing = sorted(self.required_signal_names - available)
+        missing = sorted(self.core_required_signal_names - available)
         for signal in signals:
-            missing.extend(signal.missing_data)
+            if signal.name in self.core_required_signal_names:
+                missing.extend(signal.missing_data)
         return sorted(set(missing))
 
     @staticmethod

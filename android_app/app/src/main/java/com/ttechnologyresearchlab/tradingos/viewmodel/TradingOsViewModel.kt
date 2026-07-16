@@ -27,8 +27,10 @@ class TradingOsViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun updateBackendUrl(url: String) {
-        backendBaseUrl.value = url
-        _uiState.value = _uiState.value.copy(backendBaseUrl = url)
+        val cleaned = url.trim().trimEnd('/')
+            .ifBlank { "https://t-production-8efc.up.railway.app" }
+        backendBaseUrl.value = cleaned
+        _uiState.value = _uiState.value.copy(backendBaseUrl = cleaned)
     }
 
     fun updateLanguage(language: AppLanguage) {

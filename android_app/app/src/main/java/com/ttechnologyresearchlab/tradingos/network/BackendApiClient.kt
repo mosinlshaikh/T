@@ -112,8 +112,8 @@ class BackendApiClient(
             val base = baseUrlProvider().trimEnd('/')
             val connection = URL("$base$path").openConnection() as HttpURLConnection
             connection.requestMethod = method
-            connection.connectTimeout = 5_000
-            connection.readTimeout = 5_000
+            connection.connectTimeout = 15_000
+            connection.readTimeout = 15_000
             connection.setRequestProperty("Accept", "application/json")
             if (body != null) {
                 connection.doOutput = true

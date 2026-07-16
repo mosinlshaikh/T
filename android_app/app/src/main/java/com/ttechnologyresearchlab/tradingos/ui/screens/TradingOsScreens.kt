@@ -210,7 +210,11 @@ fun TradingOsApp(viewModel: TradingOsViewModel) {
                     { route = AppRoute.SafetyLock },
                     { route = AppRoute.Dashboard }
                 )
-                AppRoute.Dashboard -> DashboardScreen(state, viewModel::emergencyStop)
+                AppRoute.Dashboard -> DashboardScreen(
+                    state,
+                    viewModel::emergencyStop,
+                    viewModel::refresh
+                )
                 AppRoute.Market -> MarketIntelligenceScreen(state)
                 AppRoute.BinanceEcosystem -> BinanceEcosystemScreen(state)
                 AppRoute.Derivatives -> DerivativesResearchScreen(state)
@@ -302,7 +306,7 @@ fun ApiSetupWizardScreen(
     }
 
 @Composable
-fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = ScrollScreen {
+fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit, reconnect: () -> Unit) = ScrollScreen {
     ScreenShell("Dashboard", "Dashboard/control-first mobile command center.") {
         PremiumHero(
             title = "${state.latestDecision.action} | ${state.latestDecision.confidence}",
@@ -316,7 +320,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit) = Scroll
                 else -> TradingGold
             }
         )
-        BackendStatusBanner(state) {}
+        BackendStatusBanner(state, reconnect)
         OfflineSyncCard(state)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Column(Modifier.weight(1f)) {
@@ -734,6 +738,10 @@ fun SettingsScreen(state: TradingOsUiState, viewModel: TradingOsViewModel) = Scr
             label = { Text("Backend URL") },
             modifier = Modifier.fillMaxWidth()
         )
+        GoldButton("Connect / Refresh Backend") {
+            viewModel.updateBackendUrl(backendUrl)
+            viewModel.refresh()
+        }
         StrategyControlPanel()
         NotificationSettingsPanel()
         GlassCard {

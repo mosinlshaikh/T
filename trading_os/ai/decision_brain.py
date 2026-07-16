@@ -79,7 +79,12 @@ class AIDecisionBrain:
             )
 
         conflict_signals = self._conflict_signals(signals)
-        confidence = min(sum(signal.confidence for signal in signals) / len(signals), 1.0)
+        decision_signals = [signal for signal in signals if signal.direction != DecisionAction.SKIP]
+        confidence_signals = decision_signals or signals
+        confidence = min(
+            sum(signal.confidence for signal in confidence_signals) / len(confidence_signals),
+            1.0,
+        )
 
         if conflict_signals:
             return self._proposal(
@@ -94,7 +99,7 @@ class AIDecisionBrain:
                 signals,
             )
 
-        direction = signals[0].direction
+        direction = self._dominant_direction(decision_signals)
         if confidence < self.minimum_confidence:
             action = DecisionAction.SKIP
             reason = "Signal confidence below threshold."
@@ -124,9 +129,25 @@ class AIDecisionBrain:
     @staticmethod
     def _conflict_signals(signals: list[SignalAssessment]) -> list[str]:
         directions = {signal.direction for signal in signals}
-        if len(directions) <= 1:
+        actionable_directions = directions & {DecisionAction.BUY, DecisionAction.SELL}
+        if len(actionable_directions) <= 1:
             return []
-        return [f"{signal.name}:{signal.direction.value}" for signal in signals]
+        return [
+            f"{signal.name}:{signal.direction.value}"
+            for signal in signals
+            if signal.direction in actionable_directions
+        ]
+
+    @staticmethod
+    def _dominant_direction(signals: list[SignalAssessment]) -> DecisionAction:
+        directions = {signal.direction for signal in signals}
+        if DecisionAction.BUY in directions and DecisionAction.SELL not in directions:
+            return DecisionAction.BUY
+        if DecisionAction.SELL in directions and DecisionAction.BUY not in directions:
+            return DecisionAction.SELL
+        if DecisionAction.HOLD in directions:
+            return DecisionAction.HOLD
+        return DecisionAction.SKIP
 
     @staticmethod
     def _proposal(

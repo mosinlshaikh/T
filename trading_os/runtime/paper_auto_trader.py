@@ -287,9 +287,14 @@ class PaperAutoTrader:
     def _radar_shortlist(
         self, max_symbols: int, client: BinancePublicMarketDataClient
     ) -> tuple[list[str], str]:
+        active_symbols = self._active_spot_symbol_set(client)
         try:
-            cached_rows = self.backend.market_stream_state.ranked_radar(limit=max_symbols)
-            cached_symbols = [str(item["symbol"]) for item in cached_rows]
+            cached_rows = self.backend.market_stream_state.ranked_radar(limit=max_symbols * 4)
+            cached_symbols = self._filter_tradable_symbols(
+                [str(item["symbol"]) for item in cached_rows],
+                active_symbols,
+                max_symbols=max_symbols,
+            )
             if cached_symbols:
                 return cached_symbols, "FAST_MARKET_STREAM_CACHE"
         except Exception as exc:
@@ -303,9 +308,13 @@ class PaperAutoTrader:
             )
         try:
             radar_rows = rank_market_radar_rows(
-                client.fetch_all_usdt_24h_tickers(), limit=max_symbols
+                client.fetch_all_usdt_24h_tickers(), limit=max_symbols * 4
             )
-            radar_symbols = [str(item["symbol"]) for item in radar_rows]
+            radar_symbols = self._filter_tradable_symbols(
+                [str(item["symbol"]) for item in radar_rows],
+                active_symbols,
+                max_symbols=max_symbols,
+            )
             return radar_symbols, "PUBLIC_24HR_REST_RADAR"
         except Exception as exc:
             self.backend.audit_logger.log_skipped_trade(
@@ -317,6 +326,31 @@ class PaperAutoTrader:
                 }
             )
             return [], ""
+
+    def _active_spot_symbol_set(self, client: BinancePublicMarketDataClient) -> set[str]:
+        try:
+            return set(client.fetch_active_spot_usdt_symbols())
+        except Exception as exc:
+            self.backend.audit_logger.log_skipped_trade(
+                {
+                    "reason": "Active Spot symbol validation unavailable; using radar symbols safely.",
+                    "error": exc.__class__.__name__,
+                    "live_trading_enabled": False,
+                    "public_data_only": True,
+                }
+            )
+            return set()
+
+    @staticmethod
+    def _filter_tradable_symbols(
+        symbols: list[str],
+        active_symbols: set[str],
+        max_symbols: int,
+    ) -> list[str]:
+        cleaned = normalize_watchlist(symbols, max_symbols=max(max_symbols * 4, max_symbols))
+        if active_symbols:
+            cleaned = [symbol for symbol in cleaned if symbol in active_symbols]
+        return cleaned[:max_symbols]
 
     def start(
         self,

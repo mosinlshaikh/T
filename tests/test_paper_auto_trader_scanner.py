@@ -25,11 +25,17 @@ class FakeBackend:
 
 
 class FailingRestRadarClient:
+    def fetch_active_spot_usdt_symbols(self):
+        return ["CACHEUSDT"]
+
     def fetch_all_usdt_24h_tickers(self):
         raise AssertionError("REST radar should not be called when stream cache has candidates")
 
 
 class RestRadarClient:
+    def fetch_active_spot_usdt_symbols(self):
+        return ["RESTUSDT"]
+
     def fetch_all_usdt_24h_tickers(self):
         return [
             {
@@ -41,6 +47,14 @@ class RestRadarClient:
                 "trade_count": 60_000,
             }
         ]
+
+
+class MixedActiveSymbolClient:
+    def fetch_active_spot_usdt_symbols(self):
+        return ["ACTIVEUSDT"]
+
+    def fetch_all_usdt_24h_tickers(self):
+        return []
 
 
 def test_normalize_watchlist_deduplicates_and_limits() -> None:
@@ -144,3 +158,35 @@ def test_paper_scanner_falls_back_to_rest_radar_when_cache_empty() -> None:
 
     assert symbols == ["RESTUSDT"]
     assert source == "PUBLIC_24HR_REST_RADAR"
+
+
+def test_paper_scanner_filters_stream_candidates_to_active_spot_symbols() -> None:
+    backend = FakeBackend()
+    backend.market_stream_state.update_many(
+        [
+            {
+                "symbol": "INACTIVEUSDT",
+                "last_price": 2.0,
+                "quote_volume": 50_000_000,
+                "price_change_pct": 10.0,
+                "high_price": 2.3,
+                "low_price": 1.8,
+                "source": "binance_public_miniticker_stream",
+            },
+            {
+                "symbol": "ACTIVEUSDT",
+                "last_price": 1.0,
+                "quote_volume": 40_000_000,
+                "price_change_pct": 8.0,
+                "high_price": 1.1,
+                "low_price": 0.9,
+                "source": "binance_public_miniticker_stream",
+            },
+        ]
+    )
+    trader = PaperAutoTrader(backend)
+
+    symbols, source = trader._radar_shortlist(5, MixedActiveSymbolClient())
+
+    assert symbols == ["ACTIVEUSDT"]
+    assert source == "FAST_MARKET_STREAM_CACHE"

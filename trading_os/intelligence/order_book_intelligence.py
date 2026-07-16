@@ -23,6 +23,7 @@ class OrderBookAnalysis:
 class OrderBookIntelligenceEngine:
     wall_multiplier: float = 3.0
     spread_risk_pct: float = 0.2
+    imbalance_signal_threshold: float = 0.18
 
     def analyze(
         self,
@@ -42,6 +43,11 @@ class OrderBookIntelligenceEngine:
             direction = DecisionAction.BUY
         elif analysis.sell_wall and not analysis.buy_wall and not analysis.spread_risk:
             direction = DecisionAction.SELL
+        elif not analysis.spread_risk and not analysis.fake_wall_suspicion:
+            if analysis.bid_ask_imbalance >= self.imbalance_signal_threshold:
+                direction = DecisionAction.BUY
+            elif analysis.bid_ask_imbalance <= -self.imbalance_signal_threshold:
+                direction = DecisionAction.SELL
 
         evidence = [
             EvidenceItem(

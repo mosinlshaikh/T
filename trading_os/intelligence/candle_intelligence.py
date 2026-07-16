@@ -117,12 +117,16 @@ class CandleIntelligenceEngine:
 
     @staticmethod
     def _direction(result: CandlePatternResult) -> DecisionAction:
+        if result.reversal or result.wick_rejection:
+            return DecisionAction.HOLD
         if result.trend == "uptrend" and (result.breakout or result.volume_confirmed):
             return DecisionAction.BUY
         if result.trend == "downtrend" and (result.breakout or result.volume_confirmed):
             return DecisionAction.SELL
-        if result.reversal or result.wick_rejection:
-            return DecisionAction.HOLD
+        if result.trend == "uptrend" and result.confidence_score >= 0.5:
+            return DecisionAction.BUY
+        if result.trend == "downtrend" and result.confidence_score >= 0.5:
+            return DecisionAction.SELL
         return DecisionAction.SKIP
 
     @staticmethod

@@ -243,7 +243,14 @@ data class PaperScanSummaryUi(
     val whyNotTraded: String = "No paper trade was opened by policy.",
     val timestamp: String = "unknown",
     val runCount: Int = 0,
-    val tradeAllowed: Boolean = false
+    val tradeAllowed: Boolean = false,
+    val selectionMode: String = "unknown",
+    val selectionSource: String = "unknown",
+    val scanSymbolCount: Int = 0,
+    val scanResultCount: Int = 0,
+    val scanErrorCount: Int = 0,
+    val paperTradeBlocker: String = "unknown",
+    val profitTargetNote: String = "1% daily PnL target is a target, not guaranteed."
 )
 
 data class PaperScanHistoryRowUi(

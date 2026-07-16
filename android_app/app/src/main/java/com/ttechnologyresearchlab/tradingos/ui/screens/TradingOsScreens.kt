@@ -1168,9 +1168,13 @@ private fun LatestPaperScanCard(state: TradingOsUiState) {
         KeyValue("Status", scan.status)
         SignalBar("Confidence", scan.confidence, timelineColor(scan.action))
         KeyValue("Trade allowed", scan.tradeAllowed.toString())
+        KeyValue("Trade blocker", scan.paperTradeBlocker, if (scan.tradeAllowed) SafeGreen else WarningAmber)
+        KeyValue("Selection source", scan.selectionSource, ElectricBlue)
+        KeyValue("Scanned / results / errors", "${scan.scanSymbolCount} / ${scan.scanResultCount} / ${scan.scanErrorCount}")
         KeyValue("Run count", scan.runCount.toString())
         Text(scan.reason)
         Text("Why not traded: ${scan.whyNotTraded}")
+        Text(scan.profitTargetNote, color = WarningAmber)
         Text("Timestamp: ${scan.timestamp}")
     }
 }

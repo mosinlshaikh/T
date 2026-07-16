@@ -2,6 +2,7 @@ from trading_os.api.routes.monitor import (
     fast_market_state,
     market_radar,
     no_trade_zone,
+    paper_scan_summary,
     paper_scan_history,
     performance_wheel,
     shadow_mode,
@@ -52,6 +53,17 @@ def test_paper_scan_history_is_safe() -> None:
     assert response["data"]["public_data_only"] is True
     assert response["data"]["requested_limit"] == 20
     assert isinstance(response["data"]["rows"], list)
+
+
+def test_paper_scan_summary_includes_trade_blocker_diagnostics() -> None:
+    response = paper_scan_summary()
+    assert response["success"] is True
+    assert response["data"]["live_trading_enabled"] is False
+    assert response["data"]["public_data_only"] is True
+    assert "latest_scan_selection_source" in response["data"]
+    assert "latest_scan_error_count" in response["data"]
+    assert "paper_trade_blocker" in response["data"]
+    assert "not guaranteed" in response["data"]["profit_target_note"]
 
 
 def test_watchlist_candidates_are_paper_safe() -> None:

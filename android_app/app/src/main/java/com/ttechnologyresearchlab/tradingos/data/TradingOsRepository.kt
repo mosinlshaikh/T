@@ -525,7 +525,15 @@ class TradingOsRepository(
             whyNotTraded = body.jsonString("why_not_traded") ?: "No paper trade was opened by policy.",
             timestamp = body.jsonString("latest_timestamp") ?: "unknown",
             runCount = body.jsonNumber("run_count")?.toIntOrNull() ?: 0,
-            tradeAllowed = body.jsonBoolean("trade_allowed") ?: false
+            tradeAllowed = body.jsonBoolean("trade_allowed") ?: false,
+            selectionMode = body.jsonString("latest_scan_selection_mode") ?: "unknown",
+            selectionSource = body.jsonString("latest_scan_selection_source") ?: "unknown",
+            scanSymbolCount = body.jsonNumber("latest_scan_symbol_count")?.toIntOrNull() ?: 0,
+            scanResultCount = body.jsonNumber("latest_scan_result_count")?.toIntOrNull() ?: 0,
+            scanErrorCount = body.jsonNumber("latest_scan_error_count")?.toIntOrNull() ?: 0,
+            paperTradeBlocker = body.jsonString("paper_trade_blocker") ?: "unknown",
+            profitTargetNote = body.jsonString("profit_target_note")
+                ?: "1% daily PnL target is a target, not guaranteed."
         )
     }
 

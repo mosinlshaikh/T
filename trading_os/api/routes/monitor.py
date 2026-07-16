@@ -147,6 +147,10 @@ def paper_scan_summary() -> dict[str, object]:
     latest_skip = _latest_audit_payload("skipped_trade")
     latest_fill = _latest_audit_payload("paper_order_fill")
     latest = _latest_paper_scan_payload()
+    scan_results = latest_scan.get("results", []) if latest_scan else []
+    scan_errors = latest_scan.get("errors", []) if latest_scan else []
+    result_count = len(scan_results) if isinstance(scan_results, list) else 0
+    error_count = len(scan_errors) if isinstance(scan_errors, list) else 0
     payload = {
         "latest_symbol": latest.get("symbol", "unknown"),
         "latest_timeframe": latest.get("timeframe", "unknown"),
@@ -165,6 +169,18 @@ def paper_scan_summary() -> dict[str, object]:
         "latest_scan_available": latest_scan is not None,
         "latest_pipeline_status": (latest_pipeline or {}).get("status", "unknown"),
         "latest_fill_available": latest_fill is not None,
+        "latest_scan_selection_mode": (latest_scan or {}).get("selection_mode", "unknown"),
+        "latest_scan_selection_source": (latest_scan or {}).get("selection_source", "unknown"),
+        "latest_scan_symbol_count": len((latest_scan or {}).get("symbols", [])),
+        "latest_scan_result_count": result_count,
+        "latest_scan_error_count": error_count,
+        "latest_scan_best_candidate": (latest_scan or {}).get("best_candidate") or {},
+        "paper_trade_blocker": (
+            "NO_PAPER_FILL"
+            if latest_fill is None and not bool(latest.get("paper_fill_id"))
+            else "PAPER_FILL_AVAILABLE"
+        ),
+        "profit_target_note": "1% daily PnL target is tracked as a target, not guaranteed.",
         "run_count": auto_status.get("run_count", 0),
         "live_trading_enabled": False,
         "public_data_only": True,

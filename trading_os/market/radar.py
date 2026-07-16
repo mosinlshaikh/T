@@ -26,7 +26,11 @@ def rank_market_radar_rows(
     for row in rows:
         quote_volume = float(row.get("quote_volume", 0.0) or 0.0)
         trade_count = int(row.get("trade_count", 0) or 0)
-        if quote_volume < min_quote_volume or trade_count < min_trade_count:
+        source = str(row.get("source", "")).lower()
+        trade_count_unavailable = "miniticker" in source
+        if quote_volume < min_quote_volume:
+            continue
+        if trade_count < min_trade_count and not trade_count_unavailable:
             continue
         score = radar_score(row)
         candidates.append(

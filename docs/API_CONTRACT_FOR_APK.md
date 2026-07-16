@@ -187,6 +187,11 @@ public Binance 24h ticker REST snapshot. The route remains public-data-only and
 does not place orders. Deep candle, order book, news, whale, risk, and
 zero-hallucination checks still run before any paper trade intent.
 
+When the FastAPI backend starts, it can run a public Binance miniTicker
+WebSocket task to refresh the same cache continuously. Set
+`T_MARKET_STREAM_ENABLED=false` to disable that background public-data stream.
+The stream never reads API keys and never sends orders.
+
 `/monitor/paper-demo-readiness` returns computed readiness percentages for the
 paper backend/APK monitoring contract and paper demo contract. It must always
 return `real_money_ready=false` in this build.

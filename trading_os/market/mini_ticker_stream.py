@@ -75,10 +75,16 @@ class BinanceMiniTickerStream:
             symbol = str(item.get("s", "")).upper()
             if not symbol.endswith("USDT"):
                 continue
+            open_price = self._float(item.get("o"))
+            last_price = self._float(item.get("c"))
+            price_change_pct = (
+                ((last_price - open_price) / open_price * 100) if open_price and last_price else 0.0
+            )
             normalized.append(
                 {
                     "symbol": symbol,
-                    "last_price": item.get("c", 0.0),
+                    "last_price": last_price,
+                    "price_change_pct": price_change_pct,
                     "quote_volume": item.get("q", 0.0),
                     "volume": item.get("v", 0.0),
                     "high_price": item.get("h", 0.0),
@@ -96,3 +102,10 @@ class BinanceMiniTickerStream:
             reconnect_attempts=self._reconnect_attempts,
             last_error=self._last_error,
         ).__dict__
+
+    @staticmethod
+    def _float(value: Any) -> float:
+        try:
+            return float(value or 0.0)
+        except (TypeError, ValueError):
+            return 0.0

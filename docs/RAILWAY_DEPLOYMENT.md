@@ -18,10 +18,15 @@ BINANCE_WITHDRAWALS_SUPPORTED=false
 T_DATABASE_URL=sqlite:///data/trading_os.sqlite3
 T_AUDIT_LOG_PATH=data/audit/trading_os_audit.jsonl
 TTRL_ADMIN_TOKEN=<owner-admin-token-generated-in-railway>
+T_MARKET_STREAM_ENABLED=true
 ```
 
 Do not add real Binance credentials for this paper deployment. Do not set live
 trading variables to true.
+
+`T_MARKET_STREAM_ENABLED=true` starts the public Binance miniTicker WebSocket
+cache on backend startup. It is public market data only: no API keys, no order
+placement, and no live trading.
 
 Optional paper-session auto-resume variables:
 

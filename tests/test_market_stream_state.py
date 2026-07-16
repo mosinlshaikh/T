@@ -48,6 +48,9 @@ def test_mini_ticker_stream_message_updates_public_cache_only() -> None:
     health = state.health()
     assert health["ticker_count"] == 1
     assert health["public_data_only"] is True
+    ranked = state.ranked_radar(limit=5)
+    assert ranked[0]["symbol"] == "ETHUSDT"
+    assert float(ranked[0]["price_change_pct"]) > 0
     status = stream.status()
     assert status["live_trading_enabled"] is False
     assert status["public_data_only"] is True

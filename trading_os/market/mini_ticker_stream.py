@@ -10,6 +10,10 @@ import websockets
 from trading_os.market.stream_state import MarketStreamState
 
 BINANCE_MINI_TICKER_STREAM_URL = "wss://stream.binance.com:9443/ws/!miniTicker@arr"
+BINANCE_MINI_TICKER_FALLBACK_URLS = (
+    "wss://stream.binance.com:443/ws/!miniTicker@arr",
+    "wss://data-stream.binance.vision/ws/!miniTicker@arr",
+)
 
 
 @dataclass
@@ -18,6 +22,7 @@ class MiniTickerStreamStatus:
     connected: bool
     reconnect_attempts: int
     last_error: str
+    current_url: str
     public_data_only: bool = True
     live_trading_enabled: bool = False
 
@@ -33,34 +38,47 @@ class BinanceMiniTickerStream:
         self,
         state: MarketStreamState,
         url: str = BINANCE_MINI_TICKER_STREAM_URL,
+        fallback_urls: tuple[str, ...] = BINANCE_MINI_TICKER_FALLBACK_URLS,
         reconnect_delay_seconds: float = 3.0,
     ) -> None:
         self.state = state
         self.url = url
+        self.fallback_urls = fallback_urls
         self.reconnect_delay_seconds = reconnect_delay_seconds
         self._running = False
         self._connected = False
         self._reconnect_attempts = 0
         self._last_error = ""
+        self._current_url = url
 
     async def run_forever(self) -> None:
         self._running = True
         while self._running:
-            try:
-                async with websockets.connect(self.url, ping_interval=20) as websocket:
-                    self._connected = True
-                    self._last_error = ""
-                    async for message in websocket:
-                        if not self._running:
-                            break
-                        self.handle_message(message)
-            except Exception as exc:
-                self._connected = False
-                self._reconnect_attempts += 1
-                self._last_error = f"{exc.__class__.__name__}: stream reconnect scheduled"
-                await asyncio.sleep(self.reconnect_delay_seconds)
-            finally:
-                self._connected = False
+            for url in (self.url, *self.fallback_urls):
+                if not self._running:
+                    break
+                self._current_url = url
+                try:
+                    async with websockets.connect(
+                        url,
+                        ping_interval=20,
+                        open_timeout=10,
+                    ) as websocket:
+                        self._connected = True
+                        self._last_error = ""
+                        async for message in websocket:
+                            if not self._running:
+                                break
+                            self.handle_message(message)
+                except Exception as exc:
+                    self._connected = False
+                    self._reconnect_attempts += 1
+                    self._last_error = (
+                        f"{exc.__class__.__name__}: stream reconnect scheduled via fallback"
+                    )
+                    await asyncio.sleep(self.reconnect_delay_seconds)
+                finally:
+                    self._connected = False
 
     def stop(self) -> None:
         self._running = False
@@ -101,6 +119,7 @@ class BinanceMiniTickerStream:
             connected=self._connected,
             reconnect_attempts=self._reconnect_attempts,
             last_error=self._last_error,
+            current_url=self._current_url,
         ).__dict__
 
     @staticmethod

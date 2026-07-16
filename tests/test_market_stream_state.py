@@ -54,3 +54,4 @@ def test_mini_ticker_stream_message_updates_public_cache_only() -> None:
     status = stream.status()
     assert status["live_trading_enabled"] is False
     assert status["public_data_only"] is True
+    assert status["current_url"].startswith("wss://")

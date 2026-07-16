@@ -191,6 +191,8 @@ When the FastAPI backend starts, it can run a public Binance miniTicker
 WebSocket task to refresh the same cache continuously. Set
 `T_MARKET_STREAM_ENABLED=false` to disable that background public-data stream.
 The stream never reads API keys and never sends orders.
+The backend rotates through public Binance stream URLs (`9443`, `443`, and
+`data-stream.binance.vision`) if a deployment network rejects one endpoint.
 
 `/monitor/paper-demo-readiness` returns computed readiness percentages for the
 paper backend/APK monitoring contract and paper demo contract. It must always

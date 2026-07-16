@@ -27,6 +27,8 @@ trading variables to true.
 `T_MARKET_STREAM_ENABLED=true` starts the public Binance miniTicker WebSocket
 cache on backend startup. It is public market data only: no API keys, no order
 placement, and no live trading.
+If Railway rejects one WebSocket endpoint, the backend rotates through alternate
+public Binance stream URLs and keeps REST cache fallback available.
 
 Optional paper-session auto-resume variables:
 

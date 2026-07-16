@@ -217,19 +217,9 @@ class PaperAutoTrader:
         client = BinancePublicMarketDataClient()
         universe_symbols: list[str] = []
         radar_symbols: list[str] = []
+        radar_source = ""
         if use_market_radar:
-            try:
-                radar_rows = rank_market_radar_rows(
-                    client.fetch_all_usdt_24h_tickers(), limit=max_symbols
-                )
-                radar_symbols = [str(item["symbol"]) for item in radar_rows]
-            except Exception as exc:
-                self.backend.audit_logger.log_skipped_trade(
-                    {
-                        "reason": "Market radar shortlist failed safely.",
-                        "error": exc.__class__.__name__,
-                    }
-                )
+            radar_symbols, radar_source = self._radar_shortlist(max_symbols, client)
         if all_usdt_symbols or str(configured_symbols).upper() == "ALL_USDT":
             try:
                 universe_symbols = client.fetch_active_spot_usdt_symbols()
@@ -282,6 +272,7 @@ class PaperAutoTrader:
             ),
             "symbol_universe_mode": "ALL_ACTIVE_USDT_SPOT" if universe_symbols else "WATCHLIST",
             "selection_mode": "MARKET_RADAR" if radar_symbols else "STANDARD",
+            "selection_source": radar_source or "configured_watchlist",
             "max_symbols_per_scan": max_symbols,
             "timeframe": timeframe,
             "results": ranked,
@@ -292,6 +283,40 @@ class PaperAutoTrader:
         }
         self.backend.audit_logger.log("paper_auto_trader_scan", payload)
         return payload
+
+    def _radar_shortlist(
+        self, max_symbols: int, client: BinancePublicMarketDataClient
+    ) -> tuple[list[str], str]:
+        try:
+            cached_rows = self.backend.market_stream_state.ranked_radar(limit=max_symbols)
+            cached_symbols = [str(item["symbol"]) for item in cached_rows]
+            if cached_symbols:
+                return cached_symbols, "FAST_MARKET_STREAM_CACHE"
+        except Exception as exc:
+            self.backend.audit_logger.log_skipped_trade(
+                {
+                    "reason": "Fast market cache shortlist failed safely.",
+                    "error": exc.__class__.__name__,
+                    "live_trading_enabled": False,
+                    "public_data_only": True,
+                }
+            )
+        try:
+            radar_rows = rank_market_radar_rows(
+                client.fetch_all_usdt_24h_tickers(), limit=max_symbols
+            )
+            radar_symbols = [str(item["symbol"]) for item in radar_rows]
+            return radar_symbols, "PUBLIC_24HR_REST_RADAR"
+        except Exception as exc:
+            self.backend.audit_logger.log_skipped_trade(
+                {
+                    "reason": "Market radar shortlist failed safely.",
+                    "error": exc.__class__.__name__,
+                    "live_trading_enabled": False,
+                    "public_data_only": True,
+                }
+            )
+            return [], ""
 
     def start(
         self,

@@ -132,6 +132,9 @@ trading.
 `/control/paper-auto-trader/scan-radar` uses the public Market Radar shortlist
 as the input symbols for a deep paper scan. It remains paper-only and cannot
 send real Binance orders.
+When the fast market cache has candidates, this endpoint returns
+`selection_source=FAST_MARKET_STREAM_CACHE`; otherwise it falls back to
+`selection_source=PUBLIC_24HR_REST_RADAR`.
 
 `/control/manual-paper-demo/open` opens a capped paper-only walkthrough position
 using public ticker data. It is clearly labeled `MANUAL PAPER DEMO`; it is not

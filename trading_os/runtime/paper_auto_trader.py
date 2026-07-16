@@ -15,6 +15,7 @@ from trading_os.quality.market_data_gate import MarketDataQualityGate
 
 DEFAULT_WATCHLIST_PATH = "config/watchlist.json"
 DEFAULT_MAX_SYMBOLS_PER_SCAN = 40
+MAX_SAFE_SYMBOLS_PER_RADAR_SCAN = 40
 
 
 def utc_now() -> str:
@@ -213,7 +214,7 @@ class PaperAutoTrader:
             or DEFAULT_MAX_SYMBOLS_PER_SCAN
         )
         if max_symbols_override is not None:
-            max_symbols = min(max(int(max_symbols_override), 1), 20)
+            max_symbols = min(max(int(max_symbols_override), 1), MAX_SAFE_SYMBOLS_PER_RADAR_SCAN)
         client = BinancePublicMarketDataClient()
         universe_symbols: list[str] = []
         radar_symbols: list[str] = []
@@ -278,6 +279,7 @@ class PaperAutoTrader:
             "results": ranked,
             "errors": errors,
             "best_candidate": ranked[0] if ranked else None,
+            "scan_summary": scan_summary(ranked),
             "live_trading_enabled": False,
             "public_data_only": True,
         }
@@ -524,4 +526,23 @@ def enrich_scan_result(result: dict[str, Any]) -> dict[str, Any]:
         "trade_allowed": trade_allowed(action, confidence, status),
         "why_not_traded": why_not_traded(action, confidence, status, reason),
         "reason_summary": reason[:180],
+    }
+
+
+def scan_summary(results: list[dict[str, Any]]) -> dict[str, Any]:
+    action_counts = {"BUY": 0, "SELL": 0, "HOLD": 0, "SKIP": 0}
+    paper_open_count = 0
+    top_directional: dict[str, Any] | None = None
+    for item in results:
+        action = str(item.get("action", "SKIP")).upper()
+        action_counts[action if action in action_counts else "SKIP"] += 1
+        if item.get("status") == "PAPER_OPEN":
+            paper_open_count += 1
+        if action in {"BUY", "SELL"} and top_directional is None:
+            top_directional = item
+    return {
+        "action_counts": action_counts,
+        "paper_open_count": paper_open_count,
+        "top_directional_candidate": top_directional,
+        "rule": "Paper trade opens only when BUY/SELL, confidence threshold, zero-hallucination, and risk all pass.",
     }

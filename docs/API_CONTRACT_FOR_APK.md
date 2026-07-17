@@ -202,7 +202,7 @@ paper backend/APK monitoring contract and paper demo contract. It must always
 return `real_money_ready=false` in this build.
 
 `/monitor/24h-paper-status` returns the durable 24-hour paper-monitoring
-contract for the APK. It includes session running state, uptime, scan count,
+contract for the APK. Alias: `/monitor/paper-24h-status`. It includes session running state, uptime, scan count,
 expected 24h scan count, latest paper action/confidence, blocker reason,
 statement PnL fields, safety checks, and `live_trading_enabled=false`.
 

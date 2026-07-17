@@ -58,8 +58,15 @@ def _latest_decision_payload() -> dict[str, Any] | None:
     return decisions[-1] if decisions else None
 
 
+def _safe_latest_audit_events(limit: int = 200) -> list[dict[str, Any]]:
+    try:
+        return latest_audit_events(limit=limit)
+    except Exception:
+        return []
+
+
 def _latest_audit_payload(event_type: str, limit: int = 200) -> dict[str, Any] | None:
-    for event in reversed(latest_audit_events(limit=limit)):
+    for event in reversed(_safe_latest_audit_events(limit=limit)):
         if event.get("event_type") == event_type:
             payload = _payload(event)
             return {"created_at": event.get("created_at", ""), **payload}
@@ -74,11 +81,34 @@ def _latest_paper_scan_payload() -> dict[str, Any]:
     return latest if isinstance(latest, dict) else {}
 
 
+def _safe_statement(hours: int = 24) -> dict[str, Any]:
+    try:
+        return StatementEngine(get_backend().repository).build(hours=hours)
+    except Exception:
+        return {
+            "statement_id": "",
+            "window_hours": hours,
+            "net_pnl": 0.0,
+            "realized_pnl": 0.0,
+            "unrealized_pnl": 0.0,
+            "paper_scan_count": 0,
+            "open_positions": 0,
+            "closed_positions": 0,
+            "safety_checks": [
+                {
+                    "name": "Persistence",
+                    "passed": False,
+                    "detail": "Statement data unavailable; returning safe empty paper defaults.",
+                }
+            ],
+        }
+
+
 @router.get("/paper-live")
 def paper_live_monitor() -> dict[str, object]:
     backend = get_backend()
     backend.paper_session_scheduler.auto_resume_if_configured()
-    events = latest_audit_events(limit=250)
+    events = _safe_latest_audit_events(limit=250)
     latest_decision = _latest_decision_payload()
     latest_market = _latest_by_type(events, "market_snapshot")
     latest_pipeline = _latest_by_type(events, "decision_to_trade_pipeline_result")
@@ -217,11 +247,12 @@ def paper_scan_summary() -> dict[str, object]:
 
 
 @router.get("/24h-paper-status")
+@router.get("/paper-24h-status")
 def paper_24h_status() -> dict[str, object]:
     backend = get_backend()
     session = backend.paper_session_scheduler.auto_resume_if_configured()
     summary = paper_scan_summary()["data"]
-    statement = StatementEngine(backend.repository).build(hours=24)
+    statement = _safe_statement(hours=24)
     payload = {
         "mode": backend.config.runtime_mode.value,
         "live_trading_enabled": False,
@@ -268,7 +299,7 @@ def paper_24h_status() -> dict[str, object]:
 def _latest_strategy_breakdown(symbol: str, limit: int = 500) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     wanted_symbol = symbol.upper()
-    for event in latest_audit_events(limit=limit):
+    for event in _safe_latest_audit_events(limit=limit):
         if event.get("event_type") != "strategy_signal":
             continue
         payload = _payload(event)
@@ -289,7 +320,7 @@ def _latest_strategy_breakdown(symbol: str, limit: int = 500) -> list[dict[str, 
 
 def _latest_pipeline_stages(symbol: str, limit: int = 500) -> list[dict[str, object]]:
     wanted_symbol = symbol.upper()
-    for event in reversed(latest_audit_events(limit=limit)):
+    for event in reversed(_safe_latest_audit_events(limit=limit)):
         if event.get("event_type") != "decision_to_trade_pipeline_result":
             continue
         payload = _payload(event)
@@ -377,7 +408,7 @@ def _dedupe_scan_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
 def paper_scan_history(limit: int = 20) -> dict[str, object]:
     safe_limit = min(max(int(limit), 1), 100)
     rows: list[dict[str, object]] = []
-    for event in latest_audit_events(limit=max(safe_limit * 8, 200)):
+    for event in _safe_latest_audit_events(limit=max(safe_limit * 8, 200)):
         event_type = str(event.get("event_type", ""))
         if event_type not in {
             "paper_auto_trader_tick",
@@ -561,7 +592,7 @@ def _evidence_item(event: dict[str, Any]) -> dict[str, object]:
 
 @router.get("/market-evidence")
 def market_evidence_feed() -> dict[str, object]:
-    events = latest_audit_events(limit=300)
+    events = _safe_latest_audit_events(limit=300)
     evidence = [
         _evidence_item(event) for event in events if event.get("event_type") in INTELLIGENCE_TYPES
     ]
@@ -577,7 +608,7 @@ def market_evidence_feed() -> dict[str, object]:
 @router.get("/paper-demo-readiness")
 def paper_demo_readiness() -> dict[str, object]:
     backend = get_backend()
-    audit_events = latest_audit_events(limit=250)
+    audit_events = _safe_latest_audit_events(limit=250)
     has_market_snapshot = any(
         event.get("event_type") == "market_snapshot" for event in audit_events
     )
@@ -687,7 +718,7 @@ def _decision_action_counts() -> dict[str, int]:
 
 def _latest_candle_studies(limit: int = 200) -> list[dict[str, Any]]:
     studies: list[dict[str, Any]] = []
-    for event in latest_audit_events(limit=limit):
+    for event in _safe_latest_audit_events(limit=limit):
         if event.get("event_type") != "candle_study":
             continue
         payload = _payload(event)
@@ -726,7 +757,7 @@ def _trend_conflicts(studies: dict[str, dict[str, Any]]) -> list[str]:
 @router.get("/performance-wheel")
 def performance_wheel() -> dict[str, object]:
     backend = get_backend()
-    events = latest_audit_events(limit=300)
+    events = _safe_latest_audit_events(limit=300)
     studies = _latest_studies_by_timeframe()
     counts = _decision_action_counts()
     has_market = any(event.get("event_type") == "market_snapshot" for event in events)

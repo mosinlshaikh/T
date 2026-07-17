@@ -8,6 +8,7 @@ post-quantum-ready security posture for future production hardening.
 The backend exposes:
 
 - `GET /monitor/24h-paper-status`
+- Alias: `GET /monitor/paper-24h-status`
 - `GET /control/paper-session/status`
 - `GET /monitor/paper-scan-summary`
 - `GET /reports/statement-daily`

@@ -133,7 +133,7 @@ data class RiskSettingsUi(
 )
 
 data class AppSettingsUi(
-    val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
+    val backendBaseUrl: String = "http://127.0.0.1:8000",
     val risk: RiskSettingsUi = RiskSettingsUi(),
     val notifications: String = "placeholders disabled",
     val vaultStatus: String = "placeholder only",
@@ -250,6 +250,9 @@ data class PaperScanSummaryUi(
     val scanResultCount: Int = 0,
     val scanErrorCount: Int = 0,
     val paperTradeBlocker: String = "unknown",
+    val currentBlockers: List<String> = emptyList(),
+    val nextTradeRequirements: List<String> = emptyList(),
+    val latestRows: List<PaperScanHistoryRowUi> = emptyList(),
     val profitTargetNote: String = "1% daily PnL target is a target, not guaranteed."
 )
 
@@ -370,7 +373,7 @@ data class OfflineSyncUi(
 
 data class TradingOsUiState(
     val isPreviewData: Boolean = true,
-    val backendBaseUrl: String = "https://t-production-8efc.up.railway.app",
+    val backendBaseUrl: String = "http://127.0.0.1:8000",
     val connectionStatus: String = "DEVELOPMENT PREVIEW DATA",
     val backendConnectionState: BackendConnectionState = BackendConnectionState.UNKNOWN,
     val lastKnownBotState: String = "unknown",

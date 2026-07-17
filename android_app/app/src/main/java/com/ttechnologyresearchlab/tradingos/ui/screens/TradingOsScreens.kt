@@ -92,7 +92,9 @@ import com.ttechnologyresearchlab.tradingos.viewmodel.TradingOsViewModel
 @Composable
 fun TradingOsApp(viewModel: TradingOsViewModel) {
     val state by viewModel.uiState.collectAsState()
-    var route by remember { mutableStateOf(AppRoute.Onboarding) }
+    var route by remember {
+        mutableStateOf(if (state.onboardingComplete) AppRoute.Dashboard else AppRoute.Onboarding)
+    }
     var menuExpanded by remember { mutableStateOf(false) }
     val menuRoutes = listOf(
         AppRoute.SetupWizard,
@@ -322,6 +324,8 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit, reconnec
         )
         BackendStatusBanner(state, reconnect)
         OfflineSyncCard(state)
+        LatestPaperScanCard(state)
+        PerSymbolScanTableCard(state)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Column(Modifier.weight(1f)) {
                 MetricCard("Daily Target", "${state.dailyTarget.targetPnlPct}% PnL", state.dailyTarget.recommendedMode)
@@ -350,7 +354,6 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit, reconnec
         MetricCard("Daily PnL", state.portfolio.dailyPnl)
         MetricCard("Open Paper Trades", state.portfolio.openTrades.toString())
         PaperReadinessCard(state)
-        LatestPaperScanCard(state)
         GlassCard {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StatusChip(state.latestDecision.action, timelineColor(state.latestDecision.action))
@@ -867,6 +870,7 @@ private fun BackendStatusBanner(state: TradingOsUiState, reconnect: () -> Unit) 
         KeyValue("Last heartbeat", state.lastHeartbeat)
         if (state.backendConnectionState != BackendConnectionState.CONNECTED) {
             Text("Backend offline/degraded. Controls are disabled except local navigation.")
+            Text(state.connectionStatus, color = WarningAmber)
             QuietButton("Reconnect", reconnect)
         }
     }
@@ -886,7 +890,7 @@ private fun OfflineSyncCard(state: TradingOsUiState) {
         KeyValue("Last successful sync", state.offlineSync.lastSuccessfulSync)
         KeyValue("Local queued actions", state.offlineSync.queuedLocalActions.toString())
         Text(state.offlineSync.cacheStatus)
-        Text("Phone offline ho to last known data dikhega. Internet wapas aate hi Railway se full refresh hoga.")
+        Text("Phone offline ho to last known data dikhega. Backend wapas reachable hote hi full refresh hoga.")
     }
 }
 
@@ -1174,8 +1178,54 @@ private fun LatestPaperScanCard(state: TradingOsUiState) {
         KeyValue("Run count", scan.runCount.toString())
         Text(scan.reason)
         Text("Why not traded: ${scan.whyNotTraded}")
+        if (scan.currentBlockers.isNotEmpty()) {
+            Text("Current blockers", color = WarningAmber, fontWeight = FontWeight.Bold)
+            scan.currentBlockers.take(5).forEach { Text("- $it", color = MutedText) }
+        }
+        if (scan.nextTradeRequirements.isNotEmpty()) {
+            Text("Paper trade requirements", color = ElectricBlue, fontWeight = FontWeight.Bold)
+            scan.nextTradeRequirements.take(6).forEach { Text("- $it", color = MutedText) }
+        }
         Text(scan.profitTargetNote, color = WarningAmber)
         Text("Timestamp: ${scan.timestamp}")
+    }
+}
+
+@Composable
+private fun PerSymbolScanTableCard(state: TradingOsUiState) {
+    val scanRows = state.paperScanSummary.latestRows
+        .ifEmpty { state.paperScanHistory }
+        .ifEmpty { state.watchlistCandidates }
+    val latestBySymbol = scanRows
+        .asReversed()
+        .distinctBy { it.symbol }
+        .take(8)
+    GlassCard {
+        Text("Per-Symbol Scan Table", color = TradingGold, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text("Latest paper scan result for each watched coin.", color = MutedText)
+        if (latestBySymbol.isEmpty()) {
+            Text("No per-symbol scan rows loaded yet. Start paper session or refresh backend.")
+        } else {
+            latestBySymbol.forEach { row ->
+                GlassCard {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.weight(1.1f)) {
+                            Text(row.symbol, color = TradingGold, fontWeight = FontWeight.Bold)
+                            Text(row.timeframe.ifBlank { "TF unknown" }, color = MutedText)
+                        }
+                        Column(Modifier.weight(0.9f)) {
+                            StatusChip(row.action, timelineColor(row.action))
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text("Conf ${row.confidence}", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+                            Text(if (row.tradeAllowed) "Paper allowed" else "No trade", color = if (row.tradeAllowed) SafeGreen else WarningAmber)
+                        }
+                    }
+                    Text(row.whyNotTraded, color = MutedText)
+                }
+            }
+        }
+        Text("Table is paper/audit only. App does not execute Binance orders.")
     }
 }
 

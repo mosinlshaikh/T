@@ -20,7 +20,38 @@ def utc_now() -> str:
 def start_runtime() -> dict[str, object]:
     backend = get_backend()
     state = backend.runtime_supervisor.start()
-    return ok({"state": state.value}, "Runtime start requested.")
+    heartbeat = backend.runtime_supervisor.run_once()
+    return ok(
+        {
+            "state": state.value,
+            "heartbeat": {
+                "state": heartbeat.state.value,
+                "healthy": heartbeat.healthy,
+                "timestamp": heartbeat.timestamp,
+                "failure_state": heartbeat.failure_state.value,
+                "message": heartbeat.message,
+            },
+            "live_trading_enabled": False,
+        },
+        "Runtime start requested.",
+    )
+
+
+@router.post("/runtime-tick")
+def runtime_tick() -> dict[str, object]:
+    backend = get_backend()
+    heartbeat = backend.runtime_supervisor.run_once()
+    return ok(
+        {
+            "state": heartbeat.state.value,
+            "healthy": heartbeat.healthy,
+            "timestamp": heartbeat.timestamp,
+            "failure_state": heartbeat.failure_state.value,
+            "message": heartbeat.message,
+            "live_trading_enabled": False,
+        },
+        "Runtime heartbeat tick completed.",
+    )
 
 
 @router.post("/stop-graceful")

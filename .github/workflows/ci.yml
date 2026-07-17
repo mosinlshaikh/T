@@ -28,6 +28,9 @@ jobs:
       - name: Ruff lint
         run: ruff check .
 
+      - name: Import boundary check
+        run: python -B scripts/check_import_boundaries.py
+
       - name: Black format check
         run: black --check .
 

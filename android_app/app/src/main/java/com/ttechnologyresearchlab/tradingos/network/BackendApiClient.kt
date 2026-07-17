@@ -66,7 +66,7 @@ class BackendApiClient(
     suspend fun getPaperLiveMonitor() = get("/monitor/paper-live")
     suspend fun getMarketEvidenceFeed() = get("/monitor/market-evidence")
     suspend fun getCandleDetail() = get("/monitor/candle-detail?symbol=BTCUSDT&timeframe=5m&limit=40")
-    suspend fun getCandleStudy() = get("/monitor/candle-study?symbol=BTCUSDT&timeframes=5m,10m,1h,4h,8h,24h,1M&limit=80")
+    suspend fun getCandleStudy() = get("/monitor/candle-study?symbol=BTCUSDT&timeframes=5m,10m,1h,4h,8h,24h,1M&limit=30")
     suspend fun getPaperScanSummary() = get("/monitor/paper-scan-summary")
     suspend fun getPaperScanHistory() = get("/monitor/paper-scan-history?limit=20")
     suspend fun getWatchlistCandidates() = get("/monitor/watchlist-candidates?limit=10")
@@ -123,13 +123,30 @@ class BackendApiClient(
                     stream.write(body.toByteArray(Charsets.UTF_8))
                 }
             }
-            val body = connection.inputStream.bufferedReader().use { it.readText() }
-            lastKnownBody = body
-            ApiClientResult(ok = true, body = body)
+            val statusCode = connection.responseCode
+            val responseStream = if (statusCode in 200..299) {
+                connection.inputStream
+            } else {
+                connection.errorStream ?: connection.inputStream
+            }
+            val body = responseStream.bufferedReader().use { it.readText() }
+            if (statusCode in 200..299) {
+                lastKnownBody = body
+                ApiClientResult(ok = true, body = body)
+            } else {
+                ApiClientResult(
+                    ok = false,
+                    body = body,
+                    safeError = "Backend HTTP $statusCode at $path from $base"
+                )
+            }
         } catch (_: SocketTimeoutException) {
-            ApiClientResult(ok = false, safeError = "Backend timeout. Offline mode active.")
-        } catch (_: Exception) {
-            ApiClientResult(ok = false, safeError = "Backend unavailable. Preview data shown.")
+            ApiClientResult(ok = false, safeError = "Backend timeout at ${baseUrlProvider().trimEnd('/')}$path")
+        } catch (error: Exception) {
+            ApiClientResult(
+                ok = false,
+                safeError = "Backend unavailable at ${baseUrlProvider().trimEnd('/')}$path (${error.javaClass.simpleName})"
+            )
         }
     }
 

@@ -12,6 +12,18 @@ direction.
 `trading_os/` is the canonical backend. The `backend/` folder is retained as an
 experimental scaffold only.
 
+Current canonical architecture references:
+
+- [Canonical Architecture](architecture/CANONICAL_ARCHITECTURE.md)
+- [Module Ownership Map](architecture/MODULE_OWNERSHIP_MAP.md)
+- [Legacy and Deprecated Modules](architecture/LEGACY_AND_DEPRECATED_MODULES.md)
+- [Phase 0 Baseline Architecture Audit](audits/BASELINE_ARCHITECTURE_AUDIT.md)
+
+CI includes an import-boundary check via `scripts/check_import_boundaries.py` so
+canonical `trading_os/` code cannot accidentally depend on legacy roots such as
+`backend/`, root `api/`, `core/`, `modules/`, `nexus/`, `enterprise/`, or
+`realworld/`.
+
 This is not a live trading system. It is a safe backend architecture skeleton
 created under the direction of **MOSIN LIYAKAT SHAIKH** for market data,
 AI-assisted research decisions, paper trading workflows, risk controls, audit

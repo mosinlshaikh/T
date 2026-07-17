@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from time import perf_counter
 
 from trading_os.ai.decision_brain import AIDecisionBrain
 from trading_os.ai.decision_types import DecisionAction, EvidenceItem, VerifiedDecision
@@ -10,53 +9,35 @@ from trading_os.audit.audit_logger import AuditLogger
 from trading_os.execution.intent import ExecutionIntent, ExecutionIntentLayer
 from trading_os.intelligence.candle_intelligence import CandleIntelligenceEngine
 from trading_os.intelligence.market_structure import MarketStructureEngine
-from trading_os.intelligence.news_risk_intelligence import NewsItem, NewsRiskIntelligenceEngine
+from trading_os.intelligence.news_risk_intelligence import NewsRiskIntelligenceEngine
 from trading_os.intelligence.order_book_intelligence import OrderBookIntelligenceEngine
 from trading_os.intelligence.signal_combiner import MultiFactorSignalCombiner
-from trading_os.intelligence.types import IntelligenceSignal
-from trading_os.intelligence.whale_intelligence_v1 import WhaleIntelligenceV1, WhaleTrade
-from trading_os.market.candle_engine import Candle
-from trading_os.market.order_book_engine import OrderBookSnapshot
-from trading_os.market.timeframes import Timeframe, normalize_timeframe
+from trading_os.intelligence.whale_intelligence_v1 import WhaleIntelligenceV1
+from trading_os.market.timeframes import normalize_timeframe
 from trading_os.paper.simulator import PaperFill, PaperTradingSimulator
-from trading_os.pipeline.stage_result import PipelineStageOutcome, PipelineStageResult
+from trading_os.pipeline.audit_adapter import PipelineAuditAdapter
+from trading_os.pipeline.decision_to_trade_types import PipelineInput, PipelineResult
+from trading_os.pipeline.stage_result import (
+    PipelineReasonCode,
+    PipelineStageName,
+    PipelineStageOutcome,
+    PipelineStageRecorder,
+    PipelineStageResult,
+)
+from trading_os.pipeline.stages import (
+    DecisionVerificationStage,
+    MarketIntelligenceStage,
+    RiskAssessmentStage,
+    ShutdownGateStage,
+    SignalCombinationStage,
+    StrategySignalStage,
+    TradeExecutionStage,
+)
 from trading_os.risk.capital_manager import CapitalManager
-from trading_os.risk.risk_engine import RiskContext, RiskEngine
+from trading_os.risk.risk_engine import RiskEngine
 from trading_os.runtime.shutdown_engine import SmartShutdownEngine
 from trading_os.strategies.registry import StrategyRegistry
-from trading_os.trade.lifecycle import RiskInfo, TradeContext, TradeLifecycleEngine, TradeState
-
-
-@dataclass(frozen=True)
-class PipelineInput:
-    symbol: str
-    timeframe: Timeframe
-    market_price: float
-    quantity: float
-    stop_loss: float
-    take_profit: float
-    account_balance: float
-    current_exposure: float = 0.0
-    daily_realized_loss: float = 0.0
-    consecutive_losses: int = 0
-    minutes_since_last_loss: int | None = None
-    candles: list[Candle] | None = None
-    order_book: OrderBookSnapshot | None = None
-    whale_trades: list[WhaleTrade] | None = None
-    news_items: list[NewsItem] | None = None
-
-
-@dataclass(frozen=True)
-class PipelineResult:
-    symbol: str
-    timeframe: Timeframe
-    decision: VerifiedDecision
-    trade_context: TradeContext | None
-    execution_intent: ExecutionIntent | None
-    paper_fill: PaperFill | None
-    status: str
-    reason: str
-    stage_results: list[dict[str, object]]
+from trading_os.trade.lifecycle import TradeContext, TradeLifecycleEngine
 
 
 @dataclass
@@ -83,36 +64,33 @@ class DecisionToTradePipeline:
         pipeline_input: PipelineInput,
         evidence: list[EvidenceItem],
     ) -> PipelineResult:
-        started = perf_counter()
-        stages: list[dict[str, object]] = []
+        try:
+            return self._run_impl(pipeline_input, evidence)
+        except Exception as exc:
+            return self._fail_closed_exception(pipeline_input, evidence, exc)
 
-        def mark(
-            stage: str,
-            outcome: PipelineStageOutcome,
-            reason_code: str,
-            missing_data: list[str] | None = None,
-            conflicts: list[str] | None = None,
-        ) -> None:
-            stages.append(
-                asdict(
-                    PipelineStageResult(
-                        stage=stage,
-                        outcome=outcome,
-                        reason_code=reason_code,
-                        latency_ms=round((perf_counter() - started) * 1000, 4),
-                        missing_data=missing_data or [],
-                        conflicts=conflicts or [],
-                    )
-                )
-            )
+    def _run_impl(
+        self,
+        pipeline_input: PipelineInput,
+        evidence: list[EvidenceItem],
+    ) -> PipelineResult:
+        recorder = PipelineStageRecorder()
+        mark = recorder.mark
+        stages = recorder.results
+        audit = PipelineAuditAdapter(self.audit)
 
-        if not self.shutdown.accepts_new_trades:
+        shutdown_gate = ShutdownGateStage(self.shutdown).evaluate()
+        if not shutdown_gate.allowed:
             decision = self._skip_decision(
                 pipeline_input,
                 evidence,
-                "Shutdown requested; new trade intents are blocked.",
+                shutdown_gate.reason,
             )
-            mark("shutdown_gate", PipelineStageOutcome.SKIP, "SHUTDOWN_REQUESTED")
+            mark(
+                PipelineStageName.SHUTDOWN_GATE,
+                PipelineStageOutcome.SKIP,
+                shutdown_gate.reason_code,
+            )
             result = PipelineResult(
                 pipeline_input.symbol.upper(),
                 pipeline_input.timeframe,
@@ -124,105 +102,72 @@ class DecisionToTradePipeline:
                 decision.reason,
                 stages,
             )
-            self.audit.log_pipeline_result(self._result_payload(result))
+            audit.log_pipeline_result(result)
             return result
-        mark("shutdown_gate", PipelineStageOutcome.CONTINUE, "OK")
+        mark(PipelineStageName.SHUTDOWN_GATE, PipelineStageOutcome.CONTINUE, PipelineReasonCode.OK)
 
-        intelligence_signals = self._market_intelligence(pipeline_input)
+        intelligence_stage = MarketIntelligenceStage(
+            candle_intelligence=self.candle_intelligence,
+            order_book_intelligence=self.order_book_intelligence,
+            whale_intelligence=self.whale_intelligence,
+            news_risk_intelligence=self.news_risk_intelligence,
+            market_structure=self.market_structure,
+        ).evaluate(pipeline_input)
+        intelligence_signals = intelligence_stage.signals
+        audit.log_market_intelligence(intelligence_signals)
         mark(
-            "market_intelligence",
+            PipelineStageName.MARKET_INTELLIGENCE,
             PipelineStageOutcome.CONTINUE if intelligence_signals else PipelineStageOutcome.SKIP,
-            "OK" if intelligence_signals else "NO_INTELLIGENCE_SIGNALS",
+            intelligence_stage.reason_code,
         )
-        combined = None
-        if self.signal_combiner is not None and intelligence_signals:
-            combined = self.signal_combiner.combine(
-                pipeline_input.symbol,
-                pipeline_input.timeframe,
-                intelligence_signals,
-            )
-            self.audit.log_combined_signal_result(
-                {
-                    "symbol": combined.symbol,
-                    "timeframe": combined.timeframe.value,
-                    "final_signal": combined.final_signal.value,
-                    "confidence_score": combined.confidence_score,
-                    "risk_score": combined.risk_score,
-                    "missing_data": combined.missing_data,
-                    "conflicts": combined.conflicts,
-                }
-            )
-            if combined.missing_data:
-                self.audit.log_missing_data(
-                    {"symbol": combined.symbol, "missing_data": combined.missing_data}
+        combined_stage = SignalCombinationStage(self.signal_combiner).evaluate(
+            pipeline_input,
+            intelligence_signals,
+        )
+        combined = combined_stage.combined
+        audit.log_combined_signal(combined)
+        mark(
+            PipelineStageName.COMBINED_SIGNAL,
+            (
+                PipelineStageOutcome.SKIP
+                if combined_stage.reason_code == PipelineReasonCode.INSUFFICIENT_EVIDENCE
+                else (
+                    PipelineStageOutcome.HOLD
+                    if combined_stage.reason_code == PipelineReasonCode.SIGNAL_CONFLICT
+                    else PipelineStageOutcome.CONTINUE
                 )
-                mark(
-                    "combined_signal",
-                    PipelineStageOutcome.SKIP,
-                    "MISSING_COMBINED_SIGNAL_DATA",
-                    missing_data=combined.missing_data,
-                )
-            if combined.conflicts:
-                self.audit.log_conflict_reason(
-                    {"symbol": combined.symbol, "conflicts": combined.conflicts}
-                )
-                mark(
-                    "combined_signal",
-                    PipelineStageOutcome.HOLD,
-                    "COMBINED_SIGNAL_CONFLICT",
-                    conflicts=combined.conflicts,
-                )
+            ),
+            combined_stage.reason_code,
+            missing_data=combined.missing_data if combined else [],
+            conflicts=combined.conflicts if combined else [],
+        )
 
         intelligence_evidence = (
             combined.evidence
             if combined is not None
             else [item for signal in intelligence_signals for item in signal.evidence]
         )
-        signals = self.strategies.evaluate_all(
+        strategy_stage = StrategySignalStage(self.strategies).evaluate(
             pipeline_input.symbol,
             evidence + intelligence_evidence,
         )
+        signals = strategy_stage.signals
         if combined is not None and not combined.missing_data:
             signals.append(combined.to_signal_assessment())
-        for signal in signals:
-            self.audit.log_strategy_signal(
-                {
-                    "symbol": pipeline_input.symbol.upper(),
-                    "signal": signal.name,
-                    "source": signal.source,
-                    "direction": signal.direction.value,
-                    "confidence": signal.confidence,
-                    "evidence_count": len(signal.evidence),
-                    "evidence_sources": [item.source for item in signal.evidence],
-                    "live_trading_enabled": False,
-                    "public_data_only": True,
-                }
-            )
+        audit.log_strategy_signals(pipeline_input.symbol, signals)
         mark(
-            "strategy_signal",
+            PipelineStageName.STRATEGY_SIGNAL,
             PipelineStageOutcome.CONTINUE if signals else PipelineStageOutcome.SKIP,
-            "OK" if signals else "NO_STRATEGY_SIGNALS",
+            PipelineReasonCode.OK if signals else strategy_stage.reason_code,
         )
 
-        risk_decision = self.risk_engine.evaluate(
-            RiskContext(
-                symbol=pipeline_input.symbol,
-                account_balance=pipeline_input.account_balance,
-                requested_trade_size=pipeline_input.quantity * pipeline_input.market_price,
-                current_exposure=pipeline_input.current_exposure,
-                daily_realized_loss=pipeline_input.daily_realized_loss,
-                consecutive_losses=pipeline_input.consecutive_losses,
-                minutes_since_last_loss=pipeline_input.minutes_since_last_loss,
-                stop_loss_present=pipeline_input.stop_loss > 0,
-                take_profit_present=pipeline_input.take_profit > 0,
-            )
-        )
-        if self.audit.repository is not None:
-            self.audit.repository.save_risk_result(risk_decision)
+        risk_stage = RiskAssessmentStage(self.risk_engine).evaluate(pipeline_input)
+        risk_decision = risk_stage.decision
+        audit.persist_risk_result(risk_decision)
         mark(
-            "risk",
+            PipelineStageName.RISK,
             PipelineStageOutcome.CONTINUE if risk_decision.allowed else PipelineStageOutcome.SKIP,
-            "RISK_APPROVED" if risk_decision.allowed else "RISK_REJECTED",
+            risk_stage.reason_code,
             conflicts=risk_decision.rejections,
         )
         capital_plan = self.capital_manager.plan_paper_allocation(
@@ -237,14 +182,14 @@ class DecisionToTradePipeline:
                 self.capital_manager.to_evidence(capital_plan),
             ]
         )
-        proposal = self.ai_brain.propose(
-            pipeline_input.symbol,
-            pipeline_input.timeframe,
+        decision_stage = DecisionVerificationStage(self.ai_brain, self.verifier).evaluate(
+            pipeline_input,
             decision_evidence,
             signals,
         )
+        proposal = decision_stage.proposal
         mark(
-            "ai_decision",
+            PipelineStageName.AI_DECISION,
             (
                 PipelineStageOutcome.HOLD
                 if proposal.action == DecisionAction.HOLD
@@ -254,60 +199,27 @@ class DecisionToTradePipeline:
                     else PipelineStageOutcome.CONTINUE
                 )
             ),
-            proposal.reason.upper().replace(" ", "_").replace(";", ""),
+            decision_stage.proposal_reason_code,
             missing_data=proposal.missing_data,
             conflicts=proposal.conflict_signals,
         )
-        decision = self.verifier.verify(proposal)
+        decision = decision_stage.decision
         mark(
-            "zero_hallucination",
+            PipelineStageName.ZERO_HALLUCINATION,
             (
                 PipelineStageOutcome.CONTINUE
                 if decision.verified_decision
                 else PipelineStageOutcome.REJECT
             ),
-            "VERIFIED" if decision.verified_decision else "ZERO_HALLUCINATION_REJECTED",
+            decision_stage.verification_reason_code,
             missing_data=decision.missing_data,
             conflicts=decision.conflict_signals,
         )
-        if self.audit.repository is not None:
-            self.audit.repository.save_zero_hallucination_result(
-                {
-                    "symbol": decision.symbol,
-                    "action": decision.action.value,
-                    "verified_decision": decision.verified_decision,
-                    "rejection_reason": decision.rejection_reason,
-                    "timestamp": decision.timestamp,
-                }
-            )
-        self.audit.log_ai_decision(
-            {
-                "symbol": decision.symbol,
-                "action": decision.action.value,
-                "confidence": decision.confidence,
-                "evidence": [
-                    {
-                        "type": item.evidence_type.value,
-                        "source": item.source,
-                        "summary": item.summary,
-                        "confidence": item.confidence,
-                        "timestamp": item.timestamp,
-                    }
-                    for item in decision.evidence
-                ],
-                "verified": decision.verified_decision,
-                "reason": decision.reason,
-                "missing_data": decision.missing_data,
-                "conflict_signals": decision.conflict_signals,
-                "risk_status": "approved" if risk_decision.allowed else "rejected",
-                "rejection_reason": decision.rejection_reason,
-            }
-        )
+        audit.persist_zero_hallucination_result(decision)
+        audit.log_ai_decision(decision, risk_decision)
 
         if not decision.verified_decision:
-            self.audit.log_blocked_hallucination(
-                {"symbol": decision.symbol, "reason": decision.rejection_reason}
-            )
+            audit.log_rejected_hallucination(decision)
             return self._finish(
                 pipeline_input,
                 decision,
@@ -320,7 +232,7 @@ class DecisionToTradePipeline:
             )
 
         if decision.action in {DecisionAction.HOLD, DecisionAction.SKIP}:
-            self.audit.log_skipped_trade({"symbol": decision.symbol, "reason": decision.reason})
+            audit.log_skipped_decision(decision)
             return self._finish(
                 pipeline_input,
                 decision,
@@ -332,71 +244,131 @@ class DecisionToTradePipeline:
                 stages,
             )
 
-        trade_context = TradeContext(
-            symbol=decision.symbol,
-            timeframe=decision.timeframe,
-            side=decision.action.value,
-            entry=pipeline_input.market_price,
-            stop_loss=pipeline_input.stop_loss,
-            take_profit=pipeline_input.take_profit,
-            confidence=decision.confidence,
-            evidence=decision.evidence,
-            risk_info=RiskInfo(
-                approved=risk_decision.allowed,
-                risk_approval_id=f"risk:{decision.timestamp}",
-                reason=risk_decision.reason,
-                rejections=risk_decision.rejections,
+        execution_stage = TradeExecutionStage(
+            self.lifecycle,
+            self.intent_layer,
+            self.paper_simulator,
+        ).evaluate(pipeline_input, decision, risk_decision)
+        audit.log_execution_result(execution_stage)
+        mark(
+            PipelineStageName.TRADE_LIFECYCLE,
+            (
+                PipelineStageOutcome.SKIP
+                if execution_stage.status == "REJECTED_BY_RISK"
+                else PipelineStageOutcome.CONTINUE
             ),
+            execution_stage.lifecycle_reason_code,
+            conflicts=risk_decision.rejections,
         )
-        trade_context = self._transition(trade_context, TradeState.RISK_CHECK_PENDING)
+        mark(
+            PipelineStageName.EXECUTION_INTENT,
+            (
+                PipelineStageOutcome.SKIP
+                if execution_stage.intent is None
+                else PipelineStageOutcome.CONTINUE
+            ),
+            execution_stage.intent_reason_code,
+        )
+        mark(
+            PipelineStageName.PAPER_EXECUTION,
+            (
+                PipelineStageOutcome.SKIP
+                if execution_stage.fill is None
+                else PipelineStageOutcome.CONTINUE
+            ),
+            execution_stage.paper_reason_code,
+        )
 
-        if not risk_decision.allowed:
-            rejected = self._transition(trade_context, TradeState.REJECTED_BY_RISK)
-            self.audit.log_risk_rejection(
-                {"symbol": decision.symbol, "rejections": risk_decision.rejections}
-            )
+        if execution_stage.status == "REJECTED_BY_RISK":
             return self._finish(
                 pipeline_input,
                 decision,
-                rejected,
+                execution_stage.trade_context,
                 None,
                 None,
-                "REJECTED_BY_RISK",
-                risk_decision.reason,
+                execution_stage.status,
+                execution_stage.reason,
                 stages,
             )
 
-        approved = self._transition(trade_context, TradeState.APPROVED_FOR_PAPER)
-        intent = self.intent_layer.from_verified_decision(
-            decision, approved, pipeline_input.quantity
-        )
-        if intent is None:
+        if execution_stage.intent is None:
             return self._finish(
                 pipeline_input,
                 decision,
-                approved,
+                execution_stage.trade_context,
                 None,
                 None,
-                "NO_INTENT",
-                "Decision did not produce an execution intent.",
+                execution_stage.status,
+                execution_stage.reason,
                 stages,
             )
 
-        self.audit.log_execution_intent_created(asdict(intent))
-        paper_open = self._transition(approved, TradeState.PAPER_OPEN)
-        fill = self.paper_simulator.open_trade(intent, pipeline_input.market_price)
-        self.audit.log_paper_order_fill(asdict(fill))
-        self.audit.log_portfolio_snapshot(asdict(self.paper_simulator.portfolio.wallet_snapshot()))
+        if execution_stage.fill is not None:
+            audit.log_portfolio_snapshot(self.paper_simulator.portfolio.wallet_snapshot())
         return self._finish(
             pipeline_input,
             decision,
-            paper_open,
-            intent,
-            fill,
-            "PAPER_OPEN",
-            "Paper trade opened.",
+            execution_stage.trade_context,
+            execution_stage.intent,
+            execution_stage.fill,
+            execution_stage.status,
+            execution_stage.reason,
             stages,
         )
+
+    def _fail_closed_exception(
+        self,
+        pipeline_input: PipelineInput,
+        evidence: list[EvidenceItem],
+        exc: Exception,
+    ) -> PipelineResult:
+        stage = asdict(
+            PipelineStageResult(
+                stage=PipelineStageName.PIPELINE_EXCEPTION,
+                outcome=PipelineStageOutcome.SKIP,
+                reason_code=PipelineReasonCode.INTERNAL_EXCEPTION,
+                latency_ms=0.0,
+                missing_data=[],
+                conflicts=[exc.__class__.__name__],
+            )
+        )
+        decision = VerifiedDecision(
+            symbol=pipeline_input.symbol.upper(),
+            timeframe=pipeline_input.timeframe,
+            action=DecisionAction.SKIP,
+            confidence=0.0,
+            evidence=evidence,
+            reason="Internal decision-path exception; failed closed to SKIP.",
+            missing_data=[],
+            conflict_signals=[],
+            verified_decision=False,
+            rejection_reason="INTERNAL_EXCEPTION",
+        )
+        result = PipelineResult(
+            symbol=pipeline_input.symbol.upper(),
+            timeframe=pipeline_input.timeframe,
+            decision=decision,
+            trade_context=None,
+            execution_intent=None,
+            paper_fill=None,
+            status="SKIP",
+            reason=decision.reason,
+            stage_results=[stage],
+        )
+        try:
+            audit = PipelineAuditAdapter(self.audit)
+            audit.log_pipeline_result(result)
+            self.audit.log_skipped_trade(
+                {
+                    "symbol": decision.symbol,
+                    "reason": decision.reason,
+                    "reason_code": PipelineReasonCode.INTERNAL_EXCEPTION.value,
+                    "exception_type": exc.__class__.__name__,
+                }
+            )
+        except Exception:
+            pass
+        return result
 
     def _finish(
         self,
@@ -420,7 +392,7 @@ class DecisionToTradePipeline:
             reason=reason,
             stage_results=stage_results or [],
         )
-        self.audit.log_pipeline_result(self._result_payload(result))
+        PipelineAuditAdapter(self.audit).log_pipeline_result(result)
         return result
 
     def _skip_decision(
@@ -448,63 +420,6 @@ class DecisionToTradePipeline:
             rejection_reason=reason,
         )
 
-    def _transition(self, context: TradeContext, target: TradeState) -> TradeContext:
-        previous = context.state
-        updated = self.lifecycle.transition(context, target)
-        self.audit.log_trade_lifecycle_transition(
-            {
-                "trade_id": updated.trade_id,
-                "symbol": updated.symbol,
-                "from": previous.value,
-                "to": updated.state.value,
-            }
-        )
-        return updated
-
-    def _market_intelligence(self, pipeline_input: PipelineInput) -> list[IntelligenceSignal]:
-        signals: list[IntelligenceSignal] = []
-        if self.candle_intelligence is not None:
-            signal = self.candle_intelligence.analyze(
-                pipeline_input.symbol,
-                pipeline_input.timeframe,
-                pipeline_input.candles or [],
-            )
-            signals.append(signal)
-            self.audit.log_candle_analysis(self._intelligence_payload(signal))
-        if self.order_book_intelligence is not None:
-            signal = self.order_book_intelligence.analyze(
-                pipeline_input.symbol,
-                pipeline_input.timeframe,
-                pipeline_input.order_book,
-            )
-            signals.append(signal)
-            self.audit.log_order_book_analysis(self._intelligence_payload(signal))
-        if self.whale_intelligence is not None:
-            signal = self.whale_intelligence.analyze(
-                pipeline_input.symbol,
-                pipeline_input.timeframe,
-                pipeline_input.whale_trades,
-            )
-            signals.append(signal)
-            self.audit.log_whale_analysis(self._intelligence_payload(signal))
-        if self.news_risk_intelligence is not None:
-            signal = self.news_risk_intelligence.analyze(
-                pipeline_input.symbol,
-                pipeline_input.timeframe,
-                pipeline_input.news_items,
-            )
-            signals.append(signal)
-            self.audit.log_news_risk_analysis(self._intelligence_payload(signal))
-        if self.market_structure is not None:
-            signal = self.market_structure.analyze(
-                pipeline_input.symbol,
-                pipeline_input.timeframe,
-                pipeline_input.candles or [],
-            )
-            signals.append(signal)
-            self.audit.log_market_structure_analysis(self._intelligence_payload(signal))
-        return signals
-
     @staticmethod
     def build_input(
         symbol: str,
@@ -524,32 +439,3 @@ class DecisionToTradePipeline:
             take_profit=take_profit,
             account_balance=account_balance,
         )
-
-    @staticmethod
-    def _result_payload(result: PipelineResult) -> dict[str, object]:
-        return {
-            "symbol": result.symbol,
-            "timeframe": result.timeframe.value,
-            "status": result.status,
-            "reason": result.reason,
-            "decision": result.decision.action.value,
-            "verified": result.decision.verified_decision,
-            "intent_id": result.execution_intent.intent_id if result.execution_intent else "",
-            "fill_id": result.paper_fill.fill_id if result.paper_fill else "",
-            "trade_id": result.trade_context.trade_id if result.trade_context else "",
-            "stage_results": result.stage_results,
-        }
-
-    @staticmethod
-    def _intelligence_payload(signal: IntelligenceSignal) -> dict[str, object]:
-        return {
-            "name": signal.name,
-            "symbol": signal.symbol,
-            "timeframe": signal.timeframe.value,
-            "direction": signal.direction.value,
-            "confidence": signal.confidence,
-            "missing_data": signal.missing_data,
-            "conflicts": signal.conflicts,
-            "risk_score": signal.risk_score,
-            "reason": signal.reason,
-        }

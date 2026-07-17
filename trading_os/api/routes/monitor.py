@@ -151,13 +151,37 @@ def paper_scan_summary() -> dict[str, object]:
     scan_errors = latest_scan.get("errors", []) if latest_scan else []
     result_count = len(scan_results) if isinstance(scan_results, list) else 0
     error_count = len(scan_errors) if isinstance(scan_errors, list) else 0
+    latest_action = str(latest.get("action", latest.get("status", "unknown"))).upper()
+    latest_status = str(latest.get("status", "unknown")).upper()
+    latest_confidence = round(float(latest.get("confidence", 0.0) or 0.0), 4)
+    latest_reason = str(latest.get("reason", "No paper scan result available."))
+    blockers: list[str] = []
+    if latest_action not in {"BUY", "SELL"}:
+        blockers.append("Latest scan did not produce BUY/SELL action.")
+    if latest_status not in {"APPROVED_FOR_PAPER", "PAPER_OPEN"}:
+        blockers.append(f"Latest lifecycle status is {latest_status}.")
+    if latest_confidence < 0.70:
+        blockers.append("Confidence is below paper-open threshold.")
+    if not bool(latest.get("paper_fill_id")):
+        blockers.append("No paper fill was created.")
+    if latest_reason:
+        blockers.append(latest_reason)
+    requirements = [
+        "BUY or SELL action from multi-factor signal.",
+        "Confidence at or above configured paper threshold.",
+        "Zero-hallucination verification must pass.",
+        "Risk engine must approve reserve, exposure, stop-loss, and take-profit.",
+        "No active kill switch or shutdown block.",
+        "Evidence must include fresh market tick, candle, order book, and strategy signals.",
+    ]
+    latest_rows = paper_scan_history(limit=10)["data"].get("rows", [])
     payload = {
         "latest_symbol": latest.get("symbol", "unknown"),
         "latest_timeframe": latest.get("timeframe", "unknown"),
-        "latest_action": latest.get("action", latest.get("status", "unknown")),
-        "latest_status": latest.get("status", "unknown"),
-        "latest_confidence": latest.get("confidence", 0.0),
-        "latest_reason": latest.get("reason", "No paper scan result available."),
+        "latest_action": latest_action,
+        "latest_status": latest_status,
+        "latest_confidence": latest_confidence,
+        "latest_reason": latest_reason,
         "latest_timestamp": latest.get("timestamp", latest.get("created_at", "")),
         "trade_allowed": bool(latest.get("paper_fill_id")),
         "paper_fill_id": latest.get("paper_fill_id", ""),
@@ -180,6 +204,9 @@ def paper_scan_summary() -> dict[str, object]:
             if latest_fill is None and not bool(latest.get("paper_fill_id"))
             else "PAPER_FILL_AVAILABLE"
         ),
+        "current_blockers": list(dict.fromkeys(blockers)),
+        "next_trade_requirements": requirements,
+        "latest_rows": latest_rows,
         "profit_target_note": "1% daily PnL target is tracked as a target, not guaranteed.",
         "run_count": auto_status.get("run_count", 0),
         "live_trading_enabled": False,

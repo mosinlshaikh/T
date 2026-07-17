@@ -60,8 +60,8 @@ class TradingOsRepository(
                     lastHeartbeat = heartbeat,
                     offlineSync = OfflineSyncUi(
                         status = "SYNCED",
-                        lastSuccessfulSync = health.body.jsonString("timestamp") ?: "latest",
-                        cacheStatus = "Fresh Railway backend data"
+                        lastSuccessfulSync = health.body.jsonLastString("timestamp") ?: "latest",
+                        cacheStatus = "Fresh backend data"
                     ),
                     lastKnownBotState = supervisorState,
                     latestDecision = monitorState.latestDecision ?: latestDecision,
@@ -171,6 +171,11 @@ class TradingOsRepository(
         return pattern.find(this)?.groupValues?.getOrNull(1)
     }
 
+    private fun String.jsonLastString(name: String): String? {
+        val pattern = Regex(""""$name"\s*:\s*"([^"]*)"""")
+        return pattern.findAll(this).lastOrNull()?.groupValues?.getOrNull(1)
+    }
+
     private fun String.jsonBoolean(name: String): Boolean? {
         val pattern = Regex(""""$name"\s*:\s*(true|false)""", RegexOption.IGNORE_CASE)
         return pattern.find(this)?.groupValues?.getOrNull(1)?.equals("true", ignoreCase = true)
@@ -247,7 +252,7 @@ class TradingOsRepository(
                 action = "SKIP",
                 confidence = "0.00",
                 reason = "Backend connected. Latest decision endpoint unavailable.",
-                evidence = listOf("Railway backend health check passed", "Paper mode active", "Live trading disabled"),
+                evidence = listOf("Backend health check passed", "Paper mode active", "Live trading disabled"),
                 missingData = listOf("latest_decision"),
                 zeroHallucinationVerified = true,
                 riskStatus = "waiting_for_decision"
@@ -530,6 +535,9 @@ class TradingOsRepository(
             scanResultCount = body.jsonNumber("latest_scan_result_count")?.toIntOrNull() ?: 0,
             scanErrorCount = body.jsonNumber("latest_scan_error_count")?.toIntOrNull() ?: 0,
             paperTradeBlocker = body.jsonString("paper_trade_blocker") ?: "unknown",
+            currentBlockers = body.jsonArrayItems("current_blockers"),
+            nextTradeRequirements = body.jsonArrayItems("next_trade_requirements"),
+            latestRows = body.arraySection("latest_rows").paperScanRows().takeLast(20),
             profitTargetNote = body.jsonString("profit_target_note")
                 ?: "1% daily PnL target is a target, not guaranteed."
         )

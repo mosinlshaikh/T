@@ -16,10 +16,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class TradingOsViewModel(application: Application) : AndroidViewModel(application) {
-    private val backendBaseUrl = MutableStateFlow("https://t-production-8efc.up.railway.app")
-    private val repository = TradingOsRepository(BackendApiClient { backendBaseUrl.value })
+    private val defaultBackendUrl = "http://127.0.0.1:8000"
     private val localCache = LocalDashboardCache(application.applicationContext)
     private val _uiState = MutableStateFlow(localCache.load())
+    private val backendBaseUrl = MutableStateFlow(_uiState.value.backendBaseUrl.ifBlank { defaultBackendUrl })
+    private val repository = TradingOsRepository(BackendApiClient { backendBaseUrl.value })
     val uiState: StateFlow<TradingOsUiState> = _uiState
 
     init {
@@ -28,27 +29,32 @@ class TradingOsViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun updateBackendUrl(url: String) {
         val cleaned = url.trim().trimEnd('/')
-            .ifBlank { "https://t-production-8efc.up.railway.app" }
+            .ifBlank { defaultBackendUrl }
         backendBaseUrl.value = cleaned
         _uiState.value = _uiState.value.copy(backendBaseUrl = cleaned)
+        localCache.saveUiPreferences(_uiState.value)
     }
 
     fun updateLanguage(language: AppLanguage) {
         _uiState.value = _uiState.value.copy(language = language)
+        localCache.saveUiPreferences(_uiState.value)
     }
 
     fun lockApp() {
         _uiState.value = _uiState.value.copy(appLocked = true)
+        localCache.saveUiPreferences(_uiState.value)
     }
 
     fun unlockWithPin(pin: String) {
         if (pin.length == 4) {
             _uiState.value = _uiState.value.copy(appLocked = false)
+            localCache.saveUiPreferences(_uiState.value)
         }
     }
 
     fun completeOnboarding() {
         _uiState.value = _uiState.value.copy(onboardingComplete = true)
+        localCache.saveUiPreferences(_uiState.value)
     }
 
     fun refresh() {
@@ -66,7 +72,7 @@ class TradingOsViewModel(application: Application) : AndroidViewModel(applicatio
                         status = "OFFLINE_CACHE",
                         lastSuccessfulSync = current.offlineSync.lastSuccessfulSync,
                         queuedLocalActions = 0,
-                        cacheStatus = "Last known Railway data shown; reconnect will refresh."
+                        cacheStatus = "Last known backend data shown; reconnect will refresh."
                     )
                 )
             } else {

@@ -18,6 +18,14 @@ Each stage result contains:
 - `conflicts`
 - `timestamp`
 
+`reason_code` is normalized through `trading_os.pipeline.stage_result.PipelineReasonCode`.
+Unknown ad-hoc text is not treated as success; it becomes `UNCLASSIFIED_REASON`
+until mapped to an approved stable code.
+
+Stage recording is handled by `PipelineStageRecorder`, exported from
+`trading_os.pipeline`. It preserves insertion order, stage latency, missing-data
+lists, conflict lists, and normalized reason codes.
+
 Valid outcomes are:
 
 - `CONTINUE`
@@ -28,13 +36,61 @@ Valid outcomes are:
 
 ## Current Stages
 
-- `shutdown_gate`
-- `market_intelligence`
-- `combined_signal`
-- `strategy_signal`
-- `risk`
-- `ai_decision`
-- `zero_hallucination`
+- `shutdown_gate` - implemented by `ShutdownGateStage`
+- `market_intelligence` - implemented by `MarketIntelligenceStage`
+- `combined_signal` - implemented by `SignalCombinationStage`
+- `strategy_signal` - implemented by `StrategySignalStage`
+- `risk` - implemented by `RiskAssessmentStage`
+- `ai_decision` - implemented by `DecisionVerificationStage`
+- `zero_hallucination` - implemented by `DecisionVerificationStage`
+- `trade_lifecycle` - implemented by `TradeExecutionStage`
+- `execution_intent` - implemented by `TradeExecutionStage`
+- `paper_execution` - implemented by `TradeExecutionStage`
+- `pipeline_exception`
+
+`pipeline_exception` is emitted only when an internal exception escapes the
+decision path. The pipeline fails closed to `SKIP`, creates no execution intent,
+opens no paper fill, and records `INTERNAL_EXCEPTION`.
+
+Audit payload formatting is centralized through `PipelineAuditAdapter`. The
+adapter writes the same audit events as before, but keeps payload construction
+outside the orchestration path.
+
+## Stable Reason Codes
+
+Current canonical reason codes include:
+
+- `OK`
+- `NO_DATA`
+- `STALE_DATA`
+- `INVALID_SCHEMA`
+- `TIMESTAMP_GAP`
+- `INSUFFICIENT_EVIDENCE`
+- `NO_COMBINER_CONFIGURED`
+- `NO_INTELLIGENCE_SIGNALS`
+- `NO_STRATEGY_SIGNALS`
+- `SIGNAL_CONFLICT`
+- `LOW_CONFIDENCE`
+- `NO_ACTIONABLE_DIRECTION`
+- `RISK_APPROVED`
+- `RISK_REJECTED`
+- `RISK_LIMIT_EXCEEDED`
+- `KILL_SWITCH_ACTIVE`
+- `RUNTIME_DEGRADED`
+- `SHUTDOWN_REQUESTED`
+- `MARKET_CLOSED`
+- `SPREAD_TOO_WIDE`
+- `LIQUIDITY_INSUFFICIENT`
+- `DUPLICATE_EVENT`
+- `UNSUPPORTED_INSTRUMENT`
+- `ZERO_HALLUCINATION_VERIFIED`
+- `ZERO_HALLUCINATION_REJECTED`
+- `PAPER_EXECUTION_FAILED`
+- `EXECUTION_INTENT_CREATED`
+- `NO_EXECUTION_INTENT`
+- `PAPER_TRADE_OPENED`
+- `INTERNAL_EXCEPTION`
+- `UNCLASSIFIED_REASON`
 
 ## APK Monitoring
 
@@ -70,4 +126,5 @@ user can see why a paper scan became `BUY`, `SELL`, `HOLD`, or `SKIP`.
 - Conflict-heavy signals remain `HOLD` or `SKIP`.
 - Zero-hallucination rejection remains blocked.
 - Risk rejection remains blocked.
+- Internal exceptions fail closed to `SKIP`.
 - Live trading remains disabled.

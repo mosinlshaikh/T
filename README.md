@@ -193,6 +193,10 @@ Still blocked until a separate explicit command:
 - Live trading and real Binance execution.
 - Withdrawal, margin, futures, transfer, or private-key support.
 | UI/UX Design System         | [docs/UI_UX_DESIGN_SYSTEM.md](docs/UI_UX_DESIGN_SYSTEM.md)                 |
+| Canonical Architecture      | [docs/architecture/CANONICAL_ARCHITECTURE.md](docs/architecture/CANONICAL_ARCHITECTURE.md) |
+| Module Ownership Map        | [docs/architecture/MODULE_OWNERSHIP_MAP.md](docs/architecture/MODULE_OWNERSHIP_MAP.md) |
+| Legacy/Deprecated Modules   | [docs/architecture/LEGACY_AND_DEPRECATED_MODULES.md](docs/architecture/LEGACY_AND_DEPRECATED_MODULES.md) |
+| Phase 0 Baseline Audit      | [docs/audits/BASELINE_ARCHITECTURE_AUDIT.md](docs/audits/BASELINE_ARCHITECTURE_AUDIT.md) |
 | Backend Architecture        | [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md)                 |
 | Decision Pipeline Stages    | [docs/architecture/DECISION_PIPELINE_STAGES.md](docs/architecture/DECISION_PIPELINE_STAGES.md) |
 | Backend Deployment Readiness | [docs/BACKEND_DEPLOYMENT_READINESS.md](docs/BACKEND_DEPLOYMENT_READINESS.md) |

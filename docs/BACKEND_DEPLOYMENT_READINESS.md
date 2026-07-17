@@ -132,6 +132,9 @@ vault design. No API key submission endpoint exists in the APK.
 ## Deployment Safety Checklist
 
 - `.env` is gitignored.
+- `.dockerignore` excludes local `.env`, APK/AAB/EXE artifacts, Android build
+  output, screenshots, client keys, deployment secrets, and private research
+  material from container build context.
 - No Binance credentials in source.
 - No admin token in source.
 - No withdrawal support.
@@ -141,6 +144,20 @@ vault design. No API key submission endpoint exists in the APK.
 - License generation routes require admin token.
 - App license validation does not expose full keys after validation.
 - `/status/health` returns safe paper-mode state.
+
+## Current Local Verification
+
+The local Python/FastAPI readiness checks pass through the automated test suite:
+
+- canonical API import
+- Railway/Docker start command contract
+- `/status/health` healthcheck path contract
+- safe paper-mode config defaults
+- Android/backend API contract static check
+- API route smoke tests
+
+Docker CLI is installed locally, but the Docker Desktop Linux daemon must be
+running before a local `docker build` smoke can complete.
 
 ## Current Limitation
 

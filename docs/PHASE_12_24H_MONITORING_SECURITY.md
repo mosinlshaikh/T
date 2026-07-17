@@ -64,3 +64,5 @@ libraries are available.
 
 Paper mode remains default. Live trading, withdrawals, margin, futures, private
 Binance execution, and any profit guarantee remain out of scope for this phase.
+
+Redeploy marker: 2026-07-17T23:24:15Z

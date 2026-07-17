@@ -201,6 +201,11 @@ The backend rotates through public Binance stream URLs (`9443`, `443`, and
 paper backend/APK monitoring contract and paper demo contract. It must always
 return `real_money_ready=false` in this build.
 
+`/monitor/24h-paper-status` returns the durable 24-hour paper-monitoring
+contract for the APK. It includes session running state, uptime, scan count,
+expected 24h scan count, latest paper action/confidence, blocker reason,
+statement PnL fields, safety checks, and `live_trading_enabled=false`.
+
 Graceful shutdown:
 
 - blocks new trades
@@ -213,6 +218,15 @@ Emergency stop:
 - activates kill switch
 - blocks new trades immediately
 - moves runtime state to `EMERGENCY_STOPPED`
+
+Security:
+
+- `/settings/security` includes `post_quantum_security`.
+- The field represents a post-quantum-ready migration posture only.
+- The APK must not claim quantum-proof security.
+- Current controls remain: no APK secrets, no withdrawal support, live trading
+  disabled, license keys hashed at rest, admin token from environment, redacted
+  logs/errors, and zero-hallucination decision gates.
 
 ## Portfolio Endpoints
 

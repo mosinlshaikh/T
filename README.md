@@ -215,6 +215,7 @@ Still blocked until a separate explicit command:
 | Phase 9 Android UI Source  | [docs/PHASE_9_ANDROID_APP_UI.md](docs/PHASE_9_ANDROID_APP_UI.md)               |
 | Phase 9B Pre-APK Polish    | [docs/PHASE_9B_PRE_APK_POLISH.md](docs/PHASE_9B_PRE_APK_POLISH.md)             |
 | Phase 10 Final Review      | [docs/PHASE_10_FINAL_REVIEW.md](docs/PHASE_10_FINAL_REVIEW.md)                 |
+| Phase 12 24h Monitoring + Security | [docs/PHASE_12_24H_MONITORING_SECURITY.md](docs/PHASE_12_24H_MONITORING_SECURITY.md) |
 | Future APK Phase            | [docs/FUTURE_APK_PHASE.md](docs/FUTURE_APK_PHASE.md)                       |
 | Global Language Support     | [docs/GLOBAL_LANGUAGE_SUPPORT.md](docs/GLOBAL_LANGUAGE_SUPPORT.md)         |
 | Multi-Language Architecture | [docs/MULTI_LANGUAGE_ARCHITECTURE.md](docs/MULTI_LANGUAGE_ARCHITECTURE.md) |

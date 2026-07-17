@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from trading_os.api.dependencies import get_backend
 from trading_os.api.framework import APIRouter
 from trading_os.api.responses import ok
+from trading_os.security.post_quantum_policy import post_quantum_security_report
 from trading_os.strategies.catalog import strategy_catalog_payload
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -99,6 +100,10 @@ def get_security() -> dict[str, object]:
             "withdrawals_supported": False,
             "vault_status": backend.api_vault.health_report(),
             "api_key_submission_endpoint": "not_available",
+            "post_quantum_security": post_quantum_security_report(),
+            "security_note": (
+                "Post-quantum-ready design posture only; no quantum-proof guarantee is claimed."
+            ),
         },
         "Security settings loaded.",
     )

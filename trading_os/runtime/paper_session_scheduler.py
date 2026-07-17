@@ -12,6 +12,18 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _parse_utc(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
 def env_flag(name: str, default: bool = False) -> bool:
     value = os.getenv(name)
     if value is None:
@@ -106,16 +118,31 @@ class PaperSessionScheduler:
         repository = getattr(self.backend, "repository", None)
         desired = repository.get_settings(self.settings_key) if repository is not None else None
         desired = desired or {}
+        started = _parse_utc(self.started_at)
+        now = datetime.now(timezone.utc)
+        uptime_seconds = max(int((now - started).total_seconds()), 0) if started else 0
+        expected_scans = max(int(uptime_seconds // max(self.interval_seconds, 1)), 0)
+        expected_scans_24h = max(int(86_400 // max(self.interval_seconds, 1)), 1)
+        health = "RUNNING" if self.running and not self.last_error else "DEGRADED" if self.running else "STOPPED"
+        if self.running and self.scan_count == 0 and uptime_seconds > self.interval_seconds * 2:
+            health = "DEGRADED"
         return {
             "running": self.running,
             "session_id": self.session_id,
             "started_at": self.started_at,
             "stopped_at": self.stopped_at,
+            "uptime_seconds": uptime_seconds,
+            "uptime_hours": round(uptime_seconds / 3600, 4),
+            "target_window_hours": 24,
+            "monitoring_health": health,
             "symbols": self.symbols,
             "timeframe": self.timeframe,
             "interval_seconds": self.interval_seconds,
             "trade_notional_usdt": self.trade_notional_usdt,
             "scan_count": self.scan_count,
+            "expected_scan_count": expected_scans,
+            "expected_scan_count_24h": expected_scans_24h,
+            "scan_progress_24h_pct": round(min((self.scan_count / expected_scans_24h) * 100, 100), 2),
             "last_scan": self.last_scan,
             "last_error": self.last_error,
             "auto_resume_enabled": bool(desired.get("enabled")),

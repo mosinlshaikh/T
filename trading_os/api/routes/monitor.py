@@ -11,6 +11,7 @@ from trading_os.market.candle_engine import Candle
 from trading_os.market.live_public_data import BinancePublicMarketDataClient
 from trading_os.market.radar import rank_market_radar_rows
 from trading_os.market.timeframes import normalize_timeframe
+from trading_os.reports.statement import StatementEngine
 
 router = APIRouter(prefix="/monitor", tags=["monitor"])
 
@@ -213,6 +214,55 @@ def paper_scan_summary() -> dict[str, object]:
         "public_data_only": True,
     }
     return ok(redact_sensitive(payload), "Paper scan summary loaded.")
+
+
+@router.get("/24h-paper-status")
+def paper_24h_status() -> dict[str, object]:
+    backend = get_backend()
+    session = backend.paper_session_scheduler.auto_resume_if_configured()
+    summary = paper_scan_summary()["data"]
+    statement = StatementEngine(backend.repository).build(hours=24)
+    payload = {
+        "mode": backend.config.runtime_mode.value,
+        "live_trading_enabled": False,
+        "public_data_only": True,
+        "window_hours": 24,
+        "monitoring_health": session.get("monitoring_health", "UNKNOWN"),
+        "running": session.get("running", False),
+        "session_id": session.get("session_id", ""),
+        "started_at": session.get("started_at", ""),
+        "uptime_seconds": session.get("uptime_seconds", 0),
+        "uptime_hours": session.get("uptime_hours", 0.0),
+        "symbols": session.get("symbols", []),
+        "timeframe": session.get("timeframe", "unknown"),
+        "interval_seconds": session.get("interval_seconds", 0),
+        "scan_count": session.get("scan_count", 0),
+        "expected_scan_count": session.get("expected_scan_count", 0),
+        "expected_scan_count_24h": session.get("expected_scan_count_24h", 0),
+        "scan_progress_24h_pct": session.get("scan_progress_24h_pct", 0.0),
+        "latest_action": summary.get("latest_action", "unknown"),
+        "latest_symbol": summary.get("latest_symbol", "unknown"),
+        "latest_confidence": summary.get("latest_confidence", 0.0),
+        "trade_allowed": summary.get("trade_allowed", False),
+        "why_not_traded": summary.get("why_not_traded", "unknown"),
+        "current_blockers": summary.get("current_blockers", []),
+        "statement_id": statement.get("statement_id", ""),
+        "net_pnl": statement.get("net_pnl", 0.0),
+        "realized_pnl": statement.get("realized_pnl", 0.0),
+        "unrealized_pnl": statement.get("unrealized_pnl", 0.0),
+        "paper_scan_count": statement.get("paper_scan_count", 0),
+        "open_positions": statement.get("open_positions", 0),
+        "closed_positions": statement.get("closed_positions", 0),
+        "safety_checks": statement.get("safety_checks", []),
+        "rules": [
+            "Paper mode only.",
+            "No real Binance orders.",
+            "No Data = No Trade.",
+            "Missing evidence or low confidence = SKIP/HOLD.",
+            "Live trading and withdrawals remain disabled.",
+        ],
+    }
+    return ok(redact_sensitive(payload), "24-hour paper monitoring status loaded.")
 
 
 def _latest_strategy_breakdown(symbol: str, limit: int = 500) -> list[dict[str, object]]:

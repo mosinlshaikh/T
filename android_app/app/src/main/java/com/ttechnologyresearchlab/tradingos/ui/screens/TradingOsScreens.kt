@@ -325,6 +325,7 @@ fun DashboardScreen(state: TradingOsUiState, emergencyStop: () -> Unit, reconnec
         BackendStatusBanner(state, reconnect)
         OfflineSyncCard(state)
         LatestPaperScanCard(state)
+        CompactWhyNoTradeCard(state)
         PerSymbolScanTableCard(state)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Column(Modifier.weight(1f)) {
@@ -1157,6 +1158,35 @@ private fun PaperReadinessCard(state: TradingOsUiState) {
         SignalBar("Paper demo", "${state.paperDemoReadiness.demoPercent}%", SafeGreen)
         StatusChip(if (state.paperDemoReadiness.readyForPaperDemo) "READY" else "NOT READY", if (state.paperDemoReadiness.readyForPaperDemo) SafeGreen else WarningAmber)
         Text("Target for this phase is paper-only 100%. Real-money trading remains blocked.")
+    }
+}
+
+@Composable
+private fun CompactWhyNoTradeCard(state: TradingOsUiState) {
+    val scan = state.paperScanSummary
+    val latestRow = scan.latestRows.lastOrNull()
+        ?: state.paperScanHistory.lastOrNull()
+        ?: state.watchlistCandidates.firstOrNull()
+    GlassCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip("WHY NO TRADE?", WarningAmber)
+            StatusChip(scan.action, timelineColor(scan.action))
+            StatusChip(if (scan.tradeAllowed) "PAPER ALLOWED" else "BLOCKED", if (scan.tradeAllowed) SafeGreen else WarningAmber)
+        }
+        Text(scan.whyNotTraded, color = MutedText)
+        if (scan.currentBlockers.isNotEmpty()) {
+            Text("Blocking reasons", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+            scan.currentBlockers.take(4).forEach { Text("- $it", color = MutedText) }
+        }
+        if (latestRow?.pipelineStages?.isNotEmpty() == true) {
+            Text("Decision pipeline", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+            latestRow.pipelineStages.take(5).forEach { Text("- $it", color = MutedText) }
+        }
+        if (latestRow?.strategyBreakdown?.isNotEmpty() == true) {
+            Text("Strategy evidence", color = ElectricBlue, fontWeight = FontWeight.SemiBold)
+            latestRow.strategyBreakdown.take(4).forEach { Text("- $it", color = MutedText) }
+        }
+        Text("Rule: no strong evidence or low confidence means SKIP/HOLD. No real Binance order is sent.", color = WarningAmber)
     }
 }
 

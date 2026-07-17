@@ -1163,10 +1163,24 @@ private fun PaperReadinessCard(state: TradingOsUiState) {
 @Composable
 private fun LatestPaperScanCard(state: TradingOsUiState) {
     val scan = state.paperScanSummary
+    val session = state.paperSession
     GlassCard {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatusChip("RAILWAY PAPER SCANNER", ElectricBlue)
+            StatusChip(if (session.running) "RUNNING" else "STOPPED", if (session.running) SafeGreen else WarningAmber)
+            StatusChip("LIVE DISABLED", DangerRed)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusChip("LATEST SCAN", TradingGold)
             StatusChip(scan.action, timelineColor(scan.action))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) {
+                MetricCard("Scans", session.scanCount.toString(), session.timeframe)
+            }
+            Column(Modifier.weight(1f)) {
+                MetricCard("Latest", scan.action, scan.symbol)
+            }
         }
         KeyValue("Symbol / TF", "${scan.symbol} ${scan.timeframe}", TradingGold)
         KeyValue("Status", scan.status)

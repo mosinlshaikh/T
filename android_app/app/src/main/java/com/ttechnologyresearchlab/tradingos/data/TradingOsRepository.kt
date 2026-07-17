@@ -5,6 +5,76 @@ import com.ttechnologyresearchlab.tradingos.network.BackendApiClient
 class TradingOsRepository(
     private val apiClient: BackendApiClient
 ) {
+    suspend fun refreshDashboardFast(previous: TradingOsUiState = PreviewData.state): TradingOsUiState {
+        return try {
+            val health = apiClient.getHealth()
+            if (!health.ok) {
+                return previous.copy(
+                    connectionStatus = health.safeError,
+                    backendConnectionState = BackendConnectionState.DISCONNECTED,
+                    offlineSync = OfflineSyncUi(
+                        status = "OFFLINE",
+                        lastSuccessfulSync = previous.offlineSync.lastSuccessfulSync,
+                        cacheStatus = "Last known backend data shown; reconnect will refresh."
+                    )
+                )
+            }
+            val shutdownState = health.body.jsonString("shutdown_state") ?: "RUNNING"
+            val supervisorState = health.body.jsonString("supervisor_state") ?: "UNKNOWN"
+            val liveTradingEnabled = health.body.jsonBoolean("live_trading_enabled") ?: false
+            val heartbeat = health.body.jsonString("last_heartbeat")
+                ?: health.body.jsonNumber("last_heartbeat_count")?.let { "Heartbeat count $it" }
+                ?: "No heartbeat yet"
+            val latestDecision = apiClient.getLatestDecision().toDecisionSummary()
+            val openTrades = apiClient.getOpenPositions().toTradeRows()
+            val statement = apiClient.getStatementReport().toStatement(apiClient.getSevenDayStatementReport())
+            val paperSession = apiClient.getPaperSessionStatus().toPaperSession()
+            val paperScanSummary = apiClient.getPaperScanSummary().toPaperScanSummary()
+            val paperScanHistory = apiClient.getPaperScanHistory().toPaperScanHistory()
+            val performanceWheel = apiClient.getPerformanceWheel().toPerformanceWheel()
+            val tradeQuality = apiClient.getTradeQuality().toTradeQuality()
+            val noTradeZone = apiClient.getNoTradeZone().toNoTradeZone()
+            val dailyTarget = apiClient.getDailyTarget().toDailyTarget()
+            previous.copy(
+                isPreviewData = false,
+                connectionStatus = "Backend reachable",
+                backendConnectionState = BackendConnectionState.CONNECTED,
+                lastHeartbeat = heartbeat,
+                offlineSync = OfflineSyncUi(
+                    status = "FAST_SYNC",
+                    lastSuccessfulSync = health.body.jsonLastString("timestamp") ?: "latest",
+                    cacheStatus = "Fast backend snapshot loaded; full intelligence refresh continues."
+                ),
+                lastKnownBotState = supervisorState,
+                latestDecision = latestDecision,
+                openTrades = openTrades,
+                statement = statement,
+                paperSession = paperSession,
+                paperScanSummary = paperScanSummary,
+                paperScanHistory = paperScanHistory,
+                performanceWheel = performanceWheel,
+                tradeQuality = tradeQuality,
+                noTradeZone = noTradeZone,
+                dailyTarget = dailyTarget,
+                botStatus = previous.botStatus.copy(
+                    botState = supervisorState,
+                    liveTradingEnabled = liveTradingEnabled
+                ),
+                shutdownState = shutdownState
+            )
+        } catch (error: Exception) {
+            previous.copy(
+                connectionStatus = "Fast refresh failed (${error.javaClass.simpleName}). Last known data shown.",
+                backendConnectionState = BackendConnectionState.DISCONNECTED,
+                offlineSync = OfflineSyncUi(
+                    status = "OFFLINE",
+                    lastSuccessfulSync = previous.offlineSync.lastSuccessfulSync,
+                    cacheStatus = "Last known backend data shown; reconnect will refresh."
+                )
+            )
+        }
+    }
+
     suspend fun refreshDashboard(): TradingOsUiState {
         return try {
             val health = apiClient.getHealth()

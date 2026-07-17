@@ -60,17 +60,29 @@ class TradingOsViewModel(application: Application) : AndroidViewModel(applicatio
     fun refresh() {
         viewModelScope.launch {
             val current = _uiState.value
+            val fast = repository.refreshDashboardFast(current)
+            val fastUpdated = fast.copy(
+                backendBaseUrl = backendBaseUrl.value,
+                language = current.language,
+                appLocked = current.appLocked,
+                onboardingComplete = current.onboardingComplete
+            )
+            _uiState.value = fastUpdated
+            if (fastUpdated.backendConnectionState == BackendConnectionState.CONNECTED) {
+                localCache.save(fastUpdated)
+            }
             val fresh = repository.refreshDashboard()
+            val latestCurrent = _uiState.value
             val preserved = if (
                 fresh.backendConnectionState == BackendConnectionState.DISCONNECTED &&
-                !current.isPreviewData
+                !latestCurrent.isPreviewData
             ) {
-                current.copy(
+                latestCurrent.copy(
                     connectionStatus = fresh.connectionStatus.ifBlank { "Backend unavailable. Last known data shown." },
                     backendConnectionState = BackendConnectionState.DISCONNECTED,
                     offlineSync = OfflineSyncUi(
                         status = "OFFLINE_CACHE",
-                        lastSuccessfulSync = current.offlineSync.lastSuccessfulSync,
+                        lastSuccessfulSync = latestCurrent.offlineSync.lastSuccessfulSync,
                         queuedLocalActions = 0,
                         cacheStatus = "Last known backend data shown; reconnect will refresh."
                     )
@@ -80,9 +92,9 @@ class TradingOsViewModel(application: Application) : AndroidViewModel(applicatio
             }
             val updated = preserved.copy(
                 backendBaseUrl = backendBaseUrl.value,
-                language = current.language,
-                appLocked = current.appLocked,
-                onboardingComplete = current.onboardingComplete
+                language = latestCurrent.language,
+                appLocked = latestCurrent.appLocked,
+                onboardingComplete = latestCurrent.onboardingComplete
             )
             _uiState.value = updated
             if (updated.backendConnectionState == BackendConnectionState.CONNECTED) {

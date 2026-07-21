@@ -85,7 +85,7 @@ class TradingOSRepository:
         return self._save("trade_journal_entry", entry)
 
     def list_trade_journal(self, limit: int = 100) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("trade_journal_entry", limit)]
+        return self._latest_payloads("trade_journal_entry", limit)
 
     def save_execution_intent(self, intent: Any) -> PersistentRecord:
         return self._save("execution_intent", intent)
@@ -94,43 +94,37 @@ class TradingOSRepository:
         return self._save("ai_decision", decision)
 
     def list_ai_decisions(self, limit: int = 100) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("ai_decision", limit)]
+        return self._latest_payloads("ai_decision", limit)
 
     def save_strategy_signal(self, signal: Any) -> PersistentRecord:
         return self._save("strategy_signal", signal)
 
     def list_strategy_signals(self, limit: int = 500) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("strategy_signal", limit)]
+        return self._latest_payloads("strategy_signal", limit)
 
     def save_market_intelligence_snapshot(self, snapshot: Any) -> PersistentRecord:
         return self._save("market_intelligence_snapshot", snapshot)
 
     def list_market_intelligence_snapshots(self, limit: int = 500) -> list[dict[str, Any]]:
-        return [
-            item["payload"]
-            for item in self.storage.list_records("market_intelligence_snapshot", limit)
-        ]
+        return self._latest_payloads("market_intelligence_snapshot", limit)
 
     def save_risk_result(self, result: Any) -> PersistentRecord:
         return self._save("risk_result", result)
 
     def list_risk_results(self, limit: int = 500) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("risk_result", limit)]
+        return self._latest_payloads("risk_result", limit)
 
     def save_zero_hallucination_result(self, result: Any) -> PersistentRecord:
         return self._save("zero_hallucination_result", result)
 
     def list_zero_hallucination_results(self, limit: int = 500) -> list[dict[str, Any]]:
-        return [
-            item["payload"]
-            for item in self.storage.list_records("zero_hallucination_result", limit)
-        ]
+        return self._latest_payloads("zero_hallucination_result", limit)
 
     def save_audit_event(self, event: Any) -> PersistentRecord:
         return self._save("audit_event", redact(json_payload(event)))
 
     def list_audit_events(self, limit: int = 100) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("audit_event", limit)]
+        return self._latest_payloads("audit_event", limit)
 
     def save_notification_event(self, event: Any) -> PersistentRecord:
         return self._save("notification_event", event)
@@ -148,13 +142,13 @@ class TradingOSRepository:
         return self.storage.save_record(persistent)
 
     def list_license_records(self, limit: int = 500) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("license_record", limit)]
+        return self._latest_payloads("license_record", limit)
 
     def list_execution_intents(self, limit: int = 500) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("execution_intent", limit)]
+        return self._latest_payloads("execution_intent", limit)
 
     def list_daily_performance(self, limit: int = 90) -> list[dict[str, Any]]:
-        return [item["payload"] for item in self.storage.list_records("daily_performance", limit)]
+        return self._latest_payloads("daily_performance", limit)
 
     def save_settings(self, key: str, value: dict[str, Any]) -> None:
         safe_value = redact(json_payload(value))
@@ -189,3 +183,8 @@ class TradingOSRepository:
     def _latest_payload(self, category: str) -> dict[str, Any] | None:
         latest = self.storage.latest_record(category)
         return latest["payload"] if latest else None
+
+    def _latest_payloads(self, category: str, limit: int) -> list[dict[str, Any]]:
+        rows = self.storage.list_records(category, limit, newest_first=True)
+        rows.reverse()
+        return [item["payload"] for item in rows]

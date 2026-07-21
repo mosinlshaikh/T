@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import sqlite3
 from typing import Any
@@ -11,8 +12,23 @@ from trading_os.db.models import PersistentRecord, utc_now
 
 def sqlite_path(database_url: str) -> Path:
     if database_url.startswith("sqlite:///"):
-        return Path(database_url.removeprefix("sqlite:///"))
+        raw_path = database_url.removeprefix("sqlite:///")
+        if raw_path.startswith("data/") and _running_on_railway():
+            return Path("/") / raw_path
+        return Path(raw_path)
     return Path(database_url)
+
+
+def _running_on_railway() -> bool:
+    return any(
+        os.getenv(name)
+        for name in (
+            "RAILWAY_ENVIRONMENT",
+            "RAILWAY_ENVIRONMENT_ID",
+            "RAILWAY_PROJECT_ID",
+            "RAILWAY_SERVICE_ID",
+        )
+    )
 
 
 class SQLiteStorage:

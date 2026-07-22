@@ -2,9 +2,7 @@ from trading_os.db.repository import TradingOSRepository
 
 
 def test_limited_decisions_return_latest_rows_in_chronological_order(tmp_path):
-    repository = TradingOSRepository.from_database_url(
-        f"sqlite:///{tmp_path / 'ordering.sqlite3'}"
-    )
+    repository = TradingOSRepository.from_database_url(f"sqlite:///{tmp_path / 'ordering.sqlite3'}")
 
     for index in range(5):
         repository.save_ai_decision(

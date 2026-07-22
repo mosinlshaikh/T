@@ -131,7 +131,11 @@ class PaperSessionScheduler:
         uptime_seconds = max(int((now - started).total_seconds()), 0) if started else 0
         expected_scans = max(int(uptime_seconds // max(self.interval_seconds, 1)), 0)
         expected_scans_24h = max(int(86_400 // max(self.interval_seconds, 1)), 1)
-        health = "RUNNING" if self.running and not self.last_error else "DEGRADED" if self.running else "STOPPED"
+        health = (
+            "RUNNING"
+            if self.running and not self.last_error
+            else "DEGRADED" if self.running else "STOPPED"
+        )
         if self.running and self.scan_count == 0 and uptime_seconds > self.interval_seconds * 2:
             health = "DEGRADED"
         return {
@@ -150,7 +154,9 @@ class PaperSessionScheduler:
             "scan_count": self.scan_count,
             "expected_scan_count": expected_scans,
             "expected_scan_count_24h": expected_scans_24h,
-            "scan_progress_24h_pct": round(min((self.scan_count / expected_scans_24h) * 100, 100), 2),
+            "scan_progress_24h_pct": round(
+                min((self.scan_count / expected_scans_24h) * 100, 100), 2
+            ),
             "last_scan": self.last_scan,
             "last_error": self.last_error,
             "auto_resume_enabled": bool(desired.get("enabled")),
